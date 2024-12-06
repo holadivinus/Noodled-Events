@@ -82,7 +82,7 @@ public class StaticMethodCookBook : CookBook
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 
         // sanity check (AddComponent() leaves this field empty)
-        if (evt.PersistentCallsList == null) evt._PersistentCalls = new();
+        if (evt.PersistentCallsList == null) evt.FSetPCalls(new());
 
         // foreach input
 
@@ -160,7 +160,7 @@ public class StaticMethodCookBook : CookBook
             }
         }
         
-        if (evt._PersistentCalls == null) evt._PersistentCalls = new List<PersistentCall>();
+        if (evt.PersistentCallsList == null) evt.FSetPCalls(new List<PersistentCall>());
         evt.PersistentCallsList.Add(myCall);
         // calls have been added/linked;
         // set compcall and compile next node.

@@ -103,7 +103,7 @@ namespace NoodledEvents
                         TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToParamVal(ArgIsSource, TargArgType);
                     else
                     {
-                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(SourceEvent._PersistentCalls.IndexOf(SourceCall), TargArgType);
+                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(SourceEvent.PersistentCallsList.IndexOf(SourceCall), TargArgType);
                     }
                 }
                 else

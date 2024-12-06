@@ -84,7 +84,7 @@ public class ObjectMethodCookBook : CookBook
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 
         // sanity check (AddComponent() leaves this field empty)
-        if (evt.PersistentCallsList == null) evt._PersistentCalls = new();
+        if (evt.PersistentCallsList == null) evt.FSetPCalls(new());
 
         // make my PCall    
         PersistentCall myCall = new PersistentCall((MethodInfo)meth.Method, node.DataInputs[0].DefaultObject); 
@@ -100,7 +100,7 @@ public class ObjectMethodCookBook : CookBook
             // make event for jsonning
             varyEvt = dataRoot.StoreComp<UltEventHolder>("varying");
             varyEvt.Event = new UltEvent();
-            varyEvt.Event._PersistentCalls = new();
+            varyEvt.Event.FSetPCalls(new());
             evt = varyEvt.Event; // move stuff to the targevt
             myCall.FSetTarget(null);
         }
@@ -214,7 +214,7 @@ public class ObjectMethodCookBook : CookBook
             var idC = dataRoot.StoreComp<XRInteractorAffordanceStateProvider>();
             var setr = new PersistentCall(idC.GetType().GetMethod("set_interactorSource", UltEventUtils.AnyAccessBindings), idC);
             new PendingConnection(node.DataInputs[0].Source, evt, setr, 0).Connect(dataRoot);
-            evt._PersistentCalls.Add(setr);
+            evt.PersistentCallsList.Add(setr);
             var serer = new PersistentCall(typeof(JsonUtility).GetMethod("ToJson", new[] { typeof(object) }), null);
             serer.PersistentArguments[0].FSetType(PersistentArgumentType.Object);
             serer.PersistentArguments[0].Object = idC;

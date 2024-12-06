@@ -12,6 +12,7 @@ public static class UltNoodleRuntimeExtensions
     private static FieldInfo s_methodGetSet = typeof(PersistentCall).GetField("_Method", UltEventUtils.AnyAccessBindings);
     private static FieldInfo s_methodNameGetSet = typeof(PersistentCall).GetField("_MethodName", UltEventUtils.AnyAccessBindings);
     private static FieldInfo s_targetGetSet = typeof(PersistentCall).GetField("_Target", UltEventUtils.AnyAccessBindings);
+    private static FieldInfo s_listGetSet = typeof(UltEventBase).GetField("_PersistentCalls", UltEventUtils.AnyAccessBindings);
     private static FieldInfo s_PersistentArgumentsGetSet = typeof(PersistentCall).GetField("_PersistentArguments", UltEventUtils.AnyAccessBindings);
     private static FieldInfo s_PersistentArgumentTypeGetSet = typeof(PersistentArgument).GetField("_Type", UltEventUtils.AnyAccessBindings);
     private static FieldInfo s_PersistentArgumentStringGetSet = typeof(PersistentArgument).GetField("_String", UltEventUtils.AnyAccessBindings);
@@ -38,6 +39,10 @@ public static class UltNoodleRuntimeExtensions
     {
         s_PersistentArgumentIntGetSet.SetValue(arg, i);
         return arg;
+    }
+    public static void FSetPCalls(this UltEventBase evt, List<PersistentCall> list)
+    {
+        s_listGetSet.SetValue(evt, list);
     }
     public static int FGetInt(this PersistentArgument arg)
         => (int)s_PersistentArgumentIntGetSet.GetValue(arg);
