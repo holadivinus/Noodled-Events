@@ -99,6 +99,7 @@ namespace NoodledEvents
             if (NoadType == NodeType.BowlInOut) 
             {
                 // bowl in out has no cookbook, so we comp it here
+                Bowl.Event._PersistentCalls ??= new List<PersistentCall>();
                 Bowl.Event.PersistentCallsList.Clear();
                 var targNode = FlowOutputs.FirstOrDefault()?.Target?.Node; // this also handles the descending nodes
                 targNode?.Book.CompileNode(Bowl.Event, targNode, dataRoot);
