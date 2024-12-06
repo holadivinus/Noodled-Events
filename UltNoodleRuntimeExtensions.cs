@@ -34,9 +34,10 @@ public static class UltNoodleRuntimeExtensions
         => (PersistentArgumentType)s_PersistentArgumentTypeGetSet.GetValue(arg);
     public static PersistentArgument FSetString(this PersistentArgument arg, string s)
     { s_PersistentArgumentStringGetSet.SetValue(arg, s); return arg; }
-    public static void FSetInt(this PersistentArgument arg, int i)
+    public static PersistentArgument FSetInt(this PersistentArgument arg, int i)
     {
-        s_PersistentArgumentIntGetSet.SetValue(arg, i); 
+        s_PersistentArgumentIntGetSet.SetValue(arg, i);
+        return arg;
     }
     public static int FGetInt(this PersistentArgument arg)
         => (int)s_PersistentArgumentIntGetSet.GetValue(arg);

@@ -253,6 +253,62 @@ public class ObjectMethodCookBook : CookBook
             // a pcall is this: {"_Target":{"instanceID":0},"_MethodName":"get_name","_PersistentArguments":[]}
             // we need to split the whole json in two while ommitting the serialized ref, and we only know the MethodName.
             //regex + string concat shenanigans
+            string methName = meth.Method.Name;
+            string removePreMethName = "^(.*),\"_MethodName\":\"" + methName + "\"";
+            var getPostRef = new PersistentCall();
+            getPostRef.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
+            getPostRef.FSetArguments(
+                new PersistentArgument().ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
+                new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString(removePreMethName),
+                new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString(",\"_MethodName\":\"" + methName + "\"")
+                );
+            evt.PersistentCallsList.Add(getPostRef);
+            // this returns everything after the serz ref in the template evt
+
+            string removePostRef = ",\"_MethodName\":\""+ methName + "\".*";
+            var removePostRefPCall = new PersistentCall();
+            removePostRefPCall.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
+            removePostRefPCall.FSetArguments(
+                new PersistentArgument().ToRetVal(evt.PersistentCallsList.Count - 2, typeof(string)),
+                new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString(removePostRef),
+                new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("")
+                );
+            evt.PersistentCallsList.Add(removePostRefPCall);
+            // this returns everything until the serz ref (blablabla{ref})
+
+            // we need to cut out the ref
+            string removePostRefRef = ".[^{]+$";
+            var removePostRefRefPCall = new PersistentCall();
+            removePostRefRefPCall.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
+            removePostRefRefPCall.FSetArguments(
+                new PersistentArgument().ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
+                new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString(removePostRefRef),
+                new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("")
+                );
+            evt.PersistentCallsList.Add(removePostRefRefPCall);
+            // this returns everything before the serz ref in the template evt
+
+            // now we just concat the correct retvals lol
+            var concatPCall = new PersistentCall();
+            concatPCall.FSetMethodName("System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Concat");
+            concatPCall.FSetArguments(
+                new PersistentArgument().FSetString(typeof(string).AssemblyQualifiedName).FSetType(PersistentArgumentType.ReturnValue).FSetInt(evt.PersistentCallsList.Count-1),
+                new PersistentArgument().FSetString(typeof(string).AssemblyQualifiedName).FSetType(PersistentArgumentType.ReturnValue).FSetInt(evt.PersistentCallsList.Count - 5),
+                new PersistentArgument().FSetString(typeof(string).AssemblyQualifiedName).FSetType(PersistentArgumentType.ReturnValue).FSetInt(evt.PersistentCallsList.Count - 3));
+            evt.PersistentCallsList.Add(concatPCall);
+            // this is the template, now reffing the our epic obj
+            // just FromJson and Invoke!
+
+            var froJs = new PersistentCall(typeof(JsonUtility).GetMethod("FromJsonOverwrite"), null);
+            froJs.PersistentArguments[0].FSetType(PersistentArgumentType.ReturnValue).FSetString(typeof(string).AssemblyQualifiedName).FSetInt(evt.PersistentCallsList.Count-1);
+            froJs.PersistentArguments[1].FSetType(PersistentArgumentType.Object);
+            froJs.PersistentArguments[1].Object = varyEvt;
+            froJs.PersistentArguments[1].FSetString(typeof(object).AssemblyQualifiedName);
+            evt.PersistentCallsList.Add(froJs);
+
+            var inv = new PersistentCall(typeof(UltEventHolder).GetMethod("Invoke", new Type[] { }), varyEvt);
+            evt.PersistentCallsList.Add(inv);
+
 
             // if evt had data output, get data
             if (retValStore != null)
