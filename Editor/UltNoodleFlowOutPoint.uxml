@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <UltNoodleFlowOutPoint style="min-width: 79px; min-height: 27px; border-left-color: rgb(67, 67, 67); border-right-color: rgb(67, 67, 67); border-top-color: rgb(67, 67, 67); border-bottom-color: rgb(67, 67, 67); border-left-width: 0; border-right-width: 0; border-top-width: 0; border-bottom-width: 1px; flex-direction: row;">
+        <ui:VisualElement name="ConnectionPoint" style="background-image: url(&apos;project://database/Assets/Noodled-Events/Editor/UI%20Assets/arrow.png?fileID=2800000&amp;guid=cfa3ae6e6c87cbc41a2faacf45c3b140&amp;type=3#arrow&apos;); width: 10px; height: 10px; margin-left: -3px; top: 10px; left: 100%; position: absolute;" />
+        <ui:Label text="Label" display-tooltip-when-elided="true" name="OutputName" style="height: 22px; -unity-text-align: middle-right; white-space: nowrap; width: 100%; margin-top: 4px; margin-right: 0; padding-right: 4px;" />
+        <ui:VisualElement name="Line" style="position: absolute; left: 0; top: 0; min-height: 3px; min-width: 40px; background-color: rgba(191, 255, 209, 0.46); transform-origin: left; visibility: hidden;" />
+    </UltNoodleFlowOutPoint>
+</ui:UXML>

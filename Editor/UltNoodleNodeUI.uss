@@ -1,0 +1,8 @@
+TemplateContainer {
+    left: 50px;
+    top: 50px;
+    width: auto;
+    min-height: 100px;
+    min-width: 300px;
+    position: absolute;
+}

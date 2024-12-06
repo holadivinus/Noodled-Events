@@ -1,0 +1,10 @@
+TemplateContainer {
+    flex-grow: 1;
+}
+
+#grabby * {
+    cursor: pan;
+}
+#grabby {
+    cursor: pan;
+}

@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/Noodled-Events/Editor/UltNoodleEditor.uss?fileID=7433441132597879392&amp;guid=df23540ea7211904ca9706a3ec19616a&amp;type=3#UltNoodleEditor" />
+    <ui:VisualElement name="GroupPath" style="height: auto; flex-direction: row;">
+        <ui:Button text="Button" display-tooltip-when-elided="true" />
+    </ui:VisualElement>
+    <ui:VisualElement name="NodesFrame" style="flex-basis: 100%; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; overflow: hidden; visibility: visible; transform-origin: right;">
+        <ui:VisualElement name="A" style="left: 171px; top: 210px; width: 0; height: 0; transform-origin: left top;">
+            <ui:VisualElement name="B" style="scale: 1 1; transform-origin: left top;">
+                <ui:VisualElement name="C" style="width: 0; height: 0; min-width: 0; min-height: 0; left: -171px; top: -210px;">
+                    <ui:VisualElement name="D" style="left: 0; top: 0;">
+                        <ui:VisualElement name="OriginX" style="min-width: 50px; min-height: 1px; background-color: rgb(255, 255, 255); position: absolute; left: -25px; top: 0; color: rgb(255, 255, 255); border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px;" />
+                        <ui:VisualElement name="OriginY" style="min-width: 1px; min-height: 50px; background-color: rgb(255, 255, 255); position: absolute; left: 0; top: -25px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px;" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:VisualElement name="SearchMenu" style="position: absolute; left: 203px; top: 256px; min-width: 0; min-height: 0; background-color: rgb(84, 84, 84); border-left-color: rgb(0, 255, 29); border-right-color: rgb(0, 255, 29); border-top-color: rgb(0, 255, 29); border-bottom-color: rgb(0, 255, 29); border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; display: flex; visibility: visible; height: 252px; width: 434px;">
+        <ui:TextField picking-mode="Ignore" is-delayed="false" name="SearchBar" />
+        <ui:ScrollView name="SearchedTypes" tabindex="0" style="flex-grow: 1;" />
+        <ui:Toggle label="Also show Non-Object Types with Static Members?" name="StaticsToggle" style="flex-direction: row-reverse; justify-content: flex-end; align-items: center;" />
+    </ui:VisualElement>
+</ui:UXML>

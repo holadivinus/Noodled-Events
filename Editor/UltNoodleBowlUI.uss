@@ -1,0 +1,7 @@
+#LowerRightPull {
+    cursor: resize-up-left;
+}
+
+#UpperLeftPull {
+    cursor: move-arrow;
+}

@@ -1,0 +1,3 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="NodePoint" style="position: absolute; left: 0; top: 0; min-width: 10px; min-height: 10px; background-image: url(&apos;project://database/Packages/com.unity.timeline/Editor/StyleSheets/Images/Shared/TimelineDisplay.png?fileID=2800000&amp;guid=03ae22b9de3989144a9bebf8972b4fad&amp;type=3#TimelineDisplay&apos;); -unity-background-image-tint-color: rgb(255, 255, 255);" />
+</ui:UXML>
