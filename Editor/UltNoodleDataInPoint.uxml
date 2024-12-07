@@ -1,8 +1,9 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
     <UltNoodleDataInPoint style="min-width: 79px; min-height: 27px; border-left-color: rgb(67, 67, 67); border-right-color: rgb(67, 67, 67); border-top-color: rgb(67, 67, 67); border-bottom-color: rgb(67, 67, 67); border-left-width: 0; border-right-width: 0; border-top-width: 0; border-bottom-width: 1px;">
         <ui:VisualElement name="ConnectionPoint" style="background-color: rgb(132, 132, 132); position: absolute; left: -5px; top: 10px; width: 10px; height: 10px; border-top-left-radius: 4px; border-bottom-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-left-width: 3px; border-right-width: 3px; border-top-width: 3px; border-bottom-width: 3px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);" />
         <ui:VisualElement name="Entries" style="flex-direction: row; min-height: 22px; margin-left: 6px;">
             <ui:Label text="Label" display-tooltip-when-elided="true" name="InputName" style="height: 22px; -unity-text-align: lower-center;" />
+            <ui:VisualElement name="System_Object" style="flex-shrink: 0; display: none; visibility: hidden;" />
         </ui:VisualElement>
         <ui:VisualElement name="Line" style="position: absolute; left: 0; top: 0; min-height: 3px; min-width: 40px; background-color: rgba(191, 255, 209, 0.46); transform-origin: left; visibility: hidden;" />
     </UltNoodleDataInPoint>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UltEvents;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace NoodledEvents
@@ -123,6 +124,8 @@ namespace NoodledEvents
             }
 
             EntryNode.Compile(lastGen);
+
+            EditorSceneManager.MarkSceneDirty(this.gameObject.scene);
         }
 
         public void OnBeforeSerialize()

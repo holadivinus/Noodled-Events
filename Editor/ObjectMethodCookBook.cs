@@ -129,10 +129,19 @@ public class ObjectMethodCookBook : CookBook
                 }
             } else
             {
-                // this input uses a default value!
                 myCall.PersistentArguments[j - 1] = new PersistentArgument(meth.Parameters[j - 1]);
 
-                switch (myCall.PersistentArguments[j - 1].Type)
+                // this input uses a default value!
+                PersistentArgumentType t = PersistentArgumentType.None;
+                if (node.DataInputs[j - 1].ConstInput != PersistentArgumentType.None) // takes consts!
+                {
+                    t = node.DataInputs[j - 1].ConstInput;
+                    // force this arg to be the const lol, ui todo
+                    myCall.PersistentArguments[j - 1].FSetType(t);
+                }
+                else t = myCall.PersistentArguments[j - 1].Type;
+
+                switch (t)
                 {
                     case PersistentArgumentType.Bool:
                         myCall.PersistentArguments[j - 1].Bool = node.DataInputs[j].DefaultBoolValue;

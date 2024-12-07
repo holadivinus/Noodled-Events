@@ -223,6 +223,7 @@ namespace NoodledEvents
         public Color DefaultColorValue { get => ValDefs; set => ValDefs = value; }
         public Quaternion DefaultQuaternionValue { get => new Quaternion(ValDefs.x, ValDefs.y, ValDefs.z, ValDefs.w); set => ValDefs = new Vector4(value.x, value.y, value.z, value.w); }
         [SerializeField] public UnityEngine.Object DefaultObject;
+        [SerializeField] public PersistentArgumentType ConstInput = PersistentArgumentType.None;
 
         public void Connect(NoodleDataOutput output)
         {
