@@ -144,7 +144,7 @@ public class UltNoodleEditor : EditorWindow
 
         foreach (var evtHolder in Resources.FindObjectsOfTypeAll<UltEventHolder>())
             if (evtHolder.gameObject.scene == curScene && !BowlUIs.Any(b => b.Component == evtHolder) && evtHolder.gameObject.activeInHierarchy)
-                UltNoodleBowlUI.New(this, D, evtHolder, "_Event");
+                UltNoodleBowlUI.New(this, D, evtHolder, new SerializedType(typeof(UltEventHolder)), "_Event");
 
         
     }

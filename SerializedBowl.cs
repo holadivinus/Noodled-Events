@@ -15,7 +15,7 @@ namespace NoodledEvents
     [ExecuteAlways]
     public partial class SerializedBowl : MonoBehaviour, ISerializationCallbackReceiver
     {
-        public static SerializedBowl Create(Component target, string eventFieldPath)
+        public static SerializedBowl Create(Component target, SerializedType fieldType, string eventFieldPath)
         {
             var o = target.gameObject.AddComponent<SerializedBowl>();
             o.EventFieldPath = eventFieldPath;
@@ -23,8 +23,9 @@ namespace NoodledEvents
             o.BowlName = "Bowl";
 
             o.NodeDatas.Add(new SerializedNode(o));
-            
-            
+            o.BowlEvtHolderType = fieldType;
+
+
 
             return o;
         }
@@ -39,10 +40,11 @@ namespace NoodledEvents
         [HideInInspector] public Component EventHolder;
         public string EventFieldPath;
         private FieldInfo _getter;
+        [SerializeField] SerializedType BowlEvtHolderType;
         public UltEventBase Event
         {
-            get => (_getter ??= EventHolder.GetType().GetField(EventFieldPath, UltEventUtils.AnyAccessBindings))?.GetValue(EventHolder) as UltEventBase;
-            set => (_getter ??= EventHolder.GetType().GetField(EventFieldPath, UltEventUtils.AnyAccessBindings))?.SetValue(EventHolder, value);
+            get => (_getter ??= BowlEvtHolderType.Type.GetField(EventFieldPath, UltEventUtils.AnyAccessBindings))?.GetValue(EventHolder) as UltEventBase;
+            set => (_getter ??= BowlEvtHolderType.Type.GetField(EventFieldPath, UltEventUtils.AnyAccessBindings))?.SetValue(EventHolder, value);
         }
         
         public Action<string> PathChange = delegate { };
@@ -106,7 +108,7 @@ namespace NoodledEvents
         /// </summary>
         public void Compile()
         {
-            if (Event == null)
+            if (Event == null) Event = new UltEvent();
             Event.Clear();
 
             var lastGen = EventHolder.transform.Find("bowl_generated");

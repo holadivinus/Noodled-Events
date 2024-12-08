@@ -9,14 +9,14 @@ namespace NoodledEvents
 {
     public static class UltNoodleExtensions
     {
-        public static SerializedBowl GetBowlData(this Component holder, string eventFieldPath)
+        public static SerializedBowl GetBowlData(this Component holder, SerializedType fieldType, string eventFieldPath)
         {
             foreach (var bowlData in holder.GetComponents<SerializedBowl>())
                 if (bowlData.EventHolder == holder && bowlData.EventFieldPath == eventFieldPath)
                     return bowlData;
             
             // needs bowl
-            return SerializedBowl.Create(holder, eventFieldPath);
+            return SerializedBowl.Create(holder, fieldType, eventFieldPath);
         }
 
         public static Type[] GetAllTypes()

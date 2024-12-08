@@ -81,15 +81,16 @@ public class UltNoodleBowlUI : VisualElement
         // ho ho ho :)
     }
     // Ctor :)
-    public static UltNoodleBowlUI New(UltNoodleEditor editor, VisualElement parent, UnityEngine.Component eventComponent, string eventField)
+    public static UltNoodleBowlUI New(UltNoodleEditor editor, VisualElement parent, UnityEngine.Component eventComponent, SerializedType fieldType, string eventField)
     {
         var o = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ScriptPath.Replace(".cs", ".uxml")).Instantiate().Q<UltNoodleBowlUI>();
-        o.setupInternal(editor, parent, eventComponent, eventField);
+        o.setupInternal(editor, parent, eventComponent, fieldType, eventField);
         return o;
     }
-    private void setupInternal(UltNoodleEditor editor, VisualElement parent, UnityEngine.Component eventComponent, string eventField)
+    private SerializedType _fieldType;
+    private void setupInternal(UltNoodleEditor editor, VisualElement parent, UnityEngine.Component eventComponent, SerializedType fieldType, string eventField)
     {
-        _editor = editor; _eventFieldPath = eventField; Component = eventComponent;
+        _editor = editor; _fieldType = fieldType; _eventFieldPath = eventField; Component = eventComponent;
 
         // i'm visual
         Visual = this; //AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ScriptPath.Replace(".cs", ".uxml")).Instantiate();
@@ -242,7 +243,7 @@ public class UltNoodleBowlUI : VisualElement
         {
             if (_sb == null && Component != null)
             {
-                _sb = Component.GetBowlData(_eventFieldPath);
+                _sb = Component.GetBowlData(_fieldType, _eventFieldPath);
                 PathLabel.text = _sb.Path;
                 _sb.PathChange += (newPath) => PathLabel.text = newPath;
             }
