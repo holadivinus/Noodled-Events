@@ -27,7 +27,6 @@ public class UltNoodleEditor : EditorWindow
         foreach (var ass in AppDomain.CurrentDomain.GetAssemblies())
         {
             o += ass.FullName + '\n';
-            
         }
         Debug.Log(o);
         return;

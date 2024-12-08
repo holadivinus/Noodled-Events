@@ -17,9 +17,11 @@ namespace NoodledEvents
     public class CookBook : ScriptableObject
     {
         private static Assembly _blAssmb;
-        public static Assembly BLAssembly => _blAssmb ??= AppDomain.CurrentDomain.GetAssemblies().First(ass => ass.FullName.StartsWith("Assembly-CSharp"));
+        public static Assembly BLAssembly => _blAssmb ??= AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(ass => ass.FullName.StartsWith("Assembly-CSharp"));
         public static Type GetBLType(string name) 
         {
+            if (BLAssembly == null)
+                return null;
             foreach (Type t in BLAssembly.GetTypes())
                 try
                 {
