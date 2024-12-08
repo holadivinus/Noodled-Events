@@ -247,6 +247,7 @@ public class UltNoodleBowlUI : VisualElement
                 PathLabel.text = _sb.Path;
                 _sb.PathChange += (newPath) => PathLabel.text = newPath;
             }
+            if (_sb != null) _sb.BowlEvtHolderType = _fieldType; // backwards compat for pre BowlEvtHolderType bowlz
             return _sb;
         }
     }

@@ -40,7 +40,7 @@ namespace NoodledEvents
         [HideInInspector] public Component EventHolder;
         public string EventFieldPath;
         private FieldInfo _getter;
-        [SerializeField] SerializedType BowlEvtHolderType;
+        [SerializeField] public SerializedType BowlEvtHolderType;
         public UltEventBase Event
         {
             get => (_getter ??= BowlEvtHolderType.Type.GetField(EventFieldPath, UltEventUtils.AnyAccessBindings))?.GetValue(EventHolder) as UltEventBase;
@@ -110,7 +110,7 @@ namespace NoodledEvents
         {
             if (Event == null) Event = new UltEvent();
             Event.Clear();
-
+d
             var lastGen = EventHolder.transform.Find("bowl_generated");
             if (lastGen != null) UnityEngine.Object.DestroyImmediate(lastGen.gameObject);
             lastGen = new GameObject("bowl_generated").transform;
