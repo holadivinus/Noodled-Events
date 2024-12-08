@@ -82,7 +82,7 @@ namespace NoodledEvents
             
             public static Dictionary<Type, (Type, PropertyInfo)> CompStoragers = new Dictionary<Type, (Type, PropertyInfo)>()
             {
-                { typeof(UnityEngine.Object), (GetBLType("SpawnableSaver"), GetBLType("SpawnableSaver").GetProperty("ItemComponent", UltEventUtils.AnyAccessBindings)) },
+                { typeof(UnityEngine.Object), (GetBLType("SpawnableSaver"), GetBLType("SpawnableSaver")?.GetProperty("ItemComponent", UltEventUtils.AnyAccessBindings)) },
                 { typeof(float), (typeof(SphereCollider), RadiusGetSet) },
                 { typeof(bool), (typeof(Mask), typeof(Mask).GetProperty("enabled")) },
                 { typeof(Vector3), (typeof(BoxCollider), typeof(BoxCollider).GetProperty(nameof(BoxCollider.center))) },
