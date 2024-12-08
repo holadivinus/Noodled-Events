@@ -23,7 +23,13 @@ public class UltNoodleEditor : EditorWindow
     [MenuItem("NoodledEvents/test")]
     public static void test()
     {
-        
+        string o = "";
+        foreach (var ass in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            o += ass.FullName + '\n';
+            
+        }
+        Debug.Log(o);
         return;
         AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<CommonsCookBook>(), "Assets/CommonsCookBook.asset");
         return;
