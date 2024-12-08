@@ -43,7 +43,7 @@ namespace NoodledEvents
         {
             Bowl = bowl;
             NoadType = SerializedNode.NodeType.BowlInOut;
-            Position = new Vector2(-230, 0);
+            Position = new Vector2(-210, 0);
 
             // todo for cooler evt types
             FlowOutputs = new[] { new NoodleFlowOutput(this) };

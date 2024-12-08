@@ -9,5 +9,6 @@
         </ui:VisualElement>
         <ui:VisualElement name="UpperLeftPull" style="position: absolute; left: -20px; top: -20px; min-width: 40px; min-height: 40px; background-color: rgba(255, 222, 0, 0.22);" />
         <ui:Button text="X" display-tooltip-when-elided="true" name="DeleteBT" style="position: absolute; right: 0; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; background-color: rgb(24, 24, 24); width: 16px; color: rgb(255, 95, 95);" />
+        <ui:Button text="Run!" display-tooltip-when-elided="true" name="Invoke" style="left: auto; bottom: 0; max-width: 31px; right: 0; position: absolute; visibility: hidden;" />
     </UltNoodleNodeUI>
 </ui:UXML>

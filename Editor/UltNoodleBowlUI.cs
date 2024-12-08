@@ -13,6 +13,7 @@ public class UltNoodleBowlUI : VisualElement
     public new class UxmlFactory : UxmlFactory<UltNoodleBowlUI, UxmlTraits> { }
 
     public static UltNoodleBowlUI CurrentBowlUI;
+    public static bool EvtIsExecRn;
 
     // when a connection drag is happening, the source is here and not null
     public NoodleFlowInput CurHoveredFlowInput;

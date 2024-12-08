@@ -31,10 +31,25 @@ public class UltNoodleNodeUI : VisualElement
         if (serializedNode.NoadType == SerializedNode.NodeType.BowlInOut)
         {
             this.Q<Button>("DeleteBT").visible = false;
+            var inv = this.Q<Button>("Invoke");
+            inv.visible = true;
+            inv.clicked += () =>
+            {
+                //compile and run evt
+                bowl.SerializedData.Compile();
+
+                UltNoodleBowlUI.EvtIsExecRn = true;
+                bowl.SerializedData.Event.DynamicInvoke();
+                UltNoodleBowlUI.EvtIsExecRn = false;
+
+                // recompile to reset state
+                bowl.SerializedData.Compile();
+            };
         }
 
         Bowl.NodeUIs.Add(this);
         NodeBG = Visual.Q("BG");
+
 
         //UIMethod = Node.Method;
         if (serializedNode.NoadType == SerializedNode.NodeType.Normal)

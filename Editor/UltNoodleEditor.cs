@@ -150,15 +150,14 @@ public class UltNoodleEditor : EditorWindow
     }
     private void OnLostFocus()
     {
-        Debug.Log("Compile!");
-        
         foreach (var bowlUI in BowlUIs.ToArray())
         {
             if (bowlUI.SerializedData != null)
                 bowlUI.SerializedData.Compile();
         }
+        Debug.Log("Compiled!");
     }
-    
+
     private bool _dragging;
     private void NodeFrameMouseDown(MouseDownEvent evt)
     {

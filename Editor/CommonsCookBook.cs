@@ -68,9 +68,11 @@ public class CommonsCookBook : CookBook
                 var onTrue = new GameObject("if True", typeof(LifeCycleEvents)).GetComponent<LifeCycleEvents>();
                 onTrue.transform.parent = dataRoot;
                 onTrue.gameObject.SetActive(false);
+                onTrue.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
                 var onFalse = new GameObject("if False", typeof(LifeCycleEvents)).GetComponent<LifeCycleEvents>();
                 onFalse.transform.parent = dataRoot;
                 onFalse.gameObject.SetActive(false);
+                onFalse.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
 
                 // inject the "figuring" of the conditional:
                 if (node.DataInputs[0].Source == null)

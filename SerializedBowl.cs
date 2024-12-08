@@ -128,6 +128,8 @@ namespace NoodledEvents
             EntryNode.Compile(lastGen);
 
             EditorSceneManager.MarkSceneDirty(this.gameObject.scene);
+
+            //Debug.Log(BowlName + ": Compile!");
         }
 
         public void OnBeforeSerialize()
