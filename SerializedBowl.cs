@@ -110,7 +110,7 @@ namespace NoodledEvents
         {
             if (Event == null) Event = new UltEvent();
             Event.Clear();
-d
+
             var lastGen = EventHolder.transform.Find("bowl_generated");
             if (lastGen != null) UnityEngine.Object.DestroyImmediate(lastGen.gameObject);
             lastGen = new GameObject("bowl_generated").transform;
