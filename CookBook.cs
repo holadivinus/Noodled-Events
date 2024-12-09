@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -7,6 +8,7 @@ using UltEvents;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
 
 namespace NoodledEvents
 {
@@ -82,7 +84,7 @@ namespace NoodledEvents
             
             public static Dictionary<Type, (Type, PropertyInfo)> CompStoragers = new Dictionary<Type, (Type, PropertyInfo)>()
             {
-                { typeof(UnityEngine.Object), (GetBLType("SpawnableSaver"), GetBLType("SpawnableSaver")?.GetProperty("ItemComponent", UltEventUtils.AnyAccessBindings)) },
+                { typeof(UnityEngine.Object), (typeof(XRInteractorAffordanceStateProvider), typeof(XRInteractorAffordanceStateProvider).GetProperty("interactorSource", UltEventUtils.AnyAccessBindings)) },
                 { typeof(float), (typeof(SphereCollider), RadiusGetSet) },
                 { typeof(bool), (typeof(Mask), typeof(Mask).GetProperty("enabled")) },
                 { typeof(Vector3), (typeof(BoxCollider), typeof(BoxCollider).GetProperty(nameof(BoxCollider.center))) },
@@ -190,3 +192,4 @@ namespace NoodledEvents
         }
     }
 }
+#endif

@@ -7,6 +7,7 @@ using System.Reflection;
 using UltEvents;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
@@ -23,15 +24,10 @@ public class UltNoodleEditor : EditorWindow
     [MenuItem("NoodledEvents/test")]
     public static void test()
     {
-        string o = "";
-        foreach (var ass in AppDomain.CurrentDomain.GetAssemblies())
-        {
-            o += ass.FullName + '\n';
-        }
-        Debug.Log(o);
-        return;
-        AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<CommonsCookBook>(), "Assets/CommonsCookBook.asset");
-        return;
+        Debug.Log(typeof(Rigidbody).AssemblyQualifiedName);
+        //Selection.activeGameObject.GetComponent<UltEventHolder>().Event.PersistentCallsList[0].SetMethod(typeof(NavMeshHit).GetConstructors(UltEventUtils.AnyAccessBindings)[0], null);
+        //AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<CommonsCookBook>(), "Assets/CommonsCookBook.asset");
+        return; 
         
     }
 

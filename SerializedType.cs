@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_EDITOR
+using System;
 using UnityEngine;
 
 namespace NoodledEvents
@@ -23,3 +24,4 @@ namespace NoodledEvents
         public static implicit operator SerializedType(Type t) => new SerializedType(t);
     }
 }
+#endif

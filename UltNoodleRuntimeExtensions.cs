@@ -1,4 +1,5 @@
-﻿using NoodledEvents;
+﻿#if UNITY_EDITOR
+using NoodledEvents;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,6 +91,18 @@ public static class UltNoodleRuntimeExtensions
         gobj.SetActive(false);
         gobj.transform.parent = dataStore.transform;
         return gobj.transform;
+    }
+    public static Type GetRetType(this MethodBase method)
+    {
+        switch (method)
+        {
+            case MethodInfo mi:
+                return mi.ReturnType;
+            case ConstructorInfo:
+                return method.DeclaringType;
+            default:
+                throw new Exception("MethodBase has no retval: " + method.DeclaringType.Name + "." + method.Name);
+        }
     }
     public static SerializedNode MatchDef(this SerializedNode nod, CookBook.NodeDef def)
     {
@@ -193,3 +206,4 @@ public static class TypeTranslator
         return type.GetFriendlyName(_defaultDictionary); 
     }
 }
+#endif

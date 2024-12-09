@@ -1,11 +1,14 @@
 ﻿#if UNITY_EDITOR
+using Codice.CM.SEIDInfo;
 using NoodledEvents;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using UltEvents;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.UIElements;
 using static NoodledEvents.CookBook.NodeDef;
 
@@ -21,11 +24,16 @@ public class StaticMethodCookBook : CookBook
             {
                 methods = t.GetMethods(UltEventUtils.AnyAccessBindings);
             } catch(TypeLoadException) { continue; }
-
+            
             foreach (var meth in methods)
             {
-                if (meth.DeclaringType != t || !meth.IsStatic) continue;
-                allDefs.Add(new NodeDef(t.Name + "." + meth.Name, 
+                if (meth.DeclaringType != t) continue;
+                if (!meth.IsStatic) continue;
+                
+
+                //if (meth.IsConstructor) continue;
+                
+                allDefs.Add(new NodeDef(t.GetFriendlyName() + "." + meth.Name, 
                     inputs:() => 
                     {
                         var @params = meth.GetParameters();
@@ -34,7 +42,7 @@ public class StaticMethodCookBook : CookBook
                     },
                     outputs:() => 
                     {
-                        if (meth.ReturnType != typeof(void))
+                        if (meth.GetRetType() != typeof(void))
                             return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.Name, meth.ReturnType) };
                         else return new[] { new NodeDef.Pin("Done") };
                     },
@@ -66,7 +74,7 @@ public class StaticMethodCookBook : CookBook
                         }
 
                         if (meth.ReturnType != typeof(void))
-                            o.text += " -> " + meth.ReturnType.Name;
+                            o.text += " -> " + meth.ReturnType.GetFriendlyName();
 
 
                         return o;
@@ -85,8 +93,9 @@ public class StaticMethodCookBook : CookBook
         if (evt.PersistentCallsList == null) evt.FSetPCalls(new());
 
         // foreach input
-
-        PersistentCall myCall = new PersistentCall((MethodInfo)meth.Method, null); // make my PCall
+        
+        PersistentCall myCall = new PersistentCall(); // make my PCall
+        myCall.SetMethod(meth.Method, null);
         if (node.DataInputs.Length > 0)
             myCall.FSetArguments(new PersistentArgument[node.DataInputs.Length]);
 

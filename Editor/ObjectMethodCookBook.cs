@@ -24,7 +24,7 @@ public class ObjectMethodCookBook : CookBook
             foreach (var meth in t.GetMethods(UltEventUtils.AnyAccessBindings))
             {
                 if (meth.DeclaringType != t || meth.IsStatic) continue;
-                allDefs.Add(new NodeDef(meth.Name, 
+                allDefs.Add(new NodeDef(t.GetFriendlyName() + "." + meth.Name, 
                     inputs:() => 
                     {
                         var @params = meth.GetParameters();
@@ -87,7 +87,8 @@ public class ObjectMethodCookBook : CookBook
         if (evt.PersistentCallsList == null) evt.FSetPCalls(new());
 
         // make my PCall    
-        PersistentCall myCall = new PersistentCall((MethodInfo)meth.Method, node.DataInputs[0].DefaultObject); 
+        PersistentCall myCall = new PersistentCall();
+        myCall.SetMethod(meth.Method, node.DataInputs[0].DefaultObject);
         if (node.DataInputs.Length > 0)
             myCall.FSetArguments(new PersistentArgument[node.DataInputs.Length - 1]);
 
