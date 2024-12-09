@@ -62,6 +62,7 @@ public class UltNoodleNodeUI : VisualElement
 
         Node.PositionChanged += PositionChanged;
         Node.PositionChanged.Invoke(Node.Position);
+        Visual.RegisterCallback<AttachToPanelEvent>(OnEnable);
         Visual.RegisterCallback<DetachFromPanelEvent>(OnDisable);
 
         var topLeftPuller = Visual.Q("UpperLeftPull");
@@ -91,7 +92,10 @@ public class UltNoodleNodeUI : VisualElement
             Bowl.Validate();
         };
     }
-
+    private void OnEnable(AttachToPanelEvent evt)
+    {
+        Node.PositionChanged += PositionChanged;
+    }
     private void PositionChanged(Vector2 position)
     {
         NodeBG.style.left = position.x;
