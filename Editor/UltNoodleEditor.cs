@@ -79,7 +79,12 @@ public class UltNoodleEditor : EditorWindow
         NodesFrame.RegisterCallback<KeyDownEvent>(NodeFrameKeyDown);
         root.panel.visualTree.RegisterCallback<KeyDownEvent>(NodeFrameKeyDown);
 
-        SearchBar.RegisterValueChangedCallback((txt) => SearchTypes());
+        //SearchBar.RegisterValueChangedCallback((txt) => SearchTypes());
+        SearchBar.RegisterCallback<KeyDownEvent>((evt) => {
+            if (evt.keyCode == KeyCode.Return) {
+                SearchTypes();
+            }
+        }, TrickleDown.TrickleDown);
         //SearchedTypes.RegisterCallback<WheelEvent>(OnSearchScroll);
 
         EditorApplication.update += OnUpdate;
@@ -222,13 +227,38 @@ public class UltNoodleEditor : EditorWindow
     {
         this.SearchedTypes.Clear();
        
-        // Collect 25 that match
-        int i = 25;
+        // To be replaced with some better comparison algorithm.
+        bool CompareString(string stringOne, string stringTwo) {
+            return stringOne.Contains(stringTwo, StringComparison.CurrentCultureIgnoreCase);
+        }
+
+        // Collect 100 that match
+        int i = 100;
         foreach(var nd in NodeDefs)
         {
-            if (i <= 0) break;
-            if (nd.Name.StartsWith(SearchBar.value, StringComparison.CurrentCultureIgnoreCase))
+            if (i <= 0)
             {
+                SearchedTypes.Add(GetIncompleteListDisplay());
+                break;
+            }
+
+            string targetSearch = SearchBar.value;
+            string[] splitResults = null;
+
+            // Ex. "rigidbody.kinematic" will search for things start start with "rigidbody." and contain "kinematic".
+            // But things like ".kinematic" need to be accounted for as obviously nothing can start with "".
+            if (!targetSearch.StartsWith(".") && targetSearch.Contains(".")) {
+                splitResults = targetSearch.Split('.');
+                targetSearch = splitResults[0] + ".";
+            }
+
+            // Primary filter, either strict startswith or loose compare
+            if (((splitResults != null) && nd.Name.StartsWith(targetSearch, StringComparison.CurrentCultureIgnoreCase)) || ((splitResults == null) && CompareString(nd.Name, targetSearch)))
+            {
+                // Secondary filter, second part compare check
+                if ((splitResults != null) && !CompareString(nd.Name, splitResults[1]))
+                        continue;
+                
                 // also follow current filters!
                 if (SearchFlowFilter.HasValue)
                 {
@@ -256,6 +286,19 @@ public class UltNoodleEditor : EditorWindow
                 SearchedTypes.Add(nd.SearchItem);
             }
         } 
+    }
+
+    private VisualElement GetIncompleteListDisplay() {
+        var o = new Label() {
+            text = "..."
+            
+        };
+
+        o.style.alignContent = Align.Center;
+        o.style.alignSelf = Align.Center;
+        o.style.unityTextAlign = TextAnchor.MiddleCenter;
+
+        return o;
     }
 
     //List<CookBook> CookBooks;
