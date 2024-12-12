@@ -164,13 +164,14 @@ namespace NoodledEvents
         }
         public class NodeDef
         {
-            public NodeDef() { }
-            public NodeDef(string name, Func<Pin[]> inputs, Func<Pin[]> outputs, Func<NodeDef, VisualElement> searchItem) 
-            { 
-                Name = name; Inputs = inputs?.Invoke() ?? new Pin[0]; Outputs = outputs?.Invoke() ?? new Pin[0];
+            //public NodeDef() { }
+            public NodeDef(CookBook book, string name, Func<Pin[]> inputs, Func<Pin[]> outputs, Func<NodeDef, VisualElement> searchItem) 
+            {
+                CookBook = book; Name = name; Inputs = inputs?.Invoke() ?? new Pin[0]; Outputs = outputs?.Invoke() ?? new Pin[0];
                 createSearchItem = searchItem;
             }
             public string Name;
+            public CookBook CookBook;
             public Pin[] Inputs;
             public Pin[] Outputs;
             public Func<SerializedNode> CreateNode;

@@ -49,6 +49,8 @@ public class UltNoodleEditor : EditorWindow
     public TextField SearchBar;
     public ScrollView SearchedTypes;
     public Toggle StaticsToggle;
+    private VisualElement cog;
+    public VisualElement SearchSettings;
     public void CreateGUI()
     {
         VisualElement root = rootVisualElement;
@@ -79,20 +81,58 @@ public class UltNoodleEditor : EditorWindow
         NodesFrame.RegisterCallback<KeyDownEvent>(NodeFrameKeyDown);
         root.panel.visualTree.RegisterCallback<KeyDownEvent>(NodeFrameKeyDown);
 
-        //SearchBar.RegisterValueChangedCallback((txt) => SearchTypes());
+        SearchBar.RegisterValueChangedCallback((txt) =>
+        {
+            if (EditorPrefs.GetBool("SearchPerChar", true))
+                SearchTypes(10);
+        });
         SearchBar.RegisterCallback<KeyDownEvent>((evt) => {
             if (evt.keyCode == KeyCode.Return) {
-                SearchTypes();
+                SearchTypes(100);
+                Debug.Log('w');
             }
         }, TrickleDown.TrickleDown);
         //SearchedTypes.RegisterCallback<WheelEvent>(OnSearchScroll);
 
+        SearchSettings = root.Q(nameof(SearchSettings));
+        root.Q<Button>("SettingsBT").clicked += () =>
+        {
+            SearchSettings.visible = !SearchSettings.visible;
+            SearchSettings.style.display = DisplayStyle.Flex;
+        };
+
+        cog = root.Q(nameof(cog));
         EditorApplication.update += OnUpdate;
 
-        NodeDefs.Clear();
-        foreach (CookBook book in AssetDatabase.FindAssets("t:" + nameof(CookBook)).Select(guid => AssetDatabase.LoadAssetAtPath<CookBook>(AssetDatabase.GUIDToAssetPath(guid))))
-            book.CollectDefs(NodeDefs);
+        // search autorefresh tog
+        var spcTog = new Toggle("Search Per Char") { value = EditorPrefs.GetBool("SearchPerChar", true) };
+        spcTog.RegisterValueChangedCallback(e =>
+        {
+            EditorPrefs.SetBool("SearchPerChar", e.newValue);
+        });
+        SearchSettings.Add(spcTog);
+
+
+
+        AllNodeDefs.Clear();
+        var cookBooks = AssetDatabase.FindAssets("t:" + nameof(CookBook)).Select(guid => AssetDatabase.LoadAssetAtPath<CookBook>(AssetDatabase.GUIDToAssetPath(guid)));
+        foreach (CookBook sdenhr in cookBooks)
+        {
+            CookBook book = sdenhr; //lol (this is like this for a reason trust me)
+            book.CollectDefs(AllNodeDefs);
+
+            //also search toggle
+            var tog = new Toggle(book.name) { value = true };
+            tog.RegisterValueChangedCallback(e => 
+            {
+                BookFilters[book] = e.newValue;
+                SearchTypes(100);
+            });
+            BookFilters[book] = true;
+            SearchSettings.Add(tog);
+        }
     }
+    Dictionary<CookBook, bool> BookFilters = new Dictionary<CookBook, bool>();
     private bool _created = false;
     private bool _currentlyZooming;
     private float _zoom = 1;
@@ -169,6 +209,7 @@ public class UltNoodleEditor : EditorWindow
             NodesFrame.name = "grabby";
         }
         SearchMenu.visible = false;
+        SearchSettings.visible = false;
     }
     public Vector2 _frameMousePosition;
     private void NodeFrameMouseMove(MouseMoveEvent evt)
@@ -195,19 +236,49 @@ public class UltNoodleEditor : EditorWindow
     {
         if (evt.keyCode == KeyCode.Space && UltNoodleBowlUI.CurrentBowlUI != null) // open Create Node Menu
         {
-            // clear filters
-            SearchFlowFilter = null;
-            SearchFilter = null;
+            ResetSearchFilter();
             OpenSearchMenu(false);
         }
     }
-    public bool? SearchFlowFilter;
-    public Type SearchFilter;
+
+    public void ResetSearchFilter() 
+    {
+        FilteredNodeDefs = AllNodeDefs;
+    }
+    public void SetSearchFilter(bool pinIn, Type t) 
+    {
+        // lets cache the searchables
+
+        // reset FilteredNodeDefs
+        if (FilteredNodeDefs == AllNodeDefs)
+            FilteredNodeDefs = new();
+        else FilteredNodeDefs.Clear();
+
+        foreach (var node in AllNodeDefs)
+        {
+            try
+            {
+                foreach (var pin in pinIn ? node.Inputs : node.Outputs)
+                {
+                    if (pin.Flow) continue;
+
+                    if ((pinIn ? pin.Type : t).IsAssignableFrom(pinIn ? t : pin.Type))
+                    {
+                        FilteredNodeDefs.Add(node);
+                        break;
+                    }
+                }
+            } catch(TypeLoadException) { /* ignore evil types */ }
+        }
+        // awesome
+    }
+
     public void OpenSearchMenu(bool useNodePos = true)
     {
         NewNodeBowl = UltNoodleBowlUI.CurrentBowlUI;
         NewNodePos = NewNodeBowl.MousePos - new Vector2(48, 39);
         SearchMenu.visible = !SearchMenu.visible;
+        SearchSettings.visible = false;
         if (SearchMenu.visible)
         {
             SearchMenu.style.left = useNodePos ? (NewNodeBowl.LocalToWorld(NewNodePos).x + 55) : _frameMousePosition.x;
@@ -219,11 +290,17 @@ public class UltNoodleEditor : EditorWindow
             {
                 SearchBar.Focus();
                 SearchBar.ElementAt(0).Focus();
-                SearchTypes();
+                SearchBar.schedule.Execute(() =>
+                {
+                    SearchBar.Focus();
+                    SearchBar.ElementAt(0).Focus();
+                    SearchTypes(25);
+                });
+                SearchTypes(25);
             });
         }
     }
-    private void SearchTypes()
+    private void SearchTypes(int dispNum)
     {
         this.SearchedTypes.Clear();
        
@@ -232,15 +309,16 @@ public class UltNoodleEditor : EditorWindow
             return stringOne.Contains(stringTwo, StringComparison.CurrentCultureIgnoreCase);
         }
 
-        // Collect 100 that match
-        int i = 100;
-        foreach(var nd in NodeDefs)
+        // Collect first x that match
+        int i = dispNum;
+        foreach(var nd in FilteredNodeDefs)
         {
             if (i <= 0)
             {
                 SearchedTypes.Add(GetIncompleteListDisplay());
                 break;
             }
+            if (!BookFilters[nd.CookBook]) continue;
 
             string targetSearch = SearchBar.value;
             string[] splitResults = null;
@@ -258,29 +336,6 @@ public class UltNoodleEditor : EditorWindow
                 // Secondary filter, second part compare check
                 if ((splitResults != null) && !CompareString(nd.Name, splitResults[1]))
                         continue;
-                
-                // also follow current filters!
-                if (SearchFlowFilter.HasValue)
-                {
-                    try
-                    {
-                        if (SearchFilter == null) // Flow type
-                        {
-                            if (SearchFlowFilter.Value && !nd.Inputs.Any(@in => @in.Flow)) // true = flow in
-                                continue;
-                            if (!SearchFlowFilter.Value && !nd.Outputs.Any(@out => @out.Flow)) // false = flow out
-                                continue;
-                        }
-                        else
-                        {
-                            // Transform output needs to be compatible with Component inputs
-                            if (SearchFlowFilter.Value && !nd.Inputs.Any(@in => @in.Flow ? false : (@in.Type == SearchFilter || SearchFilter.IsAssignableFrom(@in.Type))))
-                                continue;
-                            if (!SearchFlowFilter.Value && !nd.Outputs.Any(@out => @out.Flow ? false : (@out.Type == SearchFilter || SearchFilter.IsAssignableFrom(@out.Type))))
-                                continue;
-                        }
-                    } catch(TypeLoadException) { continue; } // evil
-                }
 
                 i--;
                 SearchedTypes.Add(nd.SearchItem);
@@ -301,8 +356,9 @@ public class UltNoodleEditor : EditorWindow
         return o;
     }
 
-    //List<CookBook> CookBooks;
-    List<CookBook.NodeDef> NodeDefs = new();
+    
+    List<CookBook.NodeDef> AllNodeDefs = new();
+    List<CookBook.NodeDef> FilteredNodeDefs = new();
 
     /*
     private int LoadedSearchPages;
@@ -507,6 +563,7 @@ public class UltNoodleEditor : EditorWindow
     {
         //if (SearchMenu.visible)
         //    LoadVisibleSearchResults();
+        cog.style.rotate = new Rotate(cog.style.rotate.value.angle.value + .01f);
     }
     private void OnDestroy()
     {

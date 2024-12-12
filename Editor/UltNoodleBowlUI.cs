@@ -35,8 +35,8 @@ public class UltNoodleBowlUI : VisualElement
                     fo.Connect(CurHoveredFlowInput); // this is the one
                     return;
                 }
-            _editor.SearchFlowFilter = false; // find outs
-            _editor.SearchFilter = null; // null == flow
+
+            _editor.ResetSearchFilter();
             _editor.OpenSearchMenu();
         }
         else if (CurHoveredFlowOutput != null)
@@ -48,8 +48,7 @@ public class UltNoodleBowlUI : VisualElement
                     fi.Connect(CurHoveredFlowOutput); // this is the one
                     return;
                 }
-            _editor.SearchFlowFilter = true; // find ins
-            _editor.SearchFilter = null; // null == flow
+            _editor.ResetSearchFilter();
             _editor.OpenSearchMenu();
         }
         else if (CurHoveredDataInput != null)
@@ -61,8 +60,7 @@ public class UltNoodleBowlUI : VisualElement
                     @do.Connect(CurHoveredDataInput); // this is the one
                     return;
                 }
-            _editor.SearchFlowFilter = false; // find outs
-            _editor.SearchFilter = CurHoveredDataInput.Type;
+            _editor.SetSearchFilter(pinIn: false, CurHoveredDataInput.Type);
             _editor.OpenSearchMenu();
         }
         else if (CurHoveredDataOutput != null)
@@ -74,8 +72,7 @@ public class UltNoodleBowlUI : VisualElement
                     di.Connect(CurHoveredDataOutput); // this is the one
                     return;
                 }
-            _editor.SearchFlowFilter = true; // find ins
-            _editor.SearchFilter = CurHoveredDataOutput.Type;
+            _editor.SetSearchFilter(pinIn: true, CurHoveredDataOutput.Type);
             _editor.OpenSearchMenu();
         }
 
@@ -113,9 +110,8 @@ public class UltNoodleBowlUI : VisualElement
         Visual.RegisterCallback<DragEnterEvent>((a) => { DragAndDrop.visualMode = DragAndDropVisualMode.Move; });
         Visual.RegisterCallback<DragUpdatedEvent>((a) => { DragAndDrop.visualMode = DragAndDropVisualMode.Move; });
         Visual.RegisterCallback<DragPerformEvent>((a) => 
-        { 
-            _editor.SearchFlowFilter = true; 
-            _editor.SearchFilter = DragAndDrop.objectReferences[0].GetType();
+        {
+            _editor.SetSearchFilter(true, DragAndDrop.objectReferences[0].GetType());
             MousePos = a.mousePosition;
             _editor.OpenSearchMenu(true); 
         });

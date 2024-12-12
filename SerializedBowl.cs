@@ -124,6 +124,12 @@ namespace NoodledEvents
                     d.CompCall = null;
                     d.CompEvt = null;
                 }
+                foreach (var d in n.DataInputs)
+                {
+                    d.CompArg = null;
+                    d.CompEvt = null;
+                    d.CompCall = null;
+                }
             }
 
             EntryNode.Compile(lastGen);

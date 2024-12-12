@@ -180,6 +180,7 @@ public static class TypeTranslator
         {typeof(object), "object"},
         {typeof(void), "void"}
     };
+    public static Dictionary<string, Type> SimpleNames2Types = _defaultDictionary.ToDictionary(x => x.Value, x => x.Key);
 
     public static string GetFriendlyName(this Type type, Dictionary<Type, string> translations)
     {

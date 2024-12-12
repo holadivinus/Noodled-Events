@@ -24,7 +24,7 @@ public class ObjectMethodCookBook : CookBook
             foreach (var meth in t.GetMethods(UltEventUtils.AnyAccessBindings))
             {
                 if (meth.DeclaringType != t || meth.IsStatic) continue;
-                allDefs.Add(new NodeDef(t.GetFriendlyName() + "." + meth.Name, 
+                allDefs.Add(new NodeDef(this, t.GetFriendlyName() + "." + meth.Name, 
                     inputs:() => 
                     {
                         var @params = meth.GetParameters();
@@ -115,6 +115,8 @@ public class ObjectMethodCookBook : CookBook
             if (j == 0) continue;
 
             NoodleDataInput @in = node.DataInputs[j];
+            @in.CompEvt = evt;
+            @in.CompCall = myCall;
 
             if (@in.Source != null) // is connected
             {
@@ -130,7 +132,7 @@ public class ObjectMethodCookBook : CookBook
                 }
             } else
             {
-                myCall.PersistentArguments[j - 1] = new PersistentArgument(meth.Parameters[j - 1]);
+                @in.CompArg = myCall.PersistentArguments[j - 1] = new PersistentArgument(meth.Parameters[j - 1]);
 
                 // this input uses a default value!
                 PersistentArgumentType t = PersistentArgumentType.None;

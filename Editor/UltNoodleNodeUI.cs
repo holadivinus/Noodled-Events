@@ -69,6 +69,7 @@ public class UltNoodleNodeUI : VisualElement
         bool drag = false;
         topLeftPuller.RegisterCallback<MouseDownEvent>((evt) =>
         {
+            if (evt.button != 0) return;
             NodeBG.CaptureMouse();
             drag = true;
         });
@@ -82,6 +83,7 @@ public class UltNoodleNodeUI : VisualElement
         });
         NodeBG.RegisterCallback<MouseUpEvent>((evt) =>
         {
+            if (evt.button != 0) return;
             drag = false;
             NodeBG.ReleaseMouse();
         });
@@ -91,6 +93,7 @@ public class UltNoodleNodeUI : VisualElement
             Bowl.SerializedData.NodeDatas.Remove(Node);
             Bowl.Validate();
         };
+
     }
     private void OnEnable(AttachToPanelEvent evt)
     {
@@ -134,6 +137,7 @@ public class UltNoodleNodeUI : VisualElement
             disp.style.height = 27;
             disp.style.borderBottomColor = new Color(0.2627451f, 0.2627451f, 0.2627451f, 1f);
             disp.style.borderBottomWidth = 1;
+            disp.pickingMode = PickingMode.Ignore;
 
 
             var arrow = new VisualElement();
@@ -156,8 +160,8 @@ public class UltNoodleNodeUI : VisualElement
             // bowl's been informed :)
 
             var label = new Label(input.Name);
-            label.style.paddingLeft = 7;
             label.style.paddingTop = 6;
+            label.style.left = 5;
             label.style.height = 22;
             label.style.unityTextAlign = TextAnchor.MiddleLeft;
             disp.Add(label);

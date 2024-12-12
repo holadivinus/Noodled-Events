@@ -33,7 +33,7 @@ public class StaticMethodCookBook : CookBook
 
                 //if (meth.IsConstructor) continue;
                 
-                allDefs.Add(new NodeDef(t.GetFriendlyName() + "." + meth.Name, 
+                allDefs.Add(new NodeDef(this, t.GetFriendlyName() + "." + meth.Name, 
                     inputs:() => 
                     {
                         var @params = meth.GetParameters();
@@ -104,7 +104,8 @@ public class StaticMethodCookBook : CookBook
         {
 
             NoodleDataInput @in = node.DataInputs[j];
-
+            @in.CompEvt = evt;
+            @in.CompCall = myCall;
 
             if (@in.Source != null) // is connected
             {
@@ -120,7 +121,7 @@ public class StaticMethodCookBook : CookBook
                 }
             } else
             {
-                myCall.PersistentArguments[j] = new PersistentArgument(meth.Parameters[j]);
+                @in.CompArg = myCall.PersistentArguments[j] = new PersistentArgument(meth.Parameters[j]);
 
                 // this input uses a default value!
                 PersistentArgumentType t = PersistentArgumentType.None;

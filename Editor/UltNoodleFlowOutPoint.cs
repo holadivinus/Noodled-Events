@@ -31,6 +31,16 @@ public class UltNoodleFlowOutPoint : VisualElement
 
         NodeUI.OutPoints.Add(this);
         Line = this.Q("Line");
+        // disconnect logic
+        
+        Line.RegisterCallback<MouseOverEvent>(e => { Line.style.backgroundColor = new Color(1, 0, 0, .7f); });
+        Line.RegisterCallback<MouseOutEvent>(e => { Line.style.backgroundColor = new Color(0.7490196f, 1f, 0.8196079f, 0.4627451f); });
+        Line.RegisterCallback<MouseDownEvent>(e =>
+        {
+            if (!e.ctrlKey) return;
+            SData.Connect(null);
+            UpdateLine();
+        });
 
         NodeUI.OutputsElement.Add(this);
     }

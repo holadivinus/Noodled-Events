@@ -13,7 +13,7 @@ public class CommonsCookBook : CookBook
 {
     public override void CollectDefs(List<NodeDef> allDefs)
     {
-        allDefs.Add(new NodeDef("flow.if", 
+        allDefs.Add(new NodeDef(this, "flow.if", 
             inputs:() => new[] { new Pin("Exec"), new Pin("condition", typeof(bool)) },
             outputs:() => new[] { new Pin("true"), new Pin("false") },
             searchItem:(def) => 
@@ -34,7 +34,7 @@ public class CommonsCookBook : CookBook
                 return o;
             }));
 
-        allDefs.Add(new NodeDef("math.add_floats",
+        allDefs.Add(new NodeDef(this, "math.add_floats",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
             outputs: () => new[] { new Pin("done"), new Pin("a+b", typeof(float)) },
             searchItem: (def) =>
@@ -54,6 +54,28 @@ public class CommonsCookBook : CookBook
                 o.text = def.Name;
                 return o;
             }));
+        
+
+        /*allDefs.Add(new NodeDef(this, "math.greater",
+            inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
+            outputs: () => new[] { new Pin("done"), new Pin("a > b", typeof(bool)) },
+            searchItem: (def) =>
+            {
+                var o = new Button(() =>
+                {
+                    // create serialized node.
+
+                    if (UltNoodleEditor.NewNodeBowl == null) return;
+                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
+
+                    nod.BookTag = "greater";
+
+                    nod.Position = UltNoodleEditor.NewNodePos;
+                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
+                });
+                o.text = def.Name;
+                return o;
+            }));*/
     }
     private static MethodInfo SetActive = typeof(GameObject).GetMethod("SetActive");
     private static PropertyInfo GetSetLocPos = typeof(Transform).GetProperty("localPosition");
@@ -126,40 +148,48 @@ public class CommonsCookBook : CookBook
                 }
                 return;
             case "add_floats":
-                var c = dataRoot.StoreTransform("add_floats counter");
-                var resetTransf = new PersistentCall(GetSetLocPos.SetMethod, c);
-                evt.PersistentCallsList.Add(resetTransf);
-
-                // add values
-                var addA = new PersistentCall(Translate, c);
-                if (node.DataInputs[0].Source != null)
                 {
-                    new PendingConnection(node.DataInputs[0].Source, evt, addA, 1).Connect(dataRoot);
-                } else addA.PersistentArguments[1].Float = node.DataInputs[0].DefaultFloatValue;
-                evt.PersistentCallsList.Add(addA);
+                    var c = dataRoot.StoreTransform("add_floats counter");
+                    var resetTransf = new PersistentCall(GetSetLocPos.SetMethod, c);
+                    evt.PersistentCallsList.Add(resetTransf);
 
-                var addB = new PersistentCall(Translate, c);
-                if (node.DataInputs[1].Source != null)
+                    // add values
+                    var addA = new PersistentCall(Translate, c);
+                    if (node.DataInputs[0].Source != null)
+                    {
+                        new PendingConnection(node.DataInputs[0].Source, evt, addA, 1).Connect(dataRoot);
+                    } else addA.PersistentArguments[1].Float = node.DataInputs[0].DefaultFloatValue;
+                    evt.PersistentCallsList.Add(addA);
+
+                    var addB = new PersistentCall(Translate, c);
+                    if (node.DataInputs[1].Source != null)
+                    {
+                        new PendingConnection(node.DataInputs[1].Source, evt, addB, 1).Connect(dataRoot);
+                    } else addB.PersistentArguments[1].Float = node.DataInputs[1].DefaultFloatValue;
+                    evt.PersistentCallsList.Add(addB);
+
+                    // get result
+                    var getO = new PersistentCall(GetSetLocPos.GetMethod, c);
+                    var toFloat = new PersistentCall(typeof(Vector3).GetMethod("Dot", UltEventUtils.AnyAccessBindings), null);
+                    toFloat.PersistentArguments[0].Vector3 = Vector3.up;
+                    toFloat.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count, typeof(Vector3));
+                    evt.PersistentCallsList.Add(getO);
+                    evt.PersistentCallsList.Add(toFloat);
+
+                    node.DataOutputs[0].CompEvt = evt;
+                    node.DataOutputs[0].CompCall = toFloat;
+
+                    var nextNode = node.FlowOutputs[0].Target?.Node;
+                    if (nextNode != null)
+                        nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+                    return;
+                }
+            case "math.greater":
                 {
-                    new PendingConnection(node.DataInputs[1].Source, evt, addB, 1).Connect(dataRoot);
-                } else addB.PersistentArguments[1].Float = node.DataInputs[1].DefaultFloatValue;
-                evt.PersistentCallsList.Add(addB);
+                    // use op_implicits
 
-                // get result
-                var getO = new PersistentCall(GetSetLocPos.GetMethod, c);
-                var toFloat = new PersistentCall(typeof(Vector3).GetMethod("Dot", UltEventUtils.AnyAccessBindings), null);
-                toFloat.PersistentArguments[0].Vector3 = Vector3.up;
-                toFloat.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count, typeof(Vector3));
-                evt.PersistentCallsList.Add(getO);
-                evt.PersistentCallsList.Add(toFloat);
-                
-                node.DataOutputs[0].CompEvt = evt;
-                node.DataOutputs[0].CompCall = toFloat;
-
-                var nextNode = node.FlowOutputs[0].Target?.Node;
-                if (nextNode != null)
-                    nextNode.Book.CompileNode(evt, nextNode, dataRoot);
-                return;
+                    return;
+                }
         }
     }
 }

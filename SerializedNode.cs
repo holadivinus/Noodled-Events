@@ -105,6 +105,31 @@ namespace NoodledEvents
                 var targNode = FlowOutputs.FirstOrDefault()?.Target?.Node; // this also handles the descending nodes
                 targNode?.Book.CompileNode(Bowl.Event, targNode, dataRoot);
                 // all the comp happens through Book.CompileNode calling more of itself
+
+                // we also need to account for nodes with inputs of "System.Type"
+                foreach (var node in Bowl.NodeDatas)
+                {
+                    foreach (var din in node.DataInputs)
+                    {
+                        if (din.Source == null && din.Type == typeof(Type))
+                        {
+                            if (din.CompEvt != null)
+                            {
+                                // cookbooks gotta tell inputs about their compdata, otherwise no System.Type injection
+                                int callIdx = din.CompEvt.PersistentCallsList.IndexOf(din.CompCall);
+                                var getTypeCall = new PersistentCall(typeof(Type).GetMethod(nameof(Type.GetType), new Type[] { typeof(string), typeof(bool), typeof(bool) }), null);
+                                getTypeCall.PersistentArguments[0].String = din.DefaultStringValue;
+                                getTypeCall.PersistentArguments[1].Bool = true;
+                                getTypeCall.PersistentArguments[2].Bool = true;
+
+                                din.CompEvt.PersistentCallsList.SafeInsert(callIdx, getTypeCall);
+                                din.CompArg.FSetType(PersistentArgumentType.ReturnValue);
+                                din.CompArg.FSetInt(callIdx);
+                                din.CompArg.FSetString(din.CompCall.Method.GetParameters()[Array.IndexOf(din.CompCall.PersistentArguments, din.CompArg)].ParameterType.AssemblyQualifiedName);
+                            }
+                        }
+                    }
+                }
             }
         }
         public CookBook Book;
@@ -226,12 +251,16 @@ namespace NoodledEvents
         [SerializeField] public UnityEngine.Object DefaultObject;
         [SerializeField] public PersistentArgumentType ConstInput = PersistentArgumentType.None;
 
+        [NonSerialized] public UltEventBase CompEvt;
+        [NonSerialized] public PersistentCall CompCall;
+        [NonSerialized] public PersistentArgument CompArg;
+
         public void Connect(NoodleDataOutput output)
         {
             if (Source != null)
                 Source.Targets.Remove(this);
             Source = output;
-            if (!Source.Targets.Contains(this))
+            if (Source != null && !Source.Targets.Contains(this))
                 Source.Targets.Add(this);
         }
     }
@@ -291,7 +320,7 @@ namespace NoodledEvents
             if (Target != null)
                 Target.Sources.Remove(this);
             Target = input;
-            if (!Target.Sources.Contains(this))
+            if (Target != null && !Target.Sources.Contains(this))
                 Target.Sources.Add(this);
         }
     }

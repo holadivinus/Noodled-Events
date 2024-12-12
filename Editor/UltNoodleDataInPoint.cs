@@ -1,6 +1,7 @@
 ﻿#if UNITY_EDITOR
 using NoodledEvents;
 using System;
+using System.Linq;
 using UltEvents;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -163,18 +164,48 @@ public class UltNoodleDataInPoint : VisualElement
                 {
                     SysObjEnum.parent.Insert(0,nf);
                     ConstVis = nf;
+                    MarkDynamic(ConstVis);
                 }
             }
+            MarkDynamic(SysObjEnum);
             SysObjEnum.RegisterValueChangedCallback(e => 
             {
                 genout((PersistentArgumentType)e.newValue);
             });
             genout(SData.ConstInput);
         }
+        else if (input.Type == typeof(Type))
+        {
+            var tf = new TextField("");
+            tf.value = input.DefaultStringValue;
+            newField = tf;
+            tf.RegisterCallback<KeyDownEvent>(e => 
+            {
+                if (e.keyCode == KeyCode.Return) 
+                {
+                    if (TypeTranslator.SimpleNames2Types.TryGetValue(tf.value.ToLower(), out Type v))
+                    {
+                        tf.value = string.Join(',', v.AssemblyQualifiedName.Split(',').Take(2));
+                        input.DefaultStringValue = tf.value;
+                        return;
+                    }
+                    foreach (Type t in UltNoodleEditor.SearchableTypes)
+                    {
+                        if (string.Compare(t.Name, tf.value, StringComparison.CurrentCultureIgnoreCase) == 0)
+                        {
+                            tf.value = string.Join(',', t.AssemblyQualifiedName.Split(',').Take(2));
+                            input.DefaultStringValue = tf.value;
+                            return;
+                        }
+                    }
+                }
+            });
+        }
         else { }
 
         if (newField != null)
         {
+            MarkDynamic(newField);
             HideWhenConnected = newField;
             newField.style.top = 5;
             Label.parent.Add(newField);
@@ -189,7 +220,24 @@ public class UltNoodleDataInPoint : VisualElement
         NodeUI.InPoints.Add(this);
         Line = this.Q("Line");
 
+        // disconnect logic
+        Line.RegisterCallback<MouseOverEvent>(e => { Line.style.backgroundColor = new Color(1, 0, 0, .7f); });
+        Line.RegisterCallback<MouseOutEvent>(e => { Line.style.backgroundColor = new Color(0.7490196f, 1f, 0.8196079f, 0.4627451f); });
+        Line.RegisterCallback<MouseDownEvent>(e =>
+        {
+            if (!e.ctrlKey) return;
+            SData.Connect(null);
+            UpdateLine();
+        });
+
+
         NodeUI.InputsElement.Add(this);
+    }
+    private void MarkDynamic(VisualElement root)
+    {
+        root.usageHints = UsageHints.DynamicTransform;
+        foreach (var child in root.Children())
+            MarkDynamic(child);
     }
     public UltNoodleNodeUI NodeUI;
     public NoodleDataInput SData;
