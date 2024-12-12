@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using Codice.Client.Common.GameUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -332,6 +333,26 @@ namespace NoodledEvents
             Target = input;
             if (Target != null && !Target.Sources.Contains(this))
                 Target.Sources.Add(this);
+
+            // Connected; Now disconnect if something down the line refs back to me somehow.
+            List<SerializedNode> valids = new List<SerializedNode>();
+            void conLoop(NoodleFlowOutput o)
+            {
+                if (valids.Contains(o.Node)) return;
+                valids.Add(Node);
+                if (o.Target != null)
+                    foreach (var fo in o.Target.Node.FlowOutputs)
+                    {
+                        if (fo.Target == null) continue;
+                        if (fo.Target.Node == this.Node)
+                        {
+                            this.Connect(null);
+                            return;
+                        }
+                        conLoop(fo);
+                    }
+            }
+            conLoop(this);
         }
     }
 }
