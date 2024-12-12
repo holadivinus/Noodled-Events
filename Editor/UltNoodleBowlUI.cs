@@ -191,7 +191,7 @@ public class UltNoodleBowlUI : VisualElement
         SerializedData.PositionChanged += OnPositionChange;
 
         if (SerializedData.Size == Vector2.zero)
-            SerializedData.Size = new Vector2(300, 100);
+            SerializedData.Size = new Vector2(3000, 1000);
         SerializedData.OnUpdate += OnSceneUpdate;
 
         Validate();

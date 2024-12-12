@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UltEvents;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -46,11 +47,16 @@ namespace NoodledEvents
             NoadType = SerializedNode.NodeType.BowlInOut;
             Position = new Vector2(-210, 0);
 
-            // todo for cooler evt types
+            FieldInfo evtField = bowl.BowlEvtHolderType.Type.GetField(bowl.EventFieldPath, UltEventUtils.AnyAccessBindings);
+            
             FlowOutputs = new[] { new NoodleFlowOutput(this) };
             FlowInputs = new NoodleFlowInput[0];
             DataInputs = new NoodleDataInput[0];
-            DataOutputs = new NoodleDataOutput[0];
+            DataOutputs = evtField.FieldType.GetEvtGenerics().Select(t => new NoodleDataOutput(this, t)).ToArray();
+
+            // move node foreach letter in dataoutputs
+            if (DataOutputs.Length != 0)
+                Position += new Vector2((DataOutputs.OrderBy(d => d.Name.Length).First().Name.Length - 4) * 10, 0);
         }
         [NonSerialized] public SerializedBowl Bowl;
         [SerializeField] public string Name;
@@ -99,6 +105,9 @@ namespace NoodledEvents
             // save the data-out to some silly component. uahrh
             if (NoadType == NodeType.BowlInOut) 
             {
+                foreach (var o in DataOutputs)
+                    o.CompEvt = Bowl.Event;
+
                 // bowl in out has no cookbook, so we comp it here
                 if (Bowl.Event.PersistentCallsList == null) Bowl.Event.FSetPCalls(new List<PersistentCall>());
                 Bowl.Event.PersistentCallsList.Clear();

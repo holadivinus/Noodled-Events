@@ -28,9 +28,13 @@ public class UltNoodleNodeUI : VisualElement
         // create normal visual for normal nodes
         Visual = this;
         Bowl.Visual.Q("Nodes").Add(Visual);
-        if (serializedNode.NoadType == SerializedNode.NodeType.BowlInOut)
+
+        // hide Delete BT only if it's the "InOut node
+        this.Q<Button>("DeleteBT").visible = serializedNode.NoadType != SerializedNode.NodeType.BowlInOut;
+
+        // Create Invoke BT only if that's possible (aka the evt doesn't need inputs.)
+        if (serializedNode.NoadType == SerializedNode.NodeType.BowlInOut && bowl.Event.GetType().GetEvtGenerics().Length == 0)
         {
-            this.Q<Button>("DeleteBT").visible = false;
             var inv = this.Q<Button>("Invoke");
             inv.visible = true;
             inv.clicked += () =>

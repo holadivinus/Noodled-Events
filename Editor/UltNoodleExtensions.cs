@@ -1,7 +1,9 @@
 ﻿#if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UltEvents;
 using UnityEditor;
 using UnityEngine;
 
@@ -17,6 +19,22 @@ namespace NoodledEvents
             
             // needs bowl
             return SerializedBowl.Create(holder, fieldType, eventFieldPath);
+        }
+
+        public static Type[] GetEvtGenerics(this Type evtType)
+        {
+            if (!typeof(UltEventBase).IsAssignableFrom(evtType)) return new Type[0];
+            List<Type> types = new List<Type>();
+            while(evtType != typeof(UltEventBase))
+            {
+                //foreach (var item in evtType.GetGenericArguments())
+                //{
+                //    Debug.Log(item);
+                //}
+                types.InsertRange(0, evtType.GetGenericArguments());
+                evtType = evtType.BaseType;
+            }
+            return types.ToArray();
         }
 
         public static Type[] GetAllTypes()

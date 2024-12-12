@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using NoodledEvents;
+using SLZ.Marrow.Warehouse;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,8 +53,10 @@ public class UltNoodleEditor : EditorWindow
     private VisualElement cog;
     public VisualElement SearchSettings;
     public static Label TypeHinter;
+    private static UltNoodleEditor s_Editor;
     public void CreateGUI()
     {
+        s_Editor = this;
         VisualElement root = rootVisualElement;
 
         // Import UXML
@@ -184,11 +187,30 @@ public class UltNoodleEditor : EditorWindow
         foreach (var bowl in BowlUIs.ToArray())
             bowl.Validate();
 
-        foreach (var evtHolder in Resources.FindObjectsOfTypeAll<UltEventHolder>())
-            if (evtHolder.gameObject.scene == curScene && !BowlUIs.Any(b => b.Component == evtHolder) && evtHolder.gameObject.activeInHierarchy)
-                UltNoodleBowlUI.New(this, D, evtHolder, new SerializedType(typeof(UltEventHolder)), "_Event");
+        // autogen bowlsUIs
+        foreach (var bowl in Resources.FindObjectsOfTypeAll<SerializedBowl>())
+            if (bowl.gameObject.scene == curScene && !BowlUIs.Any(b => b.SerializedData == bowl) && bowl.gameObject.activeInHierarchy)
+                UltNoodleBowlUI.New(this, D, bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath);
 
         
+    }
+    [MenuItem("CONTEXT/UltEventHolder/Make Noodle Bowl")]
+    static void BowlSingle(MenuCommand command)
+    {
+        if (!((UltEventHolder)command.context).GetComponent<SerializedBowl>())
+        {
+            if (s_Editor == null) ShowExample();
+            UltNoodleBowlUI.New(s_Editor, s_Editor.D, (UltEventHolder)command.context, new SerializedType(typeof(UltEventHolder)), "_Event");
+        }
+    }
+    [MenuItem("CONTEXT/CrateSpawner/Make Noodle Bowl")]
+    static void CrateBowl(MenuCommand command)
+    {
+        if (!((CrateSpawner)command.context).GetComponent<SerializedBowl>())
+        {
+            if (s_Editor == null) ShowExample();
+            UltNoodleBowlUI.New(s_Editor, s_Editor.D, (CrateSpawner)command.context, new SerializedType(typeof(CrateSpawner)), "onSpawnEvent");
+        }
     }
     private void OnLostFocus()
     {

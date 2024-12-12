@@ -120,16 +120,7 @@ public class ObjectMethodCookBook : CookBook
 
             if (@in.Source != null) // is connected
             {
-                // ensure it's in the same evt
-                if (@in.Source.CompEvt == evt)
-                {
-                    new PendingConnection(evt, @in.Source.CompCall, myCall, j - 1).Connect(dataRoot);
-                    continue;
-                } else
-                {
-                    new PendingConnection(@in.Source.CompEvt, @in.Source.CompCall, evt, myCall, j - 1).Connect(dataRoot);
-                    continue;
-                }
+                new PendingConnection(@in.Source, evt, myCall, j - 1).Connect(dataRoot);
             } else
             {
                 @in.CompArg = myCall.PersistentArguments[j - 1] = new PersistentArgument(meth.Parameters[j - 1]);

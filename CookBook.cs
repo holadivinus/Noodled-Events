@@ -41,32 +41,7 @@ namespace NoodledEvents
             // when a bowl is compiled, it puts forward an evt that is filled by compiled nodes.
         }
         public class PendingConnection // utility class to link pcalls, with support for cross-event data transfer
-        {
-            /// <summary>
-            /// same-event PCall connection
-            /// </summary>
-            /// <param name="evt"></param>
-            /// <param name="source"></param>
-            /// <param name="targ"></param>
-            /// <param name="argIdx"></param>
-            public PendingConnection(UltEventBase evt, PersistentCall source, PersistentCall targ, int argIdx) // same-event PCall connection
-            {
-                SourceEvent = TargEvent = evt; SourceCall = source; TargCall = targ; TargArgType = targ.Method.GetParameters()[argIdx].ParameterType; TargInput = argIdx;
-                ArgIsSource = -1;
-            }
-            /// <summary>
-            /// cross-event PCall connection (works for both tho)
-            /// </summary>
-            /// <param name="a"></param>
-            /// <param name="source"></param>
-            /// <param name="b"></param>
-            /// <param name="targ"></param>
-            /// <param name="argIdx"></param>
-            public PendingConnection(UltEventBase a, PersistentCall source, UltEventBase b, PersistentCall targ, int argIdx) // cross-event PCall connection
-            {
-                SourceEvent = a; TargEvent = b; SourceCall = source; TargCall = targ; TargArgType = targ.Method.GetParameters()[argIdx].ParameterType; TargInput = argIdx;
-                ArgIsSource = -1;
-            }
+        { 
             /// <summary>
             /// Super generic NoodleOut -> PersistentCallArgIn
             /// </summary>
@@ -79,7 +54,9 @@ namespace NoodledEvents
                 SourceEvent = o.CompEvt; SourceCall = o.CompCall;
                 TargEvent = targEvt; TargCall = targCall;
                 TargArgType = targCall.Method.GetParameters()[argIdx].ParameterType; TargInput = argIdx;
-                ArgIsSource = -1;
+                if (o.Node.NoadType == SerializedNode.NodeType.BowlInOut)
+                    ArgIsSource = Array.IndexOf(o.Node.DataOutputs, o);
+                else ArgIsSource = -1;
             }
             
             public static Dictionary<Type, (Type, PropertyInfo)> CompStoragers = new Dictionary<Type, (Type, PropertyInfo)>()
@@ -106,58 +83,70 @@ namespace NoodledEvents
                     if (ArgIsSource > -1)
                         TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToParamVal(ArgIsSource, TargArgType);
                     else
-                    {
                         TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(SourceEvent.PersistentCallsList.IndexOf(SourceCall), TargArgType);
-                    }
                 }
                 else
                 {
+                    // Source evt != targ event.
+                    // to transfer data, we need a temp component to store data in
+
+                    // for UnityEngine.Object, this is easy
+                    // all the other types (int, float, color, bool) are todo.
+
+                        
+                    Type transferredType = TargArgType;
                     if (ArgIsSource == -1)
                     {
-                        // Source evt != targ event.
-                        // to transfer data, we need a temp component to store data in
-
-                        // for UnityEngine.Object, this is easy
-                        // all the other types (int, float, color, bool) are todo.
-                        
-
-                        
-                        
-                        Type transferredType = TargArgType;
                         if (SourceCall.Method.GetReturnType().IsSubclassOf(TargArgType))
                             transferredType = SourceCall.Method.GetReturnType();
+                    } else
+                    {
+                        Type evtT = SourceEvent.GetType().GetEvtGenerics()[ArgIsSource]; 
+                        if (evtT.IsSubclassOf(TargArgType))
+                            transferredType = evtT;
+                    }
 
-                        foreach (var kvp in CompStoragers)
+                    foreach (var kvp in CompStoragers)
+                    {
+                        if (!(transferredType == kvp.Key || transferredType.IsSubclassOf(kvp.Key)))
+                            continue;
+
+                        Type dataT = kvp.Key;
+                        Type storageT = kvp.Value.Item1 ?? kvp.Value.Item2.DeclaringType;
+
+                        var compVar = dataRoot.StoreComp(storageT);
+
+                        // set compVar in Source Event
+                        PersistentCall varSet = null;
+                        if (ArgIsSource == -1)
                         {
-                            if (!(transferredType == kvp.Key || transferredType.IsSubclassOf(kvp.Key)))
-                                continue;
-
-                            Type dataT = kvp.Key;
-                            Type storageT = kvp.Value.Item1 ?? kvp.Value.Item2.DeclaringType;
-
-                            var compVar = dataRoot.StoreComp(storageT);
-
-                            // set compVar in Source Event
                             int sourceIdx = SourceEvent.PersistentCallsList.IndexOf(SourceCall); // source PCall idx
-                            var varSet = new PersistentCall(kvp.Value.Item2.SetMethod, compVar); // compVar setter PCall
+                            varSet = new PersistentCall(kvp.Value.Item2.SetMethod, compVar); // compVar setter PCall
                             varSet.FSetArguments(new PersistentArgument().ToRetVal(sourceIdx, transferredType)); // arg for compVar setter PCall
                             SourceEvent.PersistentCallsList.SafeInsert(sourceIdx + 1, varSet); // add compVar setter PCall directly after source PCall
-
-                            // make getter pcall for targ evt
-                            var getPCall = new PersistentCall(kvp.Value.Item2.GetMethod, compVar);
-
-                            // add the getter pcall
-                            TargEvent.PersistentCallsList.Add(getPCall);
-
-                            // make targcall ref the gotten value (remember, targcall is under construction rn so its gonna be added last)
-                            TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(TargEvent.PersistentCallsList.Count - 1, TargArgType);
-
-                            return;
+                        }
+                        else
+                        {
+                            varSet = new PersistentCall(kvp.Value.Item2.SetMethod, compVar); // compVar setter PCall
+                            varSet.FSetArguments(new PersistentArgument().ToParamVal(ArgIsSource, transferredType)); // arg for compVar setter PCall
+                            SourceEvent.PersistentCallsList.SafeInsert(0, varSet); // add compVar setter PCall directly after source PCall
                         }
 
-                        // fail
-                        Debug.Log("failed data transfer for " + TargArgType);
+                        // make getter pcall for targ evt
+                        var getPCall = new PersistentCall(kvp.Value.Item2.GetMethod, compVar);
+
+                        // add the getter pcall
+                        TargEvent.PersistentCallsList.Add(getPCall);
+
+                        // make targcall ref the gotten value (remember, targcall is under construction rn so its gonna be added last)
+                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(TargEvent.PersistentCallsList.Count - 1, TargArgType);
+
+                        return;
                     }
+
+                    // fail
+                    Debug.Log("failed data transfer for " + TargArgType);
+                    
                 }
             }
             private static PropertyInfo RadiusGetSet = typeof(SphereCollider).GetProperty(nameof(SphereCollider.radius), UltEventUtils.AnyAccessBindings);

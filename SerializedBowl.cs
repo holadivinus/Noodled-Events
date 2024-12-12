@@ -22,9 +22,9 @@ namespace NoodledEvents
             o.EventFieldPath = eventFieldPath;
             o.EventHolder = target;
             o.BowlName = "Bowl";
+            o.BowlEvtHolderType = fieldType;
 
             o.NodeDatas.Add(new SerializedNode(o));
-            o.BowlEvtHolderType = fieldType;
 
 
 
