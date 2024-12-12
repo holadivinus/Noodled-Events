@@ -279,6 +279,7 @@ public class UltNoodleEditor : EditorWindow
     public void OpenSearchMenu(bool useNodePos = true)
     {
         NewNodeBowl = UltNoodleBowlUI.CurrentBowlUI;
+        if (NewNodeBowl == null) return;
         NewNodePos = NewNodeBowl.MousePos - new Vector2(48, 39);
         SearchMenu.visible = !SearchMenu.visible;
         SearchSettings.visible = false;
