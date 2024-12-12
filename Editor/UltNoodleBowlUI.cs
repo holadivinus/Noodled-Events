@@ -1,5 +1,6 @@
 ﻿#if UNITY_EDITOR
 using NoodledEvents;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UltEvents;
@@ -165,6 +166,9 @@ public class UltNoodleBowlUI : VisualElement
             Name = name
         };
         SerializedData.NodeDatas.Add(nod);
+
+        // also close search
+        _editor.CloseSearchMenu();
         return nod;
     }
 
@@ -207,6 +211,12 @@ public class UltNoodleBowlUI : VisualElement
     {
         NodeBG.style.minWidth = size.x;
         NodeBG.style.minHeight = size.y;
+
+        foreach (var nd in NodeUIs)
+        {
+            nd.Node.Position = new Vector2(MathF.Min(nd.Node.Position.x, size.x), MathF.Min(nd.Node.Position.y, size.y));
+            nd.UpdateLineUIs();
+        }
     }
     private void OnPositionChange(Vector2 pos)
     {

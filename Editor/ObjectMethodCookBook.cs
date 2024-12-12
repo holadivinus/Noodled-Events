@@ -68,7 +68,7 @@ public class ObjectMethodCookBook : CookBook
                         }
 
                         if (meth.ReturnType != typeof(void))
-                            o.text += " -> " + meth.ReturnType.Name;
+                            o.text += " -> " + meth.ReturnType.GetFriendlyName();
 
 
                         return o;

@@ -22,9 +22,9 @@ namespace NoodledEvents
             FlowInputs = FlowInputs.Append(@in).ToArray();
             return @in;
         }
-        public NoodleDataInput AddDataIn(string name, Type t, object defaultValue = null)
+        public NoodleDataInput AddDataIn(string name, Type t, object defaultValue = null, bool @const = false)
         {
-            var @in = new NoodleDataInput(this, t, name, defaultValue);
+            var @in = new NoodleDataInput(this, t, name, defaultValue) { UIConst = @const };
             DataInputs = DataInputs.Append(@in).ToArray();
             return @in;
         }
@@ -246,6 +246,7 @@ namespace NoodledEvents
         [NonSerialized] public VisualElement UI;
         [NonSerialized] public bool HasMouse;
         [SerializeField] public string ID = Guid.NewGuid().ToString();
+        [SerializeField] public bool UIConst;
 
         [SerializeField] public string DefaultStringValue;
         [SerializeField] Vector4 ValDefs;

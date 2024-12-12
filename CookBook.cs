@@ -171,12 +171,13 @@ namespace NoodledEvents
             public class Pin
             {
                 public Pin(string name) { Name = name; }
-                public Pin(string name, Type type)
+                public Pin(string name, Type type, bool @const = false)
                 {
-                    Name = name; Type = type;
+                    Name = name; Type = type; Const = @const;
                 }
                 public string Name;
                 public Type Type;
+                public bool Const;
                 public bool Flow => Type == null;
             }
         }

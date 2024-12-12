@@ -164,7 +164,7 @@ public class CommonsCookBook : CookBook
         #endregion
 
         allDefs.Add(new NodeDef(this, "math.set_float_var",
-            inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string)), new Pin("value", typeof(float)) },
+            inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", typeof(float)) },
             outputs: () => new[] { new Pin("done") },
             searchItem: (def) =>
             {
@@ -185,7 +185,7 @@ public class CommonsCookBook : CookBook
             }));
 
         allDefs.Add(new NodeDef(this, "math.get_float_var",
-                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string)) },
+                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const:true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", typeof(float)) },
                 searchItem: (def) =>
                 {

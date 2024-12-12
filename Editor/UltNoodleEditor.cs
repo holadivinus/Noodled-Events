@@ -231,8 +231,7 @@ public class UltNoodleEditor : EditorWindow
             _dragging = true;
             NodesFrame.name = "grabby";
         }
-        SearchMenu.visible = false;
-        SearchSettings.visible = false;
+        CloseSearchMenu();
     }
     public Vector2 _frameMousePosition;
     private void NodeFrameMouseMove(MouseMoveEvent evt)
@@ -297,7 +296,11 @@ public class UltNoodleEditor : EditorWindow
         }
         // awesome
     }
-
+    public void CloseSearchMenu()
+    {
+        SearchMenu.visible = false;
+        SearchSettings.visible = false;
+    }
     public void OpenSearchMenu(bool useNodePos = true)
     {
         NewNodeBowl = UltNoodleBowlUI.CurrentBowlUI;

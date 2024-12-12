@@ -26,6 +26,7 @@ public class UltNoodleDataInPoint : VisualElement
     {
         NodeUI = node; SData = input;
         SData.UI = this.Q("ConnectionPoint");
+        SData.UI.visible = !input.UIConst; // hide if const
         // Inform the bowl about drags
         SData.UI.RegisterCallback<MouseEnterEvent>(e => { SData.HasMouse = true; UltNoodleEditor.TypeHinter.visible = true; UltNoodleEditor.TypeHinter.text = SData.Type.Type.GetFriendlyName(); });
         SData.UI.RegisterCallback<MouseLeaveEvent>(e => { SData.HasMouse = false; UltNoodleEditor.TypeHinter.visible = false; });

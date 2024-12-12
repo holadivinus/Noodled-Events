@@ -109,7 +109,7 @@ public static class UltNoodleRuntimeExtensions
         foreach (var @in in def.Inputs)
         {
             if (@in.Flow) nod.AddFlowIn(@in.Name);
-            else nod.AddDataIn(@in.Name, @in.Type);
+            else nod.AddDataIn(@in.Name, @in.Type, null, @in.Const);
         }
         foreach (var @out in def.Outputs)
         {
