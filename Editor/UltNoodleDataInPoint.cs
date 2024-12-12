@@ -27,7 +27,8 @@ public class UltNoodleDataInPoint : VisualElement
         NodeUI = node; SData = input;
         SData.UI = this.Q("ConnectionPoint");
         // Inform the bowl about drags
-        SData.UI.RegisterCallback<MouseEnterEvent>(e => SData.HasMouse = true); SData.UI.RegisterCallback<MouseLeaveEvent>(e => SData.HasMouse = false);
+        SData.UI.RegisterCallback<MouseEnterEvent>(e => { SData.HasMouse = true; UltNoodleEditor.TypeHinter.visible = true; UltNoodleEditor.TypeHinter.text = SData.Type.Type.GetFriendlyName(); });
+        SData.UI.RegisterCallback<MouseLeaveEvent>(e => { SData.HasMouse = false; UltNoodleEditor.TypeHinter.visible = false; });
         SData.UI.RegisterCallback<MouseDownEvent>(e => { if (e.button == 0) (NodeUI.Bowl.CurHoveredDataInput = SData).UI.CaptureMouse(); });
         SData.UI.RegisterCallback<MouseMoveEvent>(e => node.Bowl.MousePos = node.Bowl.NodeBG.WorldToLocal(e.mousePosition));
         SData.UI.RegisterCallback<MouseUpEvent>(e =>

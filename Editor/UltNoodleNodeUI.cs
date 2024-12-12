@@ -149,6 +149,8 @@ public class UltNoodleNodeUI : VisualElement
             arrow.style.left = -5;
             disp.Add(arrow);
 
+
+
             input.UI = arrow;
 
             // Inform the bowl about drags
@@ -194,6 +196,8 @@ public class UltNoodleNodeUI : VisualElement
             circle.style.right = -5;
             disp.Add(circle);
 
+            
+
             var label = new Label(output.Name);
             label.style.paddingTop = 6;
             label.style.height = 22;
@@ -204,7 +208,8 @@ public class UltNoodleNodeUI : VisualElement
             output.UI = circle;
 
             // Inform the bowl about drags
-            output.UI.RegisterCallback<MouseEnterEvent>(e => output.HasMouse = true); output.UI.RegisterCallback<MouseLeaveEvent>(e => output.HasMouse = false);
+            output.UI.RegisterCallback<MouseEnterEvent>(e => { output.HasMouse = true; UltNoodleEditor.TypeHinter.visible = true; UltNoodleEditor.TypeHinter.text = output.Type.Type.GetFriendlyName(); });
+            output.UI.RegisterCallback<MouseLeaveEvent>(e => { output.HasMouse = false; UltNoodleEditor.TypeHinter.visible = false; });
             output.UI.RegisterCallback<MouseDownEvent>(e => { if (e.button == 0) (Bowl.CurHoveredDataOutput = output).UI.CaptureMouse(); });
             output.UI.RegisterCallback<MouseMoveEvent>(e => Bowl.MousePos = Bowl.NodeBG.WorldToLocal(e.mousePosition));
             output.UI.RegisterCallback<MouseUpEvent>(e =>

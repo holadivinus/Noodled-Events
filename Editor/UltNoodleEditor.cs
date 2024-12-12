@@ -51,6 +51,7 @@ public class UltNoodleEditor : EditorWindow
     public Toggle StaticsToggle;
     private VisualElement cog;
     public VisualElement SearchSettings;
+    public static Label TypeHinter;
     public void CreateGUI()
     {
         VisualElement root = rootVisualElement;
@@ -70,10 +71,11 @@ public class UltNoodleEditor : EditorWindow
         SearchBar = SearchMenu.Q<TextField>(nameof(SearchBar));
         SearchedTypes = SearchMenu.Q<ScrollView>(nameof(SearchedTypes));
         SearchMenu.visible = false;
+        TypeHinter = root.Q<Label>(nameof(TypeHinter));
         //StaticsToggle = SearchMenu.Q<Toggle>("StaticsToggle");
         //StaticsToggle.RegisterValueChangedCallback((v) => SearchTypes());
         //StaticsToggle.Children().ToArray()[1].style.flexGrow = 0;
- 
+
         NodesFrame.RegisterCallback<WheelEvent>(OnScroll);
         NodesFrame.RegisterCallback<MouseDownEvent>(NodeFrameMouseDown);
         NodesFrame.RegisterCallback<MouseMoveEvent>(NodeFrameMouseMove);
@@ -89,7 +91,6 @@ public class UltNoodleEditor : EditorWindow
         SearchBar.RegisterCallback<KeyDownEvent>((evt) => {
             if (evt.keyCode == KeyCode.Return) {
                 SearchTypes(100);
-                Debug.Log('w');
             }
         }, TrickleDown.TrickleDown);
         //SearchedTypes.RegisterCallback<WheelEvent>(OnSearchScroll);
@@ -220,6 +221,8 @@ public class UltNoodleEditor : EditorWindow
             D.style.left = new StyleLength(new Length(D.style.left.value.value + (evt.mouseDelta.x / B.transform.scale.x), LengthUnit.Pixel));
             D.style.top = new StyleLength(new Length(D.style.top.value.value + (evt.mouseDelta.y / B.transform.scale.y), LengthUnit.Pixel));
         }
+        TypeHinter.style.left = evt.mousePosition.x;
+        TypeHinter.style.top = evt.mousePosition.y;
     }
     private void NodeFrameMouseUp(MouseUpEvent evt)
     {
