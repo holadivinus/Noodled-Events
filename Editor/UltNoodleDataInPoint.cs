@@ -222,18 +222,22 @@ public class UltNoodleDataInPoint : VisualElement
         Line = this.Q("Line");
 
         // disconnect logic
+        Line.style.backgroundColor = normalCol;
         Line.RegisterCallback<MouseOverEvent>(e => { Line.style.backgroundColor = new Color(1, 0, 0, .7f); });
-        Line.RegisterCallback<MouseOutEvent>(e => { Line.style.backgroundColor = new Color(0.7490196f, 1f, 0.8196079f, 0.4627451f); });
+        Line.RegisterCallback<MouseOutEvent>(e => { Line.style.backgroundColor = normalCol; });
         Line.RegisterCallback<MouseDownEvent>(e =>
         {
             if (!e.ctrlKey) return;
             SData.Connect(null);
             UpdateLine();
         });
+        
 
 
         NodeUI.InputsElement.Add(this);
     }
+    private Color green = new Color(0.7490196f, 1f, 0.8196079f, 0.4627451f);
+    private Color normalCol = new Color(0.7490196f, 1f, 0.8196079f, 0.4627451f);
     private void MarkDynamic(VisualElement root)
     {
         root.usageHints = UsageHints.DynamicTransform;
@@ -269,6 +273,8 @@ public class UltNoodleDataInPoint : VisualElement
             // figure angle, make start 0 0 0
             Vector2 a = end - start;
             Line.transform.rotation = Quaternion.Euler(0, 0, Mathf.Rad2Deg * Mathf.Atan2(a.y, a.x));
+            bool yeller = (SData.Type.Type != SData.Source.Type.Type) && !(SData.Type.Type.IsAssignableFrom(SData.Source.Type.Type));
+            Line.style.backgroundColor = normalCol = (yeller ? new Color(1, 0.92f, 0.016f, .5f) : green);
         }
     }
 }

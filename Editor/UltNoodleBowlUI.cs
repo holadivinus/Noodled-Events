@@ -277,8 +277,18 @@ public class UltNoodleBowlUI : VisualElement
                 if (ui != null)
                 {
                     ConnectionLine.visible = true;
-                    ConnectionLine.style.left = MousePos.x;
-                    ConnectionLine.style.top = MousePos.y;
+                    Vector2 sourceLoc = ConnectionLine.parent.WorldToLocal(ui.LocalToWorld(Vector2.zero));
+                    //ConnectionLine.style.transformOrigin = new TransformOrigin(0, new Length(.5f, LengthUnit.Percent));
+                    ConnectionLine.style.left = sourceLoc.x + 4;
+                    ConnectionLine.style.top = sourceLoc.y + 2.5f;
+                    float x = MousePos.x - sourceLoc.x - 4;
+                    float y = MousePos.y - sourceLoc.y - 2.5f;
+                    ConnectionLine.style.width = Mathf.Sqrt((x*x) + (y*y));
+                    ConnectionLine.style.rotate = new Rotate(Mathf.Rad2Deg * Mathf.Atan2(y, x));
+
+                    // also move type text, just in case
+                    UltNoodleEditor.TypeHinter.style.left = this.LocalToWorld(MousePos).x;
+                    UltNoodleEditor.TypeHinter.style.top = this.LocalToWorld(MousePos).y;
                     break;
                 }
         }

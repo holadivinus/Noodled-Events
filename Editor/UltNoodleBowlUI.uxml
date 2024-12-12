@@ -8,6 +8,6 @@
         <ui:VisualElement name="UpperLeftPull" style="position: absolute; left: -20px; top: -20px; right: auto; bottom: auto; width: 40px; height: 40px;" />
         <ui:VisualElement name="LowerRightPull" style="position: absolute; left: auto; top: auto; right: -20px; bottom: -20px; width: 40px; height: 40px;" />
         <ui:VisualElement name="Nodes" style="flex-grow: 1; flex-shrink: 0; overflow: hidden;" />
-        <ui:VisualElement name="ConnectionLine" style="position: absolute; left: 0; top: 0; width: 20px; height: 20px; background-color: rgb(0, 5, 91); visibility: visible;" />
+        <ui:VisualElement name="ConnectionLine" style="position: absolute; left: 0; top: 0; width: 20px; height: 3px; background-color: rgb(0, 5, 91); visibility: visible; transform-origin: left;" />
     </UltNoodleBowlUI>
 </ui:UXML>
