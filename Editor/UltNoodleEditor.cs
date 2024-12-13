@@ -107,6 +107,7 @@ public class UltNoodleEditor : EditorWindow
         response.GetAwaiter().OnCompleted(() =>
         {
             string remoteVersion = new StreamReader(response.Result.GetResponseStream()).ReadToEnd().Split("\"version\": \"")[1].Split('"')[0];
+            Debug.Log(remoteVersion);
             if (new Version(remoteVersion) > new Version(version))
             {
                 updateBT.text = "Click to Update to (" + remoteVersion + ")!";
