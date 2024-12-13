@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "displayName": "Noodled UltEvents",
     "description": "A Visual Node-Based Editor for Unity Ult-Event setups, with a bonus node category for the BoneLab MarrowSDK. Access the Scene Node-Editor via NoodledEvents > Noodle Editor",
-    "unity": "2021.3.16f1",
+    "unity": "2021.3",
     "author": 
     {
         "name": "holadivinus",
