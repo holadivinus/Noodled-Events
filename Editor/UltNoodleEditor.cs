@@ -102,13 +102,12 @@ public class UltNoodleEditor : EditorWindow
 
         Button updateBT = root.Q<Button>("NextVersionBT");
         updateBT.text = "Checking for Updates...";
-        var req = WebRequest.Create("https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json");
+        var req = WebRequest.Create("https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json" + "?dummy=" + (int)UnityEngine.Random.Range(0, 2999));
         var response = req.GetResponseAsync();
         response.GetAwaiter().OnCompleted(() =>
         {
             string remoteVersion = new StreamReader(response.Result.GetResponseStream()).ReadToEnd().Split("\"version\": \"")[1].Split('"')[0];
-
-            if (new Version(/*remoteVersion*/"2.0.0") > new Version(version))
+            if (new Version(remoteVersion) > new Version(version))
             {
                 updateBT.text = "Click to Update to (" + remoteVersion + ")!";
                 bool updatin = false;
