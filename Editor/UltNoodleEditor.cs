@@ -3,10 +3,13 @@ using NoodledEvents;
 using SLZ.Marrow.Warehouse;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using UltEvents;
 using UnityEditor;
+using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
@@ -36,6 +39,8 @@ public class UltNoodleEditor : EditorWindow
     [SerializeField] public CookBook CommonsCookBook;
     [SerializeField] public CookBook StaticCookBook;
     [SerializeField] public CookBook ObjectCookBook;
+
+    [SerializeField] public TextAsset PackageData;
 
 
     //[MenuItem("NoodledEvents/test")]
@@ -86,6 +91,45 @@ public class UltNoodleEditor : EditorWindow
         //StaticsToggle = SearchMenu.Q<Toggle>("StaticsToggle");
         //StaticsToggle.RegisterValueChangedCallback((v) => SearchTypes());
         //StaticsToggle.Children().ToArray()[1].style.flexGrow = 0;
+
+        string version = PackageData.text.Split("\"version\": \"")[1].Split('"')[0];
+        root.Q<Label>("CurVersionNum").text = "Current Version: " + version;
+
+        Button updateBT = root.Q<Button>("NextVersionBT");
+        updateBT.text = "Checking for Updates...";
+        var req = WebRequest.Create("https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json");
+        var response = req.GetResponseAsync();
+        response.GetAwaiter().OnCompleted(() =>
+        {
+            string remoteVersion = new StreamReader(response.Result.GetResponseStream()).ReadToEnd().Split("\"version\": \"")[1].Split('"')[0];
+
+            if (new Version(/*remoteVersion*/"2.0.0") > new Version(version))
+            {
+                updateBT.text = "Click to Update to (" + remoteVersion + ")!";
+                bool updatin = false;
+                updateBT.clicked += () =>
+                {
+                    if (updatin) return;
+                    updatin = true;
+                    var req = Client.Add("https://github.com/holadivinus/Noodled-Events.git");
+                    float c = 0;
+                    EditorApplication.update += () =>
+                    {
+                        c += .01f * 5   ;
+                        if (c > 300) c = 0;
+                        updateBT.text = "Updating";
+                        for (global::System.Int32 i = 0; i < (int)(c / 20); i++)
+                        {
+                            updateBT.text += ".";
+                        }
+                    };
+                };
+            }
+            else
+            {
+                updateBT.text = "Up to Date.";
+            }
+        });
 
         NodesFrame.RegisterCallback<WheelEvent>(OnScroll);
         NodesFrame.RegisterCallback<MouseDownEvent>(NodeFrameMouseDown);
