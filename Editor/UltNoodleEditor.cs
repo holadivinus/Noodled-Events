@@ -77,6 +77,7 @@ public class UltNoodleEditor : EditorWindow
     {
         using (HttpClient client = new HttpClient())
         {
+            client.DefaultRequestHeaders.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue() { NoCache = true };
             var resp = await client.GetAsync(url);
             var stringGet = await resp.Content.ReadAsStringAsync();
             response.Invoke(stringGet);
