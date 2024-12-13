@@ -102,7 +102,9 @@ public class UltNoodleEditor : EditorWindow
 
         Button updateBT = root.Q<Button>("NextVersionBT");
         updateBT.text = "Checking for Updates...";
-        var req = WebRequest.Create("https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json" + "?dummy=" + (int)UnityEngine.Random.Range(0, 2999));
+        string url = "https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json" + "?dummy=" + (int)UnityEngine.Random.Range(0, 2999);
+        var req = WebRequest.Create(url);
+        Debug.Log("Checking for Updates at: " + url);
         var response = req.GetResponseAsync();
         response.GetAwaiter().OnCompleted(() =>
         {
