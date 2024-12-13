@@ -40,7 +40,6 @@ public class UltNoodleEditor : EditorWindow
     [SerializeField] public CookBook StaticCookBook;
     [SerializeField] public CookBook ObjectCookBook;
 
-    [SerializeField] public TextAsset PackageData;
 
 
     //[MenuItem("NoodledEvents/test")]
@@ -67,6 +66,12 @@ public class UltNoodleEditor : EditorWindow
     public VisualElement SearchSettings;
     public static Label TypeHinter;
     private static UltNoodleEditor s_Editor;
+    private bool InPackage()
+    {
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(assembly);
+        return packageInfo != null;
+    }
     public void CreateGUI()
     {
         s_Editor = this;
@@ -91,8 +96,8 @@ public class UltNoodleEditor : EditorWindow
         //StaticsToggle = SearchMenu.Q<Toggle>("StaticsToggle");
         //StaticsToggle.RegisterValueChangedCallback((v) => SearchTypes());
         //StaticsToggle.Children().ToArray()[1].style.flexGrow = 0;
-
-        string version = PackageData.text.Split("\"version\": \"")[1].Split('"')[0];
+        TextAsset packageData = AssetDatabase.LoadAssetAtPath<TextAsset>(InPackage() ? "Packages/com.holadivinus.noodledevents/package.json" : "Assets/Noodled-Events/package.json");
+        string version = packageData.text.Split("\"version\": \"")[1].Split('"')[0];
         root.Q<Label>("CurVersionNum").text = "Current Version: " + version;
 
         Button updateBT = root.Q<Button>("NextVersionBT");
