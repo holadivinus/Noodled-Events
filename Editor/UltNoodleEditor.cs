@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using UltEvents;
 using UnityEditor;
@@ -72,6 +73,15 @@ public class UltNoodleEditor : EditorWindow
         var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(assembly);
         return packageInfo != null;
     }
+    async void GetRequest(string url, Action<string> response)
+    {
+        using (HttpClient client = new HttpClient())
+        {
+            var resp = await client.GetAsync(url);
+            var stringGet = await resp.Content.ReadAsStringAsync();
+            response.Invoke(stringGet);
+        }
+    }
     public void CreateGUI()
     {
         s_Editor = this;
@@ -102,13 +112,9 @@ public class UltNoodleEditor : EditorWindow
 
         Button updateBT = root.Q<Button>("NextVersionBT");
         updateBT.text = "Checking for Updates...";
-        string url = "https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json" + "?dummy=" + (int)UnityEngine.Random.Range(0, 2999);
-        var req = WebRequest.Create(url);
-        Debug.Log("Checking for Updates at: " + url);
-        var response = req.GetResponseAsync();
-        response.GetAwaiter().OnCompleted(() =>
+        GetRequest("https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json", (resp) =>
         {
-            string remoteVersion = new StreamReader(response.Result.GetResponseStream()).ReadToEnd().Split("\"version\": \"")[1].Split('"')[0];
+            string remoteVersion = resp.Split("\"version\": \"")[1].Split('"')[0];
             Debug.Log(remoteVersion);
             if (new Version(remoteVersion) > new Version(version))
             {
