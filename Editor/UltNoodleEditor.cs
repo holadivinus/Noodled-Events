@@ -22,7 +22,23 @@ public class UltNoodleEditor : EditorWindow
         wnd.Show();
         wnd.titleContent = new GUIContent("Scene Noodle Editor");
     }
-    [MenuItem("NoodledEvents/test")]
+    [SerializeField] AudioClip FordVoiceLine1;
+    [SerializeField] AudioClip FordVoiceLine2;
+    [SerializeField] AudioClip FordVoiceLine3;
+    [SerializeField] AudioClip FordVoiceLine4;
+    [SerializeField] AudioClip FordVoiceLine5;
+    [SerializeField] public Texture2D ArrowPng;
+    [SerializeField] public VisualTreeAsset UltNoodleEditorUI_UXML;
+    [SerializeField] public VisualTreeAsset UltNoodleBowlUI_UXML;
+    [SerializeField] public VisualTreeAsset UltNoodleNodeUI_UXML;
+    [SerializeField] public VisualTreeAsset UltNoodleFlowOutUI_UXML;
+    [SerializeField] public VisualTreeAsset UltNoodleDataInUI_UXML;
+    [SerializeField] public CookBook CommonsCookBook;
+    [SerializeField] public CookBook StaticCookBook;
+    [SerializeField] public CookBook ObjectCookBook;
+
+
+    //[MenuItem("NoodledEvents/test")]
     public static void test()
     {
         Debug.Log(typeof(Rigidbody).AssemblyQualifiedName);
@@ -32,14 +48,6 @@ public class UltNoodleEditor : EditorWindow
         
     }
 
-    public static string ScriptPath
-    {
-        get
-        {
-            var g = AssetDatabase.FindAssets($"t:Script {nameof(UltNoodleEditor)}");
-            return AssetDatabase.GUIDToAssetPath(g[0]);
-        }
-    }
 
     public VisualElement NodesFrame;
     public VisualElement A;
@@ -60,7 +68,7 @@ public class UltNoodleEditor : EditorWindow
         VisualElement root = rootVisualElement;
 
         // Import UXML
-        var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ScriptPath.Replace(".cs", ".uxml"));
+        var visualTree = UltNoodleEditorUI_UXML;
         VisualElement loadedUXML = visualTree.Instantiate();
         root.Add(loadedUXML);
          
@@ -105,6 +113,16 @@ public class UltNoodleEditor : EditorWindow
             SearchSettings.style.display = DisplayStyle.Flex;
         };
 
+        root.Q<Button>("fordbt").clicked += () =>
+        {
+            var src = new GameObject("forder", typeof(AudioSource)).GetComponent<AudioSource>();
+            var fordLines = new[] { FordVoiceLine1, FordVoiceLine2, FordVoiceLine3, FordVoiceLine4, FordVoiceLine5 };
+            src.clip = fordLines[Mathf.RoundToInt(UnityEngine.Random.Range(0, fordLines.Length))];
+            src.Play();
+            //src.gameObject.hideFlags = HideFlags.HideAndDontSave;
+            root.schedule.Execute(() => UnityEngine.Object.DestroyImmediate(src.gameObject)).ExecuteLater((long)(src.clip.length * 1000));
+        };
+
         cog = root.Q(nameof(cog));
         EditorApplication.update += OnUpdate;
 
@@ -120,6 +138,9 @@ public class UltNoodleEditor : EditorWindow
 
         AllNodeDefs.Clear();
         var cookBooks = AssetDatabase.FindAssets("t:" + nameof(CookBook)).Select(guid => AssetDatabase.LoadAssetAtPath<CookBook>(AssetDatabase.GUIDToAssetPath(guid)));
+        if (!cookBooks.Contains(CommonsCookBook)) cookBooks = cookBooks.Append(CommonsCookBook);
+        if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
+        if (!cookBooks.Contains(ObjectCookBook)) cookBooks = cookBooks.Append(ObjectCookBook);
         foreach (CookBook sdenhr in cookBooks)
         {
             CookBook book = sdenhr; //lol (this is like this for a reason trust me)
@@ -194,24 +215,80 @@ public class UltNoodleEditor : EditorWindow
 
         
     }
-    [MenuItem("CONTEXT/UltEventHolder/Make Noodle Bowl")]
+
+    #region Noodle Bowl Prompts
+    [MenuItem("CONTEXT/UltEventHolder/Noodle Bowl")]
     static void BowlSingle(MenuCommand command)
     {
-        if (!((UltEventHolder)command.context).GetComponent<SerializedBowl>())
-        {
             if (s_Editor == null) ShowExample();
             UltNoodleBowlUI.New(s_Editor, s_Editor.D, (UltEventHolder)command.context, new SerializedType(typeof(UltEventHolder)), "_Event");
-        }
     }
-    [MenuItem("CONTEXT/CrateSpawner/Make Noodle Bowl")]
+    [MenuItem("CONTEXT/CrateSpawner/Noodle Bowl")]
     static void CrateBowl(MenuCommand command)
     {
-        if (!((CrateSpawner)command.context).GetComponent<SerializedBowl>())
-        {
-            if (s_Editor == null) ShowExample();
-            UltNoodleBowlUI.New(s_Editor, s_Editor.D, (CrateSpawner)command.context, new SerializedType(typeof(CrateSpawner)), "onSpawnEvent");
-        }
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, (CrateSpawner)command.context, new SerializedType(typeof(CrateSpawner)), "onSpawnEvent");
     }
+    [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Awake()")]
+    static void LifeCycleEvents_Awake(MenuCommand command)
+    {
+        var targ = command.context as LifeCycleEvents;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_AwakeEvent");
+        
+    }
+    [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Start()")]
+    static void LifeCycleEvents_StartEvent(MenuCommand command)
+    {
+        var targ = command.context as LifeCycleEvents;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_StartEvent");
+    }
+    [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Enable()")]
+    static void LifeCycleEvents_EnableEvent(MenuCommand command)
+    {
+        var targ = command.context as LifeCycleEvents;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_EnableEvent");
+    }
+    [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Disable()")]
+    static void LifeCycleEvents_DisableEvent(MenuCommand command)
+    {
+        var targ = command.context as LifeCycleEvents;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_DisableEvent");    
+    }
+    
+    [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Destroy()")]
+    static void LifeCycleEvents_DestroyEvent(MenuCommand command)
+    {
+        var targ = command.context as LifeCycleEvents;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_DestroyEvent");
+        
+    }
+    [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Update()")]
+    static void UpdateEvents_UpdateEvent(MenuCommand command)
+    {
+        var targ = command.context as UpdateEvents;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_UpdateEvent");
+    }
+    [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Late Update()")]
+    static void UpdateEvents_LateUpdateEvent(MenuCommand command)
+    {
+        var targ = command.context as UpdateEvents;
+            if (s_Editor == null) ShowExample();
+            UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_LateUpdateEvent");
+    }
+    [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Fixed Update()")]
+    static void UpdateEvents_FixedUpdateEvent(MenuCommand command)
+    {
+        var targ = command.context as UpdateEvents;
+            if (s_Editor == null) ShowExample();
+            UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_FixedUpdateEvent");
+    }
+    #endregion
     private void OnLostFocus()
     {
         foreach (var bowlUI in BowlUIs.ToArray())
@@ -374,8 +451,7 @@ public class UltNoodleEditor : EditorWindow
 
     private VisualElement GetIncompleteListDisplay() {
         var o = new Label() {
-            text = "..."
-            
+            text = "Press Enter for a Full Search! (...)"
         };
 
         o.style.alignContent = Align.Center;
@@ -588,11 +664,19 @@ public class UltNoodleEditor : EditorWindow
     }
     public static Dictionary<Type, Foldout> TypeFolds = new();
 
+    bool jig = false;
     private void OnUpdate()
     {
         //if (SearchMenu.visible)
         //    LoadVisibleSearchResults();
         cog.style.rotate = new Rotate(cog.style.rotate.value.angle.value + .01f);
+
+        float f = 1.0001f;
+        jig = !jig;
+        if (jig)
+            C.transform.scale *= f;
+        else 
+            C.transform.scale /= f;
     }
     private void OnDestroy()
     {

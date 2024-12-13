@@ -87,7 +87,11 @@ namespace NoodledEvents
             set
             {
                 if (_position != value)
+                {
+                    if (NoadType != NodeType.BowlInOut)
+                        value = new Vector2(Mathf.Clamp(value.x, 0, Bowl.Size.x-10), Mathf.Clamp(value.y, 0, Bowl.Size.y-30));
                     PositionChanged.Invoke(_position = value);
+                }
             }
         }
         [SerializeField] private Vector2 _position;
@@ -135,7 +139,7 @@ namespace NoodledEvents
                                 din.CompEvt.PersistentCallsList.SafeInsert(callIdx, getTypeCall);
                                 din.CompArg.FSetType(PersistentArgumentType.ReturnValue);
                                 din.CompArg.FSetInt(callIdx);
-                                din.CompArg.FSetString(din.CompCall.Method.GetParameters()[Array.IndexOf(din.CompCall.PersistentArguments, din.CompArg)].ParameterType.AssemblyQualifiedName);
+                                din.CompArg.FSetString(typeof(Type).AssemblyQualifiedName);
                             }
                         }
                     }

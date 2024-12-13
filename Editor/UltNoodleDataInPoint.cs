@@ -16,7 +16,7 @@ public class UltNoodleDataInPoint : VisualElement
 
     public static UltNoodleDataInPoint New(UltNoodleNodeUI node, NoodleDataInput input)
     {
-        var o = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ScriptPath.Replace(".cs", ".uxml")).Instantiate().Q<UltNoodleDataInPoint>();
+        var o = node.Bowl.Editor.UltNoodleDataInUI_UXML.Instantiate().Q<UltNoodleDataInPoint>();
         o.setupInternal(node, input);
         return o;
     }
@@ -250,9 +250,6 @@ public class UltNoodleDataInPoint : VisualElement
 
     Label Label;
 
-    public static string ScriptPath
-        => s_scriptPath ??= AssetDatabase.GUIDToAssetPath(AssetDatabase.FindAssets($"t:Script {nameof(UltNoodleDataInPoint)}")[0]);
-    private static string s_scriptPath;
 
     VisualElement Line;
     public void UpdateLine() // draw connection lines

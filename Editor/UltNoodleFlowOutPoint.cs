@@ -11,7 +11,7 @@ public class UltNoodleFlowOutPoint : VisualElement
 
     public static UltNoodleFlowOutPoint New(UltNoodleNodeUI node, NoodleFlowOutput output)
     {
-        var o = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ScriptPath.Replace(".cs", ".uxml")).Instantiate().Q<UltNoodleFlowOutPoint>();
+        var o = node.Bowl.Editor.UltNoodleFlowOutUI_UXML.Instantiate().Q<UltNoodleFlowOutPoint>();
         o.setupInternal(node, output);
         return o;
     }
@@ -48,10 +48,6 @@ public class UltNoodleFlowOutPoint : VisualElement
     public NoodleFlowOutput SData;
 
     Label Label;
-
-    public static string ScriptPath
-        => s_scriptPath ??= AssetDatabase.GUIDToAssetPath(AssetDatabase.FindAssets($"t:Script {nameof(UltNoodleFlowOutPoint)}")[0]);
-    private static string s_scriptPath;
 
     int i;
     VisualElement Line;

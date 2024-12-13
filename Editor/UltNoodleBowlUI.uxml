@@ -3,11 +3,12 @@
     <UltNoodleBowlUI name="BG" style="overflow: visible; left: 0; top: 0; min-width: 191px; min-height: 65px; width: 316px; height: 102px; background-color: rgba(255, 255, 255, 0.06); border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; border-left-color: rgb(255, 240, 0); border-right-color: rgb(255, 240, 0); border-top-color: rgb(255, 240, 0); border-bottom-color: rgb(255, 240, 0); border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; position: absolute;">
         <ui:VisualElement name="Top" style="flex-direction: row;">
             <ui:Label text="Label" display-tooltip-when-elided="true" name="PathLabel" style="-unity-text-align: middle-left;" />
-            <ui:TextField picking-mode="Ignore" text="name hyere" tooltip="Bowl Name" name="BowlNameField" style="flex-grow: 1;" />
+            <ui:TextField picking-mode="Ignore" text="name hyere" tooltip="Bowl Name" name="BowlNameField" style="flex-grow: 1; margin-right: 0;" />
+            <ui:Button text="X" display-tooltip-when-elided="true" name="BowlDeleteBT" style="position: relative; right: 0; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; background-color: rgb(24, 24, 24); width: 19px; color: rgb(255, 95, 95);" />
         </ui:VisualElement>
-        <ui:VisualElement name="UpperLeftPull" style="position: absolute; left: -20px; top: -20px; right: auto; bottom: auto; width: 40px; height: 40px;" />
-        <ui:VisualElement name="LowerRightPull" style="position: absolute; left: auto; top: auto; right: -20px; bottom: -20px; width: 40px; height: 40px;" />
+        <ui:VisualElement name="UpperLeftPull" style="position: absolute; left: -20px; top: -20px; right: auto; bottom: auto; width: 40px; height: 40px; background-color: rgba(176, 16, 16, 0.35); display: flex;" />
         <ui:VisualElement name="Nodes" style="flex-grow: 1; flex-shrink: 0; overflow: hidden;" />
-        <ui:VisualElement name="ConnectionLine" style="position: absolute; left: 0; top: 0; width: 20px; height: 3px; background-color: rgb(0, 5, 91); visibility: visible; transform-origin: left;" />
+        <ui:VisualElement name="LowerRightPull" style="position: absolute; left: auto; top: auto; right: -20px; bottom: -20px; width: 40px; height: 40px; background-color: rgba(3, 229, 0, 0.31);" />
+        <ui:VisualElement name="ConnectionLine" picking-mode="Ignore" style="position: absolute; left: 0; top: 0; width: 20px; height: 3px; background-color: rgb(0, 5, 91); visibility: visible; transform-origin: left;" />
     </UltNoodleBowlUI>
 </ui:UXML>

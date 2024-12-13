@@ -17,7 +17,7 @@ public class UltNoodleNodeUI : VisualElement
 
     public static UltNoodleNodeUI New(UltNoodleBowlUI bowl, SerializedNode serializedNode)
     {
-        var o = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ScriptPath.Replace(".cs", ".uxml")).Instantiate().Q<UltNoodleNodeUI>();
+        var o = bowl.Editor.UltNoodleNodeUI_UXML.Instantiate().Q<UltNoodleNodeUI>();
         o.setupInternal(bowl, serializedNode);
         return o;
     }
@@ -123,12 +123,8 @@ public class UltNoodleNodeUI : VisualElement
     public List<UltNoodleFlowOutPoint> OutPoints = new();
     public List<UltNoodleDataInPoint> InPoints = new();
 
-    public static string ScriptPath
-        => s_scriptPath ??= AssetDatabase.GUIDToAssetPath(AssetDatabase.FindAssets($"t:Script {nameof(UltNoodleNodeUI)}")[0]);
-    private static string s_scriptPath;
 
     public VisualElement Visual;
-    
     private void GenerateInputs()
     {
         // Nodes should handle their "n" connectors themselves
@@ -146,7 +142,7 @@ public class UltNoodleNodeUI : VisualElement
 
             var arrow = new VisualElement();
             arrow.style.position = Position.Absolute;
-            arrow.style.backgroundImage = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Noodled-Events/Editor/UI Assets/arrow.png");
+            arrow.style.backgroundImage = Bowl.Editor.ArrowPng;
             arrow.style.width = 10;
             arrow.style.height = 10;
             arrow.style.top = 10;

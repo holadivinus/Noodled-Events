@@ -58,15 +58,30 @@ namespace NoodledEvents
                     ArgIsSource = Array.IndexOf(o.Node.DataOutputs, o);
                 else ArgIsSource = -1;
             }
-            
+
+            // Comps used to transfer data between events
             public static Dictionary<Type, (Type, PropertyInfo)> CompStoragers = new Dictionary<Type, (Type, PropertyInfo)>()
             {
                 { typeof(UnityEngine.Object), (typeof(XRInteractorAffordanceStateProvider), typeof(XRInteractorAffordanceStateProvider).GetProperty("interactorSource", UltEventUtils.AnyAccessBindings)) },
                 { typeof(float), (typeof(SphereCollider), RadiusGetSet) },
                 { typeof(bool), (typeof(Mask), typeof(Mask).GetProperty("enabled")) },
                 { typeof(Vector3), (typeof(BoxCollider), typeof(BoxCollider).GetProperty(nameof(BoxCollider.center))) },
-                { typeof(string), (typeof(TextMeshPro), typeof(TMP_Text).GetProperty("text", UltEventUtils.AnyAccessBindings)) }
+                { typeof(string), (typeof(TextMeshPro), typeof(TMP_Text).GetProperty("text", UltEventUtils.AnyAccessBindings)) },
+                { typeof(int), (typeof(LineRenderer), typeof(LineRenderer).GetProperty("numCapVertices", UltEventUtils.AnyAccessBindings)) }
             };
+        /* Todo types for CompStoragers
+        {typeof(uint), "uint"},
+        {typeof(long), "long"},
+        { typeof(ulong), "ulong"},
+        { typeof(short), "short"},
+        { typeof(ushort), "ushort"},
+        { typeof(byte), "byte"},
+        { typeof(sbyte), "sbyte"},
+        { typeof(double), "double"},
+        { typeof(decimal), "decimal"},
+        { typeof(char), "char"},
+        // these remains are pretty uncommon, i'll implement them later
+        */
 
             public int ArgIsSource; // if this is from an arg (-1 means no >= 0 gives arg idx)
             public UltEventBase SourceEvent;

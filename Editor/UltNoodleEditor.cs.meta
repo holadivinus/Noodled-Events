@@ -3,7 +3,22 @@ guid: 14448e050125731479e35e33dcb6a0b9
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - m_ViewDataDictionary: {instanceID: 0}
+  - FordVoiceLine1: {fileID: 8300000, guid: dff8ee7c152e2384d910b281d805fb18, type: 3}
+  - FordVoiceLine2: {fileID: 8300000, guid: bfb4c0883e747c146a07d8bcff3e2e49, type: 3}
+  - FordVoiceLine3: {fileID: 8300000, guid: 36fd511c6576ba14982aad77cd6d09d2, type: 3}
+  - FordVoiceLine4: {fileID: 8300000, guid: 8cdea83df01c3a4479cab1039b2a591f, type: 3}
+  - FordVoiceLine5: {fileID: 8300000, guid: 9e63b073f9d94134bb882acd2eb6ab19, type: 3}
+  - ArrowPng: {fileID: 2800000, guid: cfa3ae6e6c87cbc41a2faacf45c3b140, type: 3}
+  - UltNoodleEditorUI_UXML: {fileID: 9197481963319205126, guid: fac7bd2a0807eb3458b3ea88d4d60544, type: 3}
+  - UltNoodleBowlUI_UXML: {fileID: 9197481963319205126, guid: 2e8232e37f1512b459861cdfcea17899, type: 3}
+  - UltNoodleNodeUI_UXML: {fileID: 9197481963319205126, guid: 2e04e33dc0d66d24ea9e26da057833b9, type: 3}
+  - UltNoodleFlowOutUI_UXML: {fileID: 9197481963319205126, guid: f72885508e5a59c4fb8b30ca894c92f6, type: 3}
+  - UltNoodleDataInUI_UXML: {fileID: 9197481963319205126, guid: 36e9e3dc65ea7fc47b640080afc738ec, type: 3}
+  - CommonsCookBook: {fileID: 11400000, guid: 901e016ff6c33fd4da034153e7242251, type: 2}
+  - StaticCookBook: {fileID: 11400000, guid: fd6f7bcaa596bc640b3d509dada399ba, type: 2}
+  - ObjectCookBook: {fileID: 11400000, guid: 97fafb592a7f3f442b952fdee70edf10, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

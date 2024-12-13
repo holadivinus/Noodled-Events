@@ -37,8 +37,8 @@ public class UltNoodleBowlUI : VisualElement
                     return;
                 }
 
-            _editor.ResetSearchFilter();
-            _editor.OpenSearchMenu();
+            Editor.ResetSearchFilter();
+            Editor.OpenSearchMenu();
         }
         else if (CurHoveredFlowOutput != null)
         {
@@ -49,8 +49,8 @@ public class UltNoodleBowlUI : VisualElement
                     fi.Connect(CurHoveredFlowOutput); // this is the one
                     return;
                 }
-            _editor.ResetSearchFilter();
-            _editor.OpenSearchMenu();
+            Editor.ResetSearchFilter();
+            Editor.OpenSearchMenu();
         }
         else if (CurHoveredDataInput != null)
         {
@@ -61,8 +61,8 @@ public class UltNoodleBowlUI : VisualElement
                     @do.Connect(CurHoveredDataInput); // this is the one
                     return;
                 }
-            _editor.SetSearchFilter(pinIn: false, CurHoveredDataInput.Type);
-            _editor.OpenSearchMenu();
+            Editor.SetSearchFilter(pinIn: false, CurHoveredDataInput.Type);
+            Editor.OpenSearchMenu();
         }
         else if (CurHoveredDataOutput != null)
         {
@@ -73,8 +73,8 @@ public class UltNoodleBowlUI : VisualElement
                     di.Connect(CurHoveredDataOutput); // this is the one
                     return;
                 }
-            _editor.SetSearchFilter(pinIn: true, CurHoveredDataOutput.Type);
-            _editor.OpenSearchMenu();
+            Editor.SetSearchFilter(pinIn: true, CurHoveredDataOutput.Type);
+            Editor.OpenSearchMenu();
         }
 
         // ho ho ho :)
@@ -82,17 +82,19 @@ public class UltNoodleBowlUI : VisualElement
     // Ctor :)
     public static UltNoodleBowlUI New(UltNoodleEditor editor, VisualElement parent, UnityEngine.Component eventComponent, SerializedType fieldType, string eventField)
     {
-        var o = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ScriptPath.Replace(".cs", ".uxml")).Instantiate().Q<UltNoodleBowlUI>();
+        var existing = editor.BowlUIs.FirstOrDefault(bui => bui.Component == eventComponent && bui._eventFieldPath == eventField);
+        if (existing != null) return existing;
+        var o = editor.UltNoodleBowlUI_UXML.Instantiate().Q<UltNoodleBowlUI>();
         o.setupInternal(editor, parent, eventComponent, fieldType, eventField);
         return o;
     }
     private SerializedType _fieldType;
     private void setupInternal(UltNoodleEditor editor, VisualElement parent, UnityEngine.Component eventComponent, SerializedType fieldType, string eventField)
     {
-        _editor = editor; _fieldType = fieldType; _eventFieldPath = eventField; Component = eventComponent;
+        Editor = editor; _fieldType = fieldType; _eventFieldPath = eventField; Component = eventComponent;
 
         // i'm visual
-        Visual = this; //AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ScriptPath.Replace(".cs", ".uxml")).Instantiate();
+        Visual = this;
         Visual.RegisterCallback<AttachToPanelEvent>(OnEnabled);
 
         PathLabel = Visual.Q<Label>("PathLabel");
@@ -112,13 +114,20 @@ public class UltNoodleBowlUI : VisualElement
         Visual.RegisterCallback<DragUpdatedEvent>((a) => { DragAndDrop.visualMode = DragAndDropVisualMode.Move; });
         Visual.RegisterCallback<DragPerformEvent>((a) => 
         {
-            _editor.SetSearchFilter(true, DragAndDrop.objectReferences[0].GetType());
+            Editor.SetSearchFilter(true, DragAndDrop.objectReferences[0].GetType());
             MousePos = a.mousePosition;
-            _editor.OpenSearchMenu(true); 
+            Editor.OpenSearchMenu(true); 
         });
         
         NodeBG.Q("Nodes").RegisterCallback<MouseMoveEvent>(e => MousePos = e.localMousePosition);
         ConnectionLine = this.Q("ConnectionLine");
+
+        this.Q<Button>("BowlDeleteBT").clicked += () =>
+        {
+            this.parent.Remove(this);
+            Editor.BowlUIs.Remove(this);
+            UnityEngine.Object.DestroyImmediate(_sb);
+        };
 
         #region Drag Size Logic
         var lowerRightPull = Visual.Q<VisualElement>("LowerRightPull");
@@ -132,11 +141,13 @@ public class UltNoodleBowlUI : VisualElement
         SerializedData.PositionChanged.Invoke(SerializedData.Position);
         upperLeftPull.RegisterCallback<MouseDownEvent>((evt) =>
         {
+            if (evt.button != 0) return;
             NodeBG.CaptureMouse();
             draggingPos = true;
         });
         lowerRightPull.RegisterCallback<MouseDownEvent>((evt) =>
         {
+            if (evt.button != 0) return;
             NodeBG.CaptureMouse();
             draggingScale = true;
         });
@@ -149,6 +160,7 @@ public class UltNoodleBowlUI : VisualElement
         });
         NodeBG.RegisterCallback<MouseUpEvent>((evt) =>
         {
+            if (evt.button != 0) return;
             NodeBG.ReleaseMouse();
             draggingScale = false;
             draggingPos = false;
@@ -168,7 +180,7 @@ public class UltNoodleBowlUI : VisualElement
         SerializedData.NodeDatas.Add(nod);
 
         // also close search
-        _editor.CloseSearchMenu();
+        Editor.CloseSearchMenu();
         return nod;
     }
 
@@ -188,14 +200,14 @@ public class UltNoodleBowlUI : VisualElement
                 SerializedData.BowlName = evt.newValue;
         });
         SerializedData.BowlNameChange += OnBowlNameChange;
-        _editor.BowlUIs.Add(this);
+        Editor.BowlUIs.Add(this);
 
         // Size Syncup
         SerializedData.SizeChanged += OnSizeChange;
         SerializedData.PositionChanged += OnPositionChange;
 
         if (SerializedData.Size == Vector2.zero)
-            SerializedData.Size = new Vector2(3000, 1000);
+            SerializedData.Size = new Vector2(1000, 800);
         SerializedData.OnUpdate += OnSceneUpdate;
 
         Validate();
@@ -233,7 +245,7 @@ public class UltNoodleBowlUI : VisualElement
             SerializedData.PositionChanged -= OnPositionChange;
             SerializedData.OnUpdate -= OnSceneUpdate;
         }
-        _editor.BowlUIs.Remove(this);
+        Editor.BowlUIs.Remove(this);
         EditorApplication.update -= OnEditorUpdate;
     }
 
@@ -258,13 +270,13 @@ public class UltNoodleBowlUI : VisualElement
             return _sb;
         }
     }
-    private UltNoodleEditor _editor;
+    public UltNoodleEditor Editor;
     public void Validate() // validate this bowl UI and its nodes
     {
         if (Component == null) //kms if no evt
         {
             Visual?.parent?.Remove(Visual);
-            _editor.BowlUIs.Remove(this);
+            Editor.BowlUIs.Remove(this);
         }
         foreach (var nodeUI in NodeUIs.ToArray()) // validate my nodeUIs
             nodeUI.Validate();
@@ -303,9 +315,6 @@ public class UltNoodleBowlUI : VisualElement
                 }
         }
     }
-    public static string ScriptPath
-        => s_scriptPath ??= AssetDatabase.GUIDToAssetPath(AssetDatabase.FindAssets($"t:Script {nameof(UltNoodleBowlUI)}")[0]);
-    private static string s_scriptPath;
 
     public UltEventBase Event => SerializedData.Event;
     public UnityEngine.Component Component;

@@ -6,3 +6,6 @@ TemplateContainer {
     min-width: 300px;
     position: absolute;
 }
+#UpperLeftPull {
+    cursor: pan;
+}

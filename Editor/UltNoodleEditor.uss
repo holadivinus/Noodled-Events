@@ -8,3 +8,11 @@ TemplateContainer {
 #grabby {
     cursor: pan;
 }
+
+#LowerRightPull {
+    cursor: resize-up-left;
+}
+
+#UpperLeftPull {
+    cursor: move-arrow;
+}
