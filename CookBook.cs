@@ -8,7 +8,6 @@ using UltEvents;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
 
 namespace NoodledEvents
 {
@@ -19,12 +18,15 @@ namespace NoodledEvents
     public class CookBook : ScriptableObject
     {
         private static Assembly _blAssmb;
+        private static Assembly _xrAssmb;
         public static Assembly BLAssembly => _blAssmb ??= AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(ass => ass.FullName.StartsWith("Assembly-CSharp"));
-        public static Type GetBLType(string name) 
+        public static Assembly XRAssembly => _xrAssmb ??= AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(ass => ass.FullName.StartsWith("Unity.XR.Interaction.Toolkit"));
+        public static Type GetExtType(string name, Assembly ass = null) 
         {
-            if (BLAssembly == null)
+            ass ??= BLAssembly;
+            if (ass == null)
                 return null;
-            foreach (Type t in BLAssembly.GetTypes())
+            foreach (Type t in ass.GetTypes())
                 try
                 {
                     if (t.Name == name) return t;
@@ -62,7 +64,7 @@ namespace NoodledEvents
             // Comps used to transfer data between events
             public static Dictionary<Type, (Type, PropertyInfo)> CompStoragers = new Dictionary<Type, (Type, PropertyInfo)>()
             {
-                { typeof(UnityEngine.Object), (typeof(XRInteractorAffordanceStateProvider), typeof(XRInteractorAffordanceStateProvider).GetProperty("interactorSource", UltEventUtils.AnyAccessBindings)) },
+                { typeof(UnityEngine.Object), (GetExtType("XRInteractorAffordanceStateProvider", XRAssembly), GetExtType("XRInteractorAffordanceStateProvider", XRAssembly).GetProperty("interactorSource", UltEventUtils.AnyAccessBindings)) },
                 { typeof(float), (typeof(SphereCollider), RadiusGetSet) },
                 { typeof(bool), (typeof(Mask), typeof(Mask).GetProperty("enabled")) },
                 { typeof(Vector3), (typeof(BoxCollider), typeof(BoxCollider).GetProperty(nameof(BoxCollider.center))) },

@@ -7,7 +7,6 @@ using System.Reflection;
 using UltEvents;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
 using static NoodledEvents.CookBook.NodeDef;
 
 
@@ -214,7 +213,7 @@ public class ObjectMethodCookBook : CookBook
             // to get the varying ID, we need to find a comp that has a get/set property of the target
             // found XRInteractorAffordanceStateProvider.interactorSource
 
-            var idC = dataRoot.StoreComp<XRInteractorAffordanceStateProvider>();
+            var idC = dataRoot.StoreComp(GetExtType("XRInteractorAffordanceStateProvider", XRAssembly));
             var setr = new PersistentCall(idC.GetType().GetMethod("set_interactorSource", UltEventUtils.AnyAccessBindings), idC);
             new PendingConnection(node.DataInputs[0].Source, evt, setr, 0).Connect(dataRoot);
             evt.PersistentCallsList.Add(setr);
