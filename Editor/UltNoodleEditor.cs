@@ -268,7 +268,7 @@ public class UltNoodleEditor : EditorWindow
 
         // autogen bowlsUIs
         foreach (var bowl in Resources.FindObjectsOfTypeAll<SerializedBowl>())
-            if (bowl.gameObject.scene == curScene && !BowlUIs.Any(b => b.SerializedData == bowl) && bowl.gameObject.activeInHierarchy)
+            if (bowl.gameObject.scene == curScene && !BowlUIs.Any(b => b.SerializedData == bowl) && Selection.activeGameObject == bowl.gameObject)
                 UltNoodleBowlUI.New(this, D, bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath);
 
         
