@@ -175,6 +175,7 @@ public class ObjectMethodCookBook : CookBook
                         break;
                     case PersistentArgumentType.Object:
                         myCall.PersistentArguments[j - 1].Object = node.DataInputs[j].DefaultObject;
+                        myCall.PersistentArguments[j - 1].FSetString(node.DataInputs[j].Type.Type.AssemblyQualifiedName);
                         break;
                 }
             }
@@ -184,7 +185,6 @@ public class ObjectMethodCookBook : CookBook
 
         if (node.DataInputs[0].Source != null)
         {
-
             // if evt had data output, get data
             Component retValStore = null;
             PropertyInfo retValProp = null;

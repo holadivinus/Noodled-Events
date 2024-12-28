@@ -165,6 +165,7 @@ public class StaticMethodCookBook : CookBook
                         break;
                     case PersistentArgumentType.Object:
                         myCall.PersistentArguments[j].Object = node.DataInputs[j].DefaultObject;
+                        myCall.PersistentArguments[j].FSetString(node.DataInputs[j].Type.Type.AssemblyQualifiedName);
                         break;
                 }
             }

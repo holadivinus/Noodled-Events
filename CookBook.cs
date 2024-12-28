@@ -66,6 +66,7 @@ namespace NoodledEvents
             {
                 { typeof(UnityEngine.Object), (GetExtType("XRInteractorAffordanceStateProvider", XRAssembly), GetExtType("XRInteractorAffordanceStateProvider", XRAssembly).GetProperty("interactorSource", UltEventUtils.AnyAccessBindings)) },
                 { typeof(float), (typeof(SphereCollider), RadiusGetSet) },
+                { typeof(Material[]), (typeof(MeshRenderer), typeof(MeshRenderer).GetProperty("sharedMaterials", UltEventUtils.AnyAccessBindings)) },
                 { typeof(bool), (typeof(Mask), typeof(Mask).GetProperty("enabled")) },
                 { typeof(Vector3), (typeof(BoxCollider), typeof(BoxCollider).GetProperty(nameof(BoxCollider.center))) },
                 { typeof(string), (typeof(TextMeshPro), typeof(TMP_Text).GetProperty("text", UltEventUtils.AnyAccessBindings)) },
@@ -166,7 +167,7 @@ namespace NoodledEvents
                     
                 }
             }
-            private static PropertyInfo RadiusGetSet = typeof(SphereCollider).GetProperty(nameof(SphereCollider.radius), UltEventUtils.AnyAccessBindings);
+            private static PropertyInfo RadiusGetSet => typeof(SphereCollider).GetProperty(nameof(SphereCollider.radius), UltEventUtils.AnyAccessBindings);
         }
         public class NodeDef
         {
