@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using NoodledEvents;
 using SLZ.Marrow.Warehouse;
+using SLZ.Marrow.Zones;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -366,6 +367,49 @@ public class UltNoodleEditor : EditorWindow
         var targ = command.context as CollisionEvents3D;
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionExitEvent");
+    }
+    [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Enter()")]
+    static void ZoneEvents_onZoneEnter(MenuCommand command)
+    {
+        var targ = command.context as ZoneEvents;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(ZoneEvents)), "onZoneEnter");
+    }
+    [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Enter OneShot()")]
+    static void ZoneEvents_onZoneEnterOneShot(MenuCommand command)
+    {
+        var targ = command.context as ZoneEvents;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(ZoneEvents)), "onZoneEnterOneShot");
+    }
+    [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Exit()")]
+    static void ZoneEvents_onZoneExit(MenuCommand command)
+    {
+        var targ = command.context as ZoneEvents;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(ZoneEvents)), "onZoneExit");
+    }
+
+    [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Enter()")]
+    static void TriggerEvents3D_TriggerEnterEvent(MenuCommand command)
+    {
+        var targ = command.context as TriggerEvents3D;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerEnterEvent");
+    }
+    [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Stay()")]
+    static void TriggerEvents3D_TriggerStayEvent(MenuCommand command)
+    {
+        var targ = command.context as TriggerEvents3D;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerStayEvent");
+    }
+    [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Exit()")]
+    static void TriggerEvents3D_TriggerExitEvent(MenuCommand command)
+    {
+        var targ = command.context as TriggerEvents3D;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerExitEvent");
     }
     #endregion
 
