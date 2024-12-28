@@ -126,6 +126,8 @@ public class UltNoodleBowlUI : VisualElement
         {
             this.parent.Remove(this);
             Editor.BowlUIs.Remove(this);
+            if (_sb.LastGenerated != null)
+                UnityEngine.Object.DestroyImmediate(_sb.LastGenerated);
             UnityEngine.Object.DestroyImmediate(_sb);
         };
 

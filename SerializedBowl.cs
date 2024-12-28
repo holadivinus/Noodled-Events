@@ -103,6 +103,7 @@ namespace NoodledEvents
         public Action OnUpdate = delegate { };
         public SerializedNode EntryNode => NodeDatas[0];
         [SerializeField] public List<SerializedNode> NodeDatas = new(); // this list is "compiled" into the targ event.
+        [SerializeField] public GameObject LastGenerated;
 
         /// <summary>
         /// Compiles this bowl into their target event.
@@ -112,10 +113,14 @@ namespace NoodledEvents
             if (Event == null) Event = new UltEvent();
             Event.Clear();
 
-            var lastGen = EventHolder.transform.Find("bowl_generated");
-            if (lastGen != null) UnityEngine.Object.DestroyImmediate(lastGen.gameObject);
-            lastGen = new GameObject("bowl_generated").transform;
-            lastGen.parent = EventHolder.transform;
+            // remove old "bowl_generated" for pre 1.2.0 users
+            if (LastGenerated == null)
+                LastGenerated = EventHolder.transform.Find("bowl_generated")?.gameObject;
+            if (LastGenerated != null) 
+                UnityEngine.Object.DestroyImmediate(LastGenerated);
+            
+            LastGenerated = new GameObject(BowlName + "_generated");
+            LastGenerated.transform.parent = EventHolder.transform;
 
             foreach (var n in NodeDatas)
             {
@@ -132,7 +137,7 @@ namespace NoodledEvents
                 }
             }
 
-            EntryNode.Compile(lastGen);
+            EntryNode.Compile(LastGenerated.transform);
 
             EditorSceneManager.MarkSceneDirty(this.gameObject.scene);
 
