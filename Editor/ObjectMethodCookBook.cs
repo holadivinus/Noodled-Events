@@ -98,7 +98,7 @@ public class ObjectMethodCookBook : CookBook
         {
             // we need to json
             // make event for jsonning
-            varyEvt = dataRoot.StoreComp<UltEventHolder>("varying");
+            varyEvt = dataRoot.StoreComp<UltEventHolder>("varyingEvt");
             varyEvt.Event = new UltEvent();
             varyEvt.Event.FSetPCalls(new());
             evt = varyEvt.Event; // move stuff to the targevt
@@ -245,7 +245,7 @@ public class ObjectMethodCookBook : CookBook
             // we're gonna store a "template" version of the retarg evt, then we'll ToJson, insert serilized_ref, FromJson, invoke, (retval fetch?)
             var templateEvt = Instantiate(varyEvt.gameObject);
             templateEvt.name = "templateEvt";
-            templateEvt.transform.parent = varyEvt.transform.parent;
+            templateEvt.transform.parent = varyEvt.transform;
 
             var tmplSerz = new PersistentCall(typeof(JsonUtility).GetMethod("ToJson", new Type[] { typeof(object) }), null);
             tmplSerz.PersistentArguments[0].FSetType(PersistentArgumentType.Object);

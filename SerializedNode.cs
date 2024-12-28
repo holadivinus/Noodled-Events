@@ -144,6 +144,17 @@ namespace NoodledEvents
                         }
                     }
                 }
+
+                // HOTFIX (todo: replace with a fixer in the CookBook)
+                // now that varyingEvt's have a getType, make their child templateEvt's similar
+                for (int i = 0; i < Bowl.LastGenerated.transform.childCount; i++)
+                {
+                    Transform c = Bowl.LastGenerated.transform.GetChild(i);
+                    if (c.gameObject.name == "varyingEvt")
+                    {
+                        c.GetChild(0).GetComponent<UltEventHolder>().Event = c.GetComponent<UltEventHolder>().Event;
+                    }
+                }
             }
         }
         public CookBook Book;

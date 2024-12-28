@@ -343,10 +343,32 @@ public class UltNoodleEditor : EditorWindow
     static void UpdateEvents_FixedUpdateEvent(MenuCommand command)
     {
         var targ = command.context as UpdateEvents;
-            if (s_Editor == null) ShowExample();
-            UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_FixedUpdateEvent");
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_FixedUpdateEvent");
+    }
+    [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Enter()")]
+    static void CollisionEvents3D_CollisionEnterEvent(MenuCommand command)
+    {
+        var targ = command.context as CollisionEvents3D;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionEnterEvent");
+    }
+    [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Stay()")]
+    static void CollisionEvents3D_CollisionStayEvent(MenuCommand command)
+    {
+        var targ = command.context as CollisionEvents3D;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionStayEvent");
+    }
+    [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Exit()")]
+    static void CollisionEvents3D_CollisionExitEvent(MenuCommand command)
+    {
+        var targ = command.context as CollisionEvents3D;
+        if (s_Editor == null) ShowExample();
+        UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionExitEvent");
     }
     #endregion
+
     private void OnLostFocus()
     {
         foreach (var bowlUI in BowlUIs.ToArray())
