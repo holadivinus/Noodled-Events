@@ -143,7 +143,7 @@ public class CommonsCookBook : CookBook
 
         allDefs.Add(new NodeDef(this, "math.lesser",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
-            outputs: () => new[] { new Pin("done"), new Pin("a > b", typeof(bool)) },
+            outputs: () => new[] { new Pin("done"), new Pin("a < b", typeof(bool)) },
             searchItem: (def) =>
             {
                 var o = new Button(() =>
@@ -422,43 +422,33 @@ public class CommonsCookBook : CookBook
                 {
                     // given a, b
                     // a > b?
-                    // normalized(a - b) == 1 : <
 
-                    MethodInfo v3Mult = typeof(Vector3).GetMethod("op_Multiply", UltEventUtils.AnyAccessBindings, null, new Type[] { typeof(Vector3), typeof(float) }, null);
+                    var clampr = new PersistentCall(typeof(UnityEngine.Mathf).GetMethod("Clamp", new Type[] { typeof(float), typeof(float), typeof(float) }), null);
 
-                    var makeA = new PersistentCall(v3Mult, null);
-                    makeA.PersistentArguments[0].Vector3 = new Vector3(0, 1, 0);
-                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, makeA, 1).Connect(dataRoot);
-                    else makeA.PersistentArguments[1].Float = node.DataInputs[0].DefaultFloatValue;
-                    evt.PersistentCallsList.Add(makeA);
+                    // Connect a to Clamp.value
+                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, clampr, 0).Connect(dataRoot);
+                    else clampr.PersistentArguments[0].Float = node.DataInputs[0].DefaultFloatValue;
 
-                    var makeB = new PersistentCall(v3Mult, null);
-                    makeB.PersistentArguments[0].Vector3 = new Vector3(0, 1, 0);
-                    if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, makeB, 1).Connect(dataRoot);
-                    else makeB.PersistentArguments[1].Float = node.DataInputs[1].DefaultFloatValue;
-                    evt.PersistentCallsList.Add(makeB);
+                    // Connect b to Clamp.max
+                    if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, clampr, 2).Connect(dataRoot);
+                    else clampr.PersistentArguments[2].Float = node.DataInputs[1].DefaultFloatValue;
 
-                    MethodInfo v3Sub = typeof(Vector3).GetMethod("op_Subtraction", UltEventUtils.AnyAccessBindings, null, new Type[] { typeof(Vector3), typeof(Vector3) }, null);
-                    var subAB = new PersistentCall(v3Sub, null);
-                    subAB.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 2, typeof(Vector3));
-                    subAB.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(Vector3));
-                    evt.PersistentCallsList.Add(subAB);
+                    evt.PersistentCallsList.Add(clampr);
 
-                    MethodInfo v3Norm = typeof(Vector3).GetMethod("Normalize", UltEventUtils.AnyAccessBindings, null, new Type[] { typeof(Vector3) }, null);
-                    var normIt = new PersistentCall(v3Norm, null);
-                    normIt.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(Vector3));
-                    evt.PersistentCallsList.Add(normIt);
+                    // if clamp_out == b, a > b
+                    var comper = new PersistentCall(typeof(object).GetMethod("Equals", new Type[] { typeof(object), typeof(object) }), null);
+                    comper.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count-1, typeof(object));
 
-                    // dot extract float
-                    MethodInfo v3Equals = typeof(Vector3).GetMethod("op_Equality", UltEventUtils.AnyAccessBindings, null, new Type[] { typeof(Vector3), typeof(Vector3) }, null);
-                    var equaller = new PersistentCall(v3Equals, null);
-                    equaller.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(Vector3));
-                    equaller.PersistentArguments[1].FSetType(PersistentArgumentType.Vector3);
-                    equaller.PersistentArguments[1].Vector3 = Vector3.up;
-                    evt.PersistentCallsList.Add(equaller);
+                    // Connect b to comper.b
+                    if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, comper, 1).Connect(dataRoot);
+                    else
+                        comper.PersistentArguments[1].FSetType(PersistentArgumentType.Float).Float = node.DataInputs[1].DefaultFloatValue;
+
+                    evt.PersistentCallsList.Add(comper);
+
 
                     node.DataOutputs[0].CompEvt = evt;
-                    node.DataOutputs[0].CompCall = equaller;
+                    node.DataOutputs[0].CompCall = comper;
 
                     var nextNode = node.FlowOutputs[0].Target?.Node;
                     if (nextNode != null)
@@ -467,41 +457,35 @@ public class CommonsCookBook : CookBook
                 }
             case "lesser":
                 {
-                    MethodInfo v3Mult = typeof(Vector3).GetMethod("op_Multiply", UltEventUtils.AnyAccessBindings, null, new Type[] { typeof(Vector3), typeof(float) }, null);
+                    // given a, b
+                    // b > a?
 
-                    var makeA = new PersistentCall(v3Mult, null);
-                    makeA.PersistentArguments[0].Vector3 = new Vector3(0, 1, 0);
-                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, makeA, 1).Connect(dataRoot);
-                    else makeA.PersistentArguments[1].Float = node.DataInputs[0].DefaultFloatValue;
-                    evt.PersistentCallsList.Add(makeA);
+                    var clampr = new PersistentCall(typeof(UnityEngine.Mathf).GetMethod("Clamp", new Type[] { typeof(float), typeof(float), typeof(float) }), null);
 
-                    var makeB = new PersistentCall(v3Mult, null);
-                    makeB.PersistentArguments[0].Vector3 = new Vector3(0, 1, 0);
-                    if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, makeB, 1).Connect(dataRoot);
-                    else makeB.PersistentArguments[1].Float = node.DataInputs[1].DefaultFloatValue;
-                    evt.PersistentCallsList.Add(makeB);
+                    // Connect b to Clamp.value
+                    if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, clampr, 0).Connect(dataRoot);
+                    else clampr.PersistentArguments[0].Float = node.DataInputs[1].DefaultFloatValue;
 
-                    MethodInfo v3Sub = typeof(Vector3).GetMethod("op_Subtraction", UltEventUtils.AnyAccessBindings, null, new Type[] { typeof(Vector3), typeof(Vector3) }, null);
-                    var subAB = new PersistentCall(v3Sub, null);
-                    subAB.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 2, typeof(Vector3));
-                    subAB.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(Vector3));
-                    evt.PersistentCallsList.Add(subAB);
+                    // Connect a to Clamp.max
+                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, clampr, 2).Connect(dataRoot);
+                    else clampr.PersistentArguments[2].Float = node.DataInputs[0].DefaultFloatValue;
 
-                    MethodInfo v3Norm = typeof(Vector3).GetMethod("Normalize", UltEventUtils.AnyAccessBindings, null, new Type[] { typeof(Vector3) }, null);
-                    var normIt = new PersistentCall(v3Norm, null);
-                    normIt.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(Vector3));
-                    evt.PersistentCallsList.Add(normIt);
+                    evt.PersistentCallsList.Add(clampr);
 
-                    // dot extract float
-                    MethodInfo v3Equals = typeof(Vector3).GetMethod("op_Equality", UltEventUtils.AnyAccessBindings, null, new Type[] { typeof(Vector3), typeof(Vector3) }, null);
-                    var equaller = new PersistentCall(v3Equals, null);
-                    equaller.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(Vector3));
-                    equaller.PersistentArguments[1].FSetType(PersistentArgumentType.Vector3);
-                    equaller.PersistentArguments[1].Vector3 = Vector3.down;
-                    evt.PersistentCallsList.Add(equaller);
+                    // if clamp_out == a, b > a
+                    var comper = new PersistentCall(typeof(object).GetMethod("Equals", new Type[] { typeof(object), typeof(object) }), null);
+                    comper.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(object));
+
+                    // Connect a to comper.b
+                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, comper, 1).Connect(dataRoot);
+                    else
+                        comper.PersistentArguments[1].FSetType(PersistentArgumentType.Float).Float = node.DataInputs[0].DefaultFloatValue;
+
+                    evt.PersistentCallsList.Add(comper);
+
 
                     node.DataOutputs[0].CompEvt = evt;
-                    node.DataOutputs[0].CompCall = equaller;
+                    node.DataOutputs[0].CompCall = comper;
 
                     var nextNode = node.FlowOutputs[0].Target?.Node;
                     if (nextNode != null)
