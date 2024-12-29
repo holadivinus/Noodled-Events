@@ -251,6 +251,26 @@ public class CommonsCookBook : CookBook
                     o.text = def.Name;
                     return o;
                 }));
+            allDefs.Add(new NodeDef(this, $"vars.get_or_init_scene_{storager.Key.GetFriendlyName()}_var",
+                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("default/init value", storager.Key, @const: true) },
+                outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
+                searchItem: (def) =>
+                {
+                    var o = new Button(() =>
+                    {
+                        // create serialized node.
+
+                        if (UltNoodleEditor.NewNodeBowl == null) return;
+                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
+
+                        nod.BookTag = $"get_scene_{storager.Key.GetFriendlyName()}_var";
+
+                        nod.Position = UltNoodleEditor.NewNodePos;
+                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
+                    });
+                    o.text = def.Name;
+                    return o;
+                }));
             // gobj storagers
             allDefs.Add(new NodeDef(this, $"vars.set_gobj_{storager.Key.GetFriendlyName()}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", storager.Key), new Pin("gobj", typeof(GameObject), true) },
@@ -292,6 +312,26 @@ public class CommonsCookBook : CookBook
                     o.text = def.Name;
                     return o;
                 }));
+            allDefs.Add(new NodeDef(this, $"vars.get_or_init_gobj_{storager.Key.GetFriendlyName()}_var",
+                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("gobj", typeof(GameObject), true), new Pin("default/init value", storager.Key, @const: true) },
+                outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
+                searchItem: (def) =>
+                {
+                    var o = new Button(() =>
+                    {
+                        // create serialized node.
+
+                        if (UltNoodleEditor.NewNodeBowl == null) return;
+                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
+
+                        nod.BookTag = $"get_gobj_{storager.Key.GetFriendlyName()}_var";
+
+                        nod.Position = UltNoodleEditor.NewNodePos;
+                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
+                    });
+                    o.text = def.Name;
+                    return o;
+                }));
         }
     }
     private static MethodInfo SetActive = typeof(GameObject).GetMethod("SetActive");
@@ -311,7 +351,14 @@ public class CommonsCookBook : CookBook
             string varName = $"{(gobjRoot ? "gobj_" : "TEMP_scene_")}{node.DataInputs[1].Type.Type.GetFriendlyName()}_var_" + node.DataInputs[0].DefaultStringValue;
 
             Component tempVarRef = (gobjRoot?.transform ?? dataRoot).Find(varName)?.GetComponent(storagerData.Item1);
-            tempVarRef ??= (gobjRoot?.transform ?? dataRoot).StoreComp(storagerData.Item1, varName);
+            if (tempVarRef == null)
+            {
+                tempVarRef = (gobjRoot?.transform ?? dataRoot).StoreComp(storagerData.Item1, varName);
+                if (storagerData.Item2.PropertyType.IsValueType)
+                    storagerData.Item2.SetValue(tempVarRef, Activator.CreateInstance(storagerData.Item2.PropertyType));
+                else storagerData.Item2.SetValue(tempVarRef, null);
+            }
+            
 
             var setCall = new PersistentCall(storagerData.Item2.SetMethod, tempVarRef);
             if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, setCall, 0).Connect(dataRoot); // retval
@@ -350,7 +397,20 @@ public class CommonsCookBook : CookBook
             string varName = $"{(gobjRoot ? "gobj_" : "TEMP_scene_")}{node.DataOutputs[0].Type.Type.GetFriendlyName()}_var_" + node.DataInputs[0].DefaultStringValue;
 
             Component tempVarRef = (gobjRoot?.transform ?? dataRoot).Find(varName)?.GetComponent(storagerData.Item1);
-            tempVarRef ??= (gobjRoot?.transform ?? dataRoot).StoreComp(storagerData.Item1, varName);
+            if (tempVarRef == null)
+            {
+                tempVarRef = (gobjRoot?.transform ?? dataRoot).StoreComp(storagerData.Item1, varName);
+                if (node.Name.StartsWith("vars.get_or_init_gobj_"))
+                {
+                    storagerData.Item2.SetValue(tempVarRef, node.DataInputs[2].GetDefault());
+                } else
+                {
+                    // get before init??? we have to use type defaults then :/
+                    if (storagerData.Item2.PropertyType.IsValueType)
+                        storagerData.Item2.SetValue(tempVarRef, Activator.CreateInstance(storagerData.Item2.PropertyType));
+                    else storagerData.Item2.SetValue(tempVarRef, null);
+                }
+            }
 
             var getCall = new PersistentCall(storagerData.Item2.GetMethod, tempVarRef);
             evt.PersistentCallsList.Add(getCall);
@@ -762,6 +822,29 @@ public class CommonsCookBook : CookBook
 
             // place the compstorager on the scene_var template
             Component storger = ensurer.transform.GetChild(0).gameObject.AddComponent(varStoragerData.Item1);
+            // we need to figure the default value for this scene var
+            // crawl down the bowl untill a vars.get_or_init happens
+            bool SearchForDef(SerializedNode curNode)
+            {
+                if (curNode.Book == this && curNode.Name.StartsWith("vars.get_or_init_scene_"))
+                {
+                    // found it!
+                    varStoragerData.Item2.SetValue(storger, curNode.DataInputs[1].GetDefault());
+                    return true;
+                } else
+                    foreach (var o in curNode.FlowOutputs)
+                        if (o.Target != null && SearchForDef(o.Target.Node))
+                            return true;
+                return false;
+            }
+            if (!SearchForDef(bowl.EntryNode))
+            {
+                // didnt find initter, use default value
+                // get before init??? we have to use type defaults then :/
+                if (varStoragerData.Item2.PropertyType.IsValueType)
+                    varStoragerData.Item2.SetValue(storger, Activator.CreateInstance(varStoragerData.Item2.PropertyType));
+                else varStoragerData.Item2.SetValue(storger, null);
+            }
             if (storger is TextMeshPro tmp)
             {
                 tmp.enabled = false;

@@ -277,6 +277,30 @@ namespace NoodledEvents
         [SerializeField] public string ID = Guid.NewGuid().ToString();
         [SerializeField] public bool UIConst;
 
+        public object GetDefault()
+        {
+            switch (Type.Type.GetFriendlyName())
+            {
+                case "bool":
+                    return DefaultBoolValue;
+                case "float":
+                    return DefaultFloatValue;
+                case "int":
+                    return DefaultIntValue;
+                case "Vector2":
+                    return DefaultVector2Value;
+                case "Vector3":
+                    return DefaultVector3Value;
+                case "Vector4":
+                    return DefaultVector4Value;
+                case "Quaternion":
+                    return DefaultQuaternionValue;
+                case "string":
+                    return DefaultStringValue;
+            }
+            return null;
+        }
+
         [SerializeField] public string DefaultStringValue;
         [SerializeField] public Vector4 ValDefs;
         public bool DefaultBoolValue { get => ValDefs.x != 0; set => ValDefs.x = value ? 1 : 0; }
