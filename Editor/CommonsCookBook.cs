@@ -268,6 +268,14 @@ public class CommonsCookBook : CookBook
                     falCall.FSetArguments(new PersistentArgument().ToRetVal(evt.PersistentCallsList.IndexOf(invCall), typeof(bool)));
                     evt.PersistentCallsList.Add(falCall);
 
+                    // reset to false so no accidental triggers happen
+                    var rs11 = new PersistentCall(SetActive, onTrue.gameObject);  // reset onTrue
+                    rs11.FSetArguments(new PersistentArgument(typeof(bool)));
+                    evt.PersistentCallsList.Add(rs11);
+                    var rs22 = new PersistentCall(SetActive, onFalse.gameObject); // reset onFalse
+                    rs22.FSetArguments(new PersistentArgument(typeof(bool)));
+                    evt.PersistentCallsList.Add(rs22);
+
                     // compile true, false evts
                     var next = node.FlowOutputs[0];
                     if (next.Target != null)
@@ -424,8 +432,11 @@ public class CommonsCookBook : CookBook
                 {
                     // given a, b
                     // a > b?
-
-                    var clampr = new PersistentCall(typeof(UnityEngine.Mathf).GetMethod("Clamp", new Type[] { typeof(float), typeof(float), typeof(float) }), null);
+                    
+                    var clampr = new PersistentCall();
+                    clampr.FSetTarget(null);
+                    clampr.FSetMethodName("Unity.Mathematics.math, Unity.Mathematics, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.clamp");
+                    clampr.FSetArguments(new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)));
 
                     // Connect a to Clamp.value
                     if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, clampr, 0).Connect(dataRoot);
@@ -461,7 +472,10 @@ public class CommonsCookBook : CookBook
                     // given a, b
                     // b > a?
 
-                    var clampr = new PersistentCall(typeof(UnityEngine.Mathf).GetMethod("Clamp", new Type[] { typeof(float), typeof(float), typeof(float) }), null);
+                    var clampr = new PersistentCall();
+                    clampr.FSetTarget(null);
+                    clampr.FSetMethodName("Unity.Mathematics.math, Unity.Mathematics, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.clamp");
+                    clampr.FSetArguments(new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)));
 
                     // Connect b to Clamp.value
                     if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, clampr, 0).Connect(dataRoot);
@@ -546,6 +560,11 @@ public class CommonsCookBook : CookBook
                     return;
                 }
         }
+    }
+
+    public override void PostCompile(SerializedBowl bowl)
+    {
+        // todo: add scene_var nodes, and the zany retargetting that'll need to happen via this postcompile
     }
 }
 #endif

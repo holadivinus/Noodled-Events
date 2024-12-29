@@ -42,6 +42,11 @@ namespace NoodledEvents
         {
             // when a bowl is compiled, it puts forward an evt that is filled by compiled nodes.
         }
+        public virtual void PostCompile(SerializedBowl bowl)
+        {
+            // ran when a bowl with a nodedef from this book has been compiled (and GetType injected!)
+            // lalala
+        }
         public class PendingConnection // utility class to link pcalls, with support for cross-event data transfer
         { 
             /// <summary>
