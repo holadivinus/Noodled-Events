@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_EDITOR
+using System;
 using System.CodeDom;
 using System.Collections.Generic;
 using System.IO;
@@ -39,3 +40,4 @@ namespace NoodledEvents
         const string fixedMathCS = "using System.Runtime.CompilerServices;\r\n\r\nnamespace SLZ.Bonelab.VoidLogic\r\n{\r\n\tinternal static class MathUtilities\r\n\t{\r\n\t\t[MethodImpl(256)]\r\n\t\tpublic static bool IsApproximatelyEqualToOrGreaterThan(this float num1, float num2)\r\n\t\t{\r\n\t\t\treturn num1 >= num2;\r\n\t\t}\r\n\r\n\t\t[MethodImpl(256)]\r\n\t\tpublic static bool IsApproximatelyEqualToOrLessThan(this float num1, float num2)\r\n\t\t{\r\n\t\t\treturn num1 <= num2;\r\n\t\t}\r\n\t}\r\n}\r\n";
     }
 }
+#endif
