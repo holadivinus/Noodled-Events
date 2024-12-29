@@ -185,6 +185,7 @@ public class UltNoodleDataInPoint : VisualElement
             {
                 if (e.keyCode == KeyCode.Return) 
                 {
+                    tf.value = tf.value.Trim();
                     if (TypeTranslator.SimpleNames2Types.TryGetValue(tf.value.ToLower(), out Type v))
                     {
                         tf.value = string.Join(',', v.AssemblyQualifiedName.Split(',').Take(2));
@@ -200,6 +201,8 @@ public class UltNoodleDataInPoint : VisualElement
                             return;
                         }
                     }
+                    // string doesn't match any type name, might be raw gettype input
+                    input.DefaultStringValue = tf.value;
                 }
             });
         }
