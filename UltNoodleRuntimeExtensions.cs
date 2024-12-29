@@ -57,6 +57,11 @@ public static class UltNoodleRuntimeExtensions
                     ar.FSetInt(ar.FGetInt() + 1);
 
     }
+    public static void EnsurePCallList(this UltEventBase evt)
+    {
+        if (evt.PersistentCallsList == null)
+            evt.FSetPCalls(new List<PersistentCall>()); // bruh
+    }
     public static PersistentArgument ToRetVal(this PersistentArgument arg, int idx, Type t)
     {
         arg.FSetType(PersistentArgumentType.ReturnValue);
