@@ -351,7 +351,13 @@ public class CommonsCookBook : CookBook
             string varName = $"{(gobjRoot ? "gobj_" : "TEMP_scene_")}{node.DataInputs[1].Type.Type.GetFriendlyName()}_var_" + node.DataInputs[0].DefaultStringValue;
 
             Component tempVarRef = (gobjRoot?.transform ?? dataRoot).Find(varName)?.GetComponent(storagerData.Item1);
-            tempVarRef = (gobjRoot?.transform ?? dataRoot).StoreComp(storagerData.Item1, varName);
+            if (tempVarRef == null)
+            {
+                tempVarRef = (gobjRoot?.transform ?? dataRoot).StoreComp(storagerData.Item1, varName);
+                if (storagerData.Item2.PropertyType.IsValueType)
+                    storagerData.Item2.SetValue(tempVarRef, Activator.CreateInstance(storagerData.Item2.PropertyType));
+                else storagerData.Item2.SetValue(tempVarRef, null);
+            }
             
 
             var setCall = new PersistentCall(storagerData.Item2.SetMethod, tempVarRef);
@@ -397,6 +403,12 @@ public class CommonsCookBook : CookBook
                 if (node.Name.StartsWith("vars.get_or_init_gobj_"))
                 {
                     storagerData.Item2.SetValue(tempVarRef, node.DataInputs[2].GetDefault());
+                } else
+                {
+                    // get before init??? we have to use type defaults then :/
+                    if (storagerData.Item2.PropertyType.IsValueType)
+                        storagerData.Item2.SetValue(tempVarRef, Activator.CreateInstance(storagerData.Item2.PropertyType));
+                    else storagerData.Item2.SetValue(tempVarRef, null);
                 }
             }
 
@@ -825,7 +837,14 @@ public class CommonsCookBook : CookBook
                             return true;
                 return false;
             }
-            SearchForDef(bowl.EntryNode);
+            if (!SearchForDef(bowl.EntryNode))
+            {
+                // didnt find initter, use default value
+                // get before init??? we have to use type defaults then :/
+                if (varStoragerData.Item2.PropertyType.IsValueType)
+                    varStoragerData.Item2.SetValue(storger, Activator.CreateInstance(varStoragerData.Item2.PropertyType));
+                else varStoragerData.Item2.SetValue(storger, null);
+            }
             if (storger is TextMeshPro tmp)
             {
                 tmp.enabled = false;
