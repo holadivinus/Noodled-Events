@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbbb5605f6d708b488ae4a8bf306ec26, type: 3}
   m_Name: CommonsCookBook
   m_EditorClassIdentifier: 
+  VarEnsurer: {fileID: 1045003542133777929, guid: b2501973155f47546b07a6033ae114bb, type: 3}

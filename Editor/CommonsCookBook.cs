@@ -4,10 +4,13 @@ using Codice.CM.WorkspaceServer;
 using NoodledEvents;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using TMPro;
 using UltEvents;
 using UnityEngine;
 using UnityEngine.UIElements;
+using WebSocketSharp;
 using static NoodledEvents.CookBook.NodeDef;
 
 
@@ -163,7 +166,7 @@ public class CommonsCookBook : CookBook
             }));
         #endregion
 
-        allDefs.Add(new NodeDef(this, "math.set_float_var",
+        allDefs.Add(new NodeDef(this, "vars.set_bowl_float_var",
             inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", typeof(float)) },
             outputs: () => new[] { new Pin("done") },
             searchItem: (def) =>
@@ -175,7 +178,7 @@ public class CommonsCookBook : CookBook
                     if (UltNoodleEditor.NewNodeBowl == null) return;
                     var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
 
-                    nod.BookTag = "set_float_var";
+                    nod.BookTag = "set_bowl_float_var";
 
                     nod.Position = UltNoodleEditor.NewNodePos;
                     UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
@@ -184,7 +187,7 @@ public class CommonsCookBook : CookBook
                 return o;
             }));
 
-        allDefs.Add(new NodeDef(this, "math.get_float_var",
+        allDefs.Add(new NodeDef(this, "vars.set_bowl_float_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const:true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", typeof(float)) },
                 searchItem: (def) =>
@@ -196,7 +199,7 @@ public class CommonsCookBook : CookBook
                         if (UltNoodleEditor.NewNodeBowl == null) return;
                         var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
 
-                        nod.BookTag = "get_float_var";
+                        nod.BookTag = "get_bowl_float_var";
 
                         nod.Position = UltNoodleEditor.NewNodePos;
                         UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
@@ -204,12 +207,161 @@ public class CommonsCookBook : CookBook
                     o.text = def.Name;
                     return o;
                 }));
+
+        foreach (var storager in PendingConnection.CompStoragers)
+        {
+            // scene storagers
+            allDefs.Add(new NodeDef(this, $"vars.set_scene_{storager.Key.GetFriendlyName()}_var",
+                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", storager.Key) },
+                outputs: () => new[] { new Pin("done") },
+                searchItem: (def) =>
+                {
+                    var o = new Button(() =>
+                    {
+                        // create serialized node.
+
+                        if (UltNoodleEditor.NewNodeBowl == null) return;
+                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
+
+                        nod.BookTag = $"set_scene_{storager.Key.GetFriendlyName()}_var";
+
+                        nod.Position = UltNoodleEditor.NewNodePos;
+                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
+                    });
+                    o.text = def.Name;
+                    return o;
+                }));
+            allDefs.Add(new NodeDef(this, $"vars.get_scene_{storager.Key.GetFriendlyName()}_var",
+                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true) },
+                outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
+                searchItem: (def) =>
+                {
+                    var o = new Button(() =>
+                    {
+                        // create serialized node.
+
+                        if (UltNoodleEditor.NewNodeBowl == null) return;
+                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
+
+                        nod.BookTag = $"get_scene_{storager.Key.GetFriendlyName()}_var";
+
+                        nod.Position = UltNoodleEditor.NewNodePos;
+                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
+                    });
+                    o.text = def.Name;
+                    return o;
+                }));
+            // gobj storagers
+            allDefs.Add(new NodeDef(this, $"vars.set_gobj_{storager.Key.GetFriendlyName()}_var",
+                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", storager.Key), new Pin("gobj", typeof(GameObject), true) },
+                outputs: () => new[] { new Pin("done") },
+                searchItem: (def) =>
+                {
+                    var o = new Button(() =>
+                    {
+                        // create serialized node.
+
+                        if (UltNoodleEditor.NewNodeBowl == null) return;
+                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
+
+                        nod.BookTag = $"set_gobj_{storager.Key.GetFriendlyName()}_var";
+
+                        nod.Position = UltNoodleEditor.NewNodePos;
+                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
+                    });
+                    o.text = def.Name;
+                    return o;
+                }));
+            allDefs.Add(new NodeDef(this, $"vars.get_gobj_{storager.Key.GetFriendlyName()}_var",
+                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("gobj", typeof(GameObject), true) },
+                outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
+                searchItem: (def) =>
+                {
+                    var o = new Button(() =>
+                    {
+                        // create serialized node.
+
+                        if (UltNoodleEditor.NewNodeBowl == null) return;
+                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
+
+                        nod.BookTag = $"get_gobj_{storager.Key.GetFriendlyName()}_var";
+
+                        nod.Position = UltNoodleEditor.NewNodePos;
+                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
+                    });
+                    o.text = def.Name;
+                    return o;
+                }));
+        }
     }
     private static MethodInfo SetActive = typeof(GameObject).GetMethod("SetActive");
     private static PropertyInfo GetSetLocPos = typeof(Transform).GetProperty("localPosition");
     private static MethodInfo Translate = typeof(Transform).GetMethod("Translate", new Type[] { typeof(float), typeof(float), typeof(float) });
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
+        void SetSceneVar(GameObject gobjRoot)
+        {
+            // Type Agnostic set var code
+
+            // CONST ONLY
+            if (node.DataInputs[0].Source != null) node.DataInputs[0].Connect(null); // disconnect var_name vary cables
+
+            // scene vars are made to be retargetted!
+            var storagerData = PendingConnection.CompStoragers[node.DataInputs[1].Type];
+            string varName = $"{(gobjRoot ? "gobj_" : "TEMP_scene_")}{node.DataInputs[1].Type.Type.GetFriendlyName()}_var_" + node.DataInputs[0].DefaultStringValue;
+
+            Component tempVarRef = (gobjRoot?.transform ?? dataRoot).Find(varName)?.GetComponent(storagerData.Item1);
+            tempVarRef ??= (gobjRoot?.transform ?? dataRoot).StoreComp(storagerData.Item1, varName);
+
+            var setCall = new PersistentCall(storagerData.Item2.SetMethod, tempVarRef);
+            if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, setCall, 0).Connect(dataRoot); // retval
+            else // const (todo: add more types)
+            {
+                if (node.DataInputs[1].Type.Type == typeof(float))
+                    setCall.PersistentArguments[0].Float = node.DataInputs[1].DefaultFloatValue;
+                else if (node.DataInputs[1].Type.Type == typeof(UnityEngine.Object))
+                    setCall.PersistentArguments[0].Object = node.DataInputs[1].DefaultObject;
+                else if (node.DataInputs[1].Type.Type == typeof(int))
+                    setCall.PersistentArguments[0].Int = node.DataInputs[1].DefaultIntValue;
+                else if (node.DataInputs[1].Type.Type == typeof(string))
+                    setCall.PersistentArguments[0].String = node.DataInputs[1].DefaultStringValue;
+                else if (node.DataInputs[1].Type.Type == typeof(bool))
+                    setCall.PersistentArguments[0].Bool = node.DataInputs[1].DefaultBoolValue;
+                else if (node.DataInputs[1].Type.Type == typeof(Vector3))
+                    setCall.PersistentArguments[0].Vector3 = node.DataInputs[1].DefaultVector3Value;
+                //else
+            }
+            evt.PersistentCallsList.Add(setCall);
+
+            var nextNode = node.FlowOutputs[0].Target?.Node;
+            if (nextNode != null)
+                nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+            return;
+        }
+        void GetSceneVar(GameObject gobjRoot)
+        {
+            // Type Agnostic Get var code
+
+            // CONST ONLY
+            if (node.DataInputs[0].Source != null) node.DataInputs[0].Connect(null); // disconnect var_name vary cables
+
+            // scene vars are made to be retargetted!
+            var storagerData = PendingConnection.CompStoragers[node.DataOutputs[0].Type];
+            string varName = $"{(gobjRoot ? "gobj_" : "TEMP_scene_")}{node.DataOutputs[0].Type.Type.GetFriendlyName()}_var_" + node.DataInputs[0].DefaultStringValue;
+
+            Component tempVarRef = (gobjRoot?.transform ?? dataRoot).Find(varName)?.GetComponent(storagerData.Item1);
+            tempVarRef ??= (gobjRoot?.transform ?? dataRoot).StoreComp(storagerData.Item1, varName);
+
+            var getCall = new PersistentCall(storagerData.Item2.GetMethod, tempVarRef);
+            evt.PersistentCallsList.Add(getCall);
+            node.DataOutputs[0].CompCall = getCall;
+            node.DataOutputs[0].CompEvt = evt;
+
+            var nextNode = node.FlowOutputs[0].Target?.Node;
+            if (nextNode != null)
+                nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+            return;
+        }
         switch (node.BookTag)
         {
             case "if":
@@ -507,7 +659,8 @@ public class CommonsCookBook : CookBook
                         nextNode.Book.CompileNode(evt, nextNode, dataRoot);
                     return;
                 }
-            case "set_float_var":
+            case "set_float_var": // old name support
+            case "set_bowl_float_var":
                 {
                     // CONST ONLY
                     if (node.DataInputs[0].Source != null) node.DataInputs[0].Connect(null);
@@ -532,7 +685,8 @@ public class CommonsCookBook : CookBook
                         nextNode.Book.CompileNode(evt, nextNode, dataRoot);
                     return;
                 }
-            case "get_float_var":
+            case "get_float_var": // old name support
+            case "get_bowl_float_var":
                 {
                     // CONST ONLY
                     if (node.DataInputs[0].Source != null) node.DataInputs[0].Connect(null);
@@ -559,12 +713,201 @@ public class CommonsCookBook : CookBook
                         nextNode.Book.CompileNode(evt, nextNode, dataRoot);
                     return;
                 }
+            default:
+                if (node.BookTag.Contains("_scene_") && node.BookTag.EndsWith("_var"))
+                {
+                    if (node.BookTag.StartsWith("get_"))
+                        GetSceneVar(null);
+                    else SetSceneVar(null); 
+                    return;
+                } else if (node.BookTag.Contains("_gobj_") && node.BookTag.EndsWith("_var"))
+                {
+                    if (node.BookTag.StartsWith("get_"))
+                        GetSceneVar((GameObject)node.DataInputs[1].DefaultObject);
+                    else SetSceneVar((GameObject)node.DataInputs[2].DefaultObject);
+                    return;
+                }
+                return;
         }
     }
 
     public override void PostCompile(SerializedBowl bowl)
     {
-        // todo: add scene_var nodes, and the zany retargetting that'll need to happen via this postcompile
+        handleSceneVars(bowl);
     }
+    private void handleSceneVars(SerializedBowl bowl)
+    {
+        // First, figure var gameobjs
+        List<(GameObject, Type)> vars = new();
+        foreach (var node in bowl.NodeDatas)
+            if (node.Book == this && ((node.BookTag.StartsWith("get_scene_") || node.BookTag.StartsWith("set_scene_")) && node.BookTag.EndsWith("_var")))
+            {
+                // find the compstorager transf
+                for (int i = 0; i < bowl.LastGenerated.transform.childCount; i++)
+                {
+                    GameObject c = bowl.LastGenerated.transform.GetChild(i).gameObject;
+                    if (c.name.StartsWith("TEMP_scene_") && c.gameObject.name.EndsWith("_var_" + node.DataInputs[0].DefaultStringValue))
+                    {
+                        vars.Add((c, node.BookTag.StartsWith("set") ? node.DataInputs[1].Type : node.DataOutputs[0].Type));
+                        break;
+                    }
+                }
+            }
+        vars = vars.Distinct().ToList();
+
+        // early exit if none
+        if (vars.Count == 0) return;
+
+        // we have vars and need to do a ton of bs
+        // move entry event to LastGenerated, so it can possibly be retargetted
+        var movedEntryEvt = bowl.LastGenerated.transform.StoreComp<UltEventHolder>("Moved Entry Event");
+        movedEntryEvt.Event.EnsurePCallList();
+        movedEntryEvt.Event.CopyFrom(bowl.Event);
+
+        bowl.Event.Clear(); // god
+
+        var varEnsurementRoot = bowl.LastGenerated.transform.StoreTransform("Scene Var Ensurement");
+
+        foreach ((GameObject, Type) varData in vars)
+        {
+            string varName = varData.Item1.name.Substring(5); // the scene_var name
+            var varStoragerData = PendingConnection.CompStoragers[varData.Item2]; // this tells us what compstorager the scene_var uses
+            var reffedTempStorager = varData.Item1.GetComponent(varStoragerData.Item1);
+
+            // omfg im an NOT setting all this shii up manually
+            // spawn et prefab with ensurement and targ compstorager fetching (made with noodled evts!!!! the tool is helping the tool develop lol)
+            GameObject ensurer = GameObject.Instantiate(VarEnsurer, varEnsurementRoot);
+            ensurer.SetActive(true);
+            ensurer.name = varName.Split('_').Last() + " Ensurer";
+            ensurer.transform.parent = varEnsurementRoot;
+            ensurer.AddComponent<LifeCycleEvtEditorRunner>();
+
+            // give ensurer the targ var comp store name
+            ensurer.transform.GetChild(0).gameObject.name = varName;
+
+            // place the compstorager on the scene_var template
+            Component storger = ensurer.transform.GetChild(0).gameObject.AddComponent(varStoragerData.Item1);
+            if (storger is TextMeshPro tmp)
+            {
+                tmp.enabled = false;
+                tmp.GetComponent<Renderer>().enabled = false;
+            }
+
+            // give the ensurer the targ compstorager type
+            ensurer.transform.GetChild(2).GetChild(2).GetComponent<UltEventHolder>().Event.PersistentCallsList[0].PersistentArguments[0].String = varStoragerData.Item1.AssemblyQualifiedName;
+            ensurer.transform.GetChild(2).GetChild(2).GetChild(0).GetComponent<UltEventHolder>().Event.PersistentCallsList[0].PersistentArguments[0].String = varStoragerData.Item1.AssemblyQualifiedName;
+            // god
+
+            // okay, now that we've got the targ scene_var_storager in VarEnsurer.retval,
+            // we just need to add some ultevent code to:
+            // 1. Retarget evts that use this scene_var
+            // 2. destroy this VarEnsurer instance
+            // RAHHHHH
+
+            var postEnsurementEvt = ensurer.transform.GetChild(2).GetChild(1).GetComponent<LifeCycleEvents>().EnableEvent;
+            Type XRComp = GetExtType("XRInteractorAffordanceStateProvider", XRAssembly);
+            var CompStoragerXRRef = ensurer.transform.GetChild(2).GetChild(4).GetComponent(XRComp);
+
+            List<(Component, UltEventBase)> evtsThatUseVar = new();
+            foreach (Component comp in bowl.EventHolder.gameObject.GetComponentsInChildren(typeof(Component), true)) // scan all comps for Ult fields :(
+                foreach (var field in comp.GetType().GetFields(UltEventUtils.AnyAccessBindings))
+                    if (typeof(UltEventBase).IsAssignableFrom(field.FieldType))
+                    {
+                        UltEventBase evt = field.GetValue(comp) as UltEventBase;
+                        if (evt == null || evt.PersistentCallsList == null || !evt.PersistentCallsList.Any(pcall => pcall.Target == reffedTempStorager))
+                            continue;
+                        evtsThatUseVar.Add((comp, evt));
+                    }
+
+            // set the tempreffer's targ, to TempRef
+            var tempRefRef = ensurer.transform.GetChild(3).GetComponent(XRComp);
+            MethodInfo toJson = typeof(JsonUtility).GetMethod("ToJson", new Type[] { typeof(object) });
+            MethodInfo regReplace = typeof(System.Text.RegularExpressions.Regex).GetMethod("Replace", new Type[] { typeof(string), typeof(string), typeof(string) });
+            XRComp.GetField("m_InteractorSource", UltEventUtils.AnyAccessBindings).SetValue(tempRefRef, reffedTempStorager);
+            {
+                // post Ensurement, we'll get TempRef as a SerializedReference
+                var jsoTemper = new PersistentCall(toJson, null);
+                jsoTemper.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = tempRefRef;
+                postEnsurementEvt.PersistentCallsList.Add(jsoTemper);
+                // now cut the pre-ref
+                var prerefCut = new PersistentCall(regReplace, null);
+                prerefCut.PersistentArguments[0].ToRetVal(postEnsurementEvt.PersistentCallsList.Count - 1, typeof(string));
+                prerefCut.PersistentArguments[1].String = "^(.*\"m_InteractorSource\":)";
+                prerefCut.PersistentArguments[2].String = "";
+                postEnsurementEvt.PersistentCallsList.Add(prerefCut);
+                // now cut the post-ref
+                var postrefCut = new PersistentCall(regReplace, null);
+                postrefCut.PersistentArguments[0].ToRetVal(postEnsurementEvt.PersistentCallsList.Count - 1, typeof(string));
+                postrefCut.PersistentArguments[1].String = ",\"m_I(.)*";
+                postrefCut.PersistentArguments[2].String = "";
+                postEnsurementEvt.PersistentCallsList.Add(postrefCut);
+            }
+
+            // now, foreach event that refs this var, we'll retarget them from the above SerializedRef to the below SerializedRef
+            //omfg ultevents suck
+            {
+                // jsonify the XRComp that's reffing our ensured targ scene compstorager
+                var jsoTemper = new PersistentCall(toJson, null);
+                jsoTemper.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = ensurer.transform.GetChild(2).GetChild(3).GetComponent(XRComp);
+                postEnsurementEvt.PersistentCallsList.Add(jsoTemper);
+                // now cut the pre-ref
+                var prerefCut = new PersistentCall(regReplace, null);
+                prerefCut.PersistentArguments[0].ToRetVal(postEnsurementEvt.PersistentCallsList.Count - 1, typeof(string));
+                prerefCut.PersistentArguments[1].String = "^(.*\"m_InteractorSource\":)";
+                prerefCut.PersistentArguments[2].String = "";
+                postEnsurementEvt.PersistentCallsList.Add(prerefCut);
+                // now cut the post-ref
+                var postrefCut = new PersistentCall(regReplace, null);
+                postrefCut.PersistentArguments[0].ToRetVal(postEnsurementEvt.PersistentCallsList.Count - 1, typeof(string));
+                postrefCut.PersistentArguments[1].String = ",\"m_I(.)*";
+                postrefCut.PersistentArguments[2].String = "";
+                postEnsurementEvt.PersistentCallsList.Add(postrefCut);
+            }
+            int tempRefIdx = postEnsurementEvt.PersistentCallsList.Count - 4;
+            int sceneRefIdx = postEnsurementEvt.PersistentCallsList.Count - 1;
+
+            /*var dbg = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
+            dbg.PersistentArguments[0].ToRetVal(tempRefIdx, typeof(object));
+            postEnsurementEvt.PersistentCallsList.Add(dbg);
+
+            var dbg2 = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
+            dbg2.PersistentArguments[0].ToRetVal(sceneRefIdx, typeof(object));
+            postEnsurementEvt.PersistentCallsList.Add(dbg2);*/
+
+            foreach (var evt in evtsThatUseVar)
+            {
+                // this event has pcalls where Target=reffedTempStorager
+                // in postEnsurementEvt, we need to toJson evt, RegReplace
+
+                var jsoTemper = new PersistentCall(toJson, null);
+                jsoTemper.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = evt.Item1;
+                postEnsurementEvt.PersistentCallsList.Add(jsoTemper);
+                // replace tempRef with sceneRef
+                var temp2Scene = new PersistentCall(regReplace, null);
+                temp2Scene.PersistentArguments[0].ToRetVal(postEnsurementEvt.PersistentCallsList.Count - 1, typeof(string));
+                temp2Scene.PersistentArguments[1].ToRetVal(tempRefIdx, typeof(string));
+                temp2Scene.PersistentArguments[2].ToRetVal(sceneRefIdx, typeof(string));
+                postEnsurementEvt.PersistentCallsList.Add(temp2Scene);
+                //fromjson overwrite
+                var jsoOver = new PersistentCall(typeof(JsonUtility).GetMethod("FromJsonOverwrite"), null);
+                jsoOver.PersistentArguments[0].ToRetVal(postEnsurementEvt.PersistentCallsList.Count - 1, typeof(string));
+                jsoOver.PersistentArguments[1].FSetType(PersistentArgumentType.Object).Object = evt.Item1;
+                postEnsurementEvt.PersistentCallsList.Add(jsoOver);
+            }
+            // temp is done for; Kill.
+            var tdelCall = new PersistentCall(typeof(UnityEngine.Object).GetMethod("DestroyImmediate", new Type[] { typeof(UnityEngine.Object) }), null);
+            tdelCall.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = reffedTempStorager.gameObject;
+            postEnsurementEvt.PersistentCallsList.Add(tdelCall);
+            // finally, kill off this so it's done
+            var delCall = new PersistentCall(typeof(UnityEngine.Object).GetMethod("DestroyImmediate", new Type[] { typeof(UnityEngine.Object) }), null);
+            delCall.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = ensurer;
+            postEnsurementEvt.PersistentCallsList.Add(delCall);
+        }
+        // make entry event enable varEnsurementRoot, causing the ensurers to ensure & die
+        bowl.Event.PersistentCallsList.Add(new PersistentCall(typeof(GameObject).GetMethod("SetActive"), varEnsurementRoot.gameObject));
+        bowl.Event.PersistentCallsList[0].PersistentArguments[0].Bool = true;
+        bowl.Event.PersistentCallsList.Add(new PersistentCall(typeof(UltEventHolder).GetMethod("Invoke", new Type[] { }), movedEntryEvt));
+    }
+    [SerializeField] GameObject VarEnsurer;
 }
 #endif
