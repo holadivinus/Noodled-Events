@@ -17,6 +17,30 @@ namespace NoodledEvents
     public class SerializedNode
     {
         public SerializedNode() { }
+        public SerializedNode CopyFrom(SerializedNode other)
+        {
+            this.Book = other.Book;
+            this.Name = other.Name;
+            this.NoadType = other.NoadType;
+            this.Bowl = other.Bowl;
+            this.BookTag = other.BookTag;
+            foreach (var din in other.DataInputs)
+                this.AddDataIn(din.Name, din.Type, @const: din.UIConst);
+            for (int i = 0; i < other.DataInputs.Length; i++)
+            {
+                this.DataInputs[i].ConstInput = other.DataInputs[i].ConstInput;
+                this.DataInputs[i].DefaultObject = other.DataInputs[i].DefaultObject;
+                this.DataInputs[i].DefaultStringValue = other.DataInputs[i].DefaultStringValue;
+                this.DataInputs[i].ValDefs = other.DataInputs[i].ValDefs;
+            }
+            foreach (var dou in other.DataOutputs)
+                this.AddDataOut(dou.Name, dou.Type);
+            foreach (var fi in other.FlowInputs)
+                this.AddFlowIn(fi.Name);
+            foreach (var fo in other.FlowOutputs)
+                this.AddFlowOut(fo.Name);
+            return this;
+        }
         public NoodleFlowInput AddFlowIn(string name)
         {
             var @in = new NoodleFlowInput(this) { Name = name };
@@ -254,7 +278,7 @@ namespace NoodledEvents
         [SerializeField] public bool UIConst;
 
         [SerializeField] public string DefaultStringValue;
-        [SerializeField] Vector4 ValDefs;
+        [SerializeField] public Vector4 ValDefs;
         public bool DefaultBoolValue { get => ValDefs.x != 0; set => ValDefs.x = value ? 1 : 0; }
         public float DefaultFloatValue { get => ValDefs.x; set => ValDefs.x = value; }
         public int DefaultIntValue { get => (int)ValDefs.x; set => ValDefs.x = value; }

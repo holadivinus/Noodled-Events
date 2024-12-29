@@ -585,34 +585,22 @@ public class CommonsCookBook : CookBook
                     // given a, b
                     // a > b?
                     
-                    var clampr = new PersistentCall();
-                    clampr.FSetTarget(null);
-                    clampr.FSetMethodName("Unity.Mathematics.math, Unity.Mathematics, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.clamp");
-                    clampr.FSetArguments(new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)));
+                    var greater = new PersistentCall();
+                    greater.FSetTarget(null);
+                    greater.FSetMethodName("SLZ.Bonelab.VoidLogic.MathUtilities, Assembly-CSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.IsApproximatelyEqualToOrGreaterThan");
+                    greater.FSetArguments(new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)));
 
                     // Connect a to Clamp.value
-                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, clampr, 0).Connect(dataRoot);
-                    else clampr.PersistentArguments[0].Float = node.DataInputs[0].DefaultFloatValue;
+                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, greater, 0).Connect(dataRoot);
+                    else greater.PersistentArguments[0].Float = node.DataInputs[0].DefaultFloatValue;
 
                     // Connect b to Clamp.max
-                    if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, clampr, 2).Connect(dataRoot);
-                    else clampr.PersistentArguments[2].Float = node.DataInputs[1].DefaultFloatValue;
-                    evt.PersistentCallsList.Add(clampr);
-
-                    // if clamp_out == b, a > b
-                    var comper = new PersistentCall(typeof(object).GetMethod("Equals", new Type[] { typeof(object), typeof(object) }), null);
-                    comper.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count-1, typeof(object));
-
-                    // Connect b to comper.b
-                    if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, comper, 1).Connect(dataRoot);
-                    else
-                        comper.PersistentArguments[1].FSetType(PersistentArgumentType.Float).Float = node.DataInputs[1].DefaultFloatValue;
-
-                    evt.PersistentCallsList.Add(comper);
-
+                    if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, greater, 1).Connect(dataRoot);
+                    else greater.PersistentArguments[1].Float = node.DataInputs[1].DefaultFloatValue;
+                    evt.PersistentCallsList.Add(greater);
 
                     node.DataOutputs[0].CompEvt = evt;
-                    node.DataOutputs[0].CompCall = comper;
+                    node.DataOutputs[0].CompCall = greater;
 
                     var nextNode = node.FlowOutputs[0].Target?.Node;
                     if (nextNode != null)
@@ -622,37 +610,24 @@ public class CommonsCookBook : CookBook
             case "lesser":
                 {
                     // given a, b
-                    // b > a?
+                    // a > b?
 
-                    var clampr = new PersistentCall();
-                    clampr.FSetTarget(null);
-                    clampr.FSetMethodName("Unity.Mathematics.math, Unity.Mathematics, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.clamp");
-                    clampr.FSetArguments(new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)));
+                    var lesser = new PersistentCall();
+                    lesser.FSetTarget(null);
+                    lesser.FSetMethodName("SLZ.Bonelab.VoidLogic.MathUtilities, Assembly-CSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.IsApproximatelyEqualToOrLessThan");
+                    lesser.FSetArguments(new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)));
 
-                    // Connect b to Clamp.value
-                    if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, clampr, 0).Connect(dataRoot);
-                    else clampr.PersistentArguments[0].Float = node.DataInputs[1].DefaultFloatValue;
+                    // Connect a to Clamp.value
+                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, lesser, 0).Connect(dataRoot);
+                    else lesser.PersistentArguments[0].Float = node.DataInputs[0].DefaultFloatValue;
 
-                    // Connect a to Clamp.max
-                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, clampr, 2).Connect(dataRoot);
-                    else clampr.PersistentArguments[2].Float = node.DataInputs[0].DefaultFloatValue;
-
-                    evt.PersistentCallsList.Add(clampr);
-
-                    // if clamp_out == a, b > a
-                    var comper = new PersistentCall(typeof(object).GetMethod("Equals", new Type[] { typeof(object), typeof(object) }), null);
-                    comper.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(object));
-
-                    // Connect a to comper.b
-                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, comper, 1).Connect(dataRoot);
-                    else
-                        comper.PersistentArguments[1].FSetType(PersistentArgumentType.Float).Float = node.DataInputs[0].DefaultFloatValue;
-
-                    evt.PersistentCallsList.Add(comper);
-
+                    // Connect b to Clamp.max
+                    if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, lesser, 1).Connect(dataRoot);
+                    else lesser.PersistentArguments[1].Float = node.DataInputs[1].DefaultFloatValue;
+                    evt.PersistentCallsList.Add(lesser);
 
                     node.DataOutputs[0].CompEvt = evt;
-                    node.DataOutputs[0].CompCall = comper;
+                    node.DataOutputs[0].CompCall = lesser;
 
                     var nextNode = node.FlowOutputs[0].Target?.Node;
                     if (nextNode != null)
