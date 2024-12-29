@@ -218,10 +218,12 @@ public class CommonsCookBook : CookBook
                 var onTrue = new GameObject("if True", typeof(LifeCycleEvents)).GetComponent<LifeCycleEvents>();
                 onTrue.transform.parent = dataRoot;
                 onTrue.gameObject.SetActive(false);
+                onTrue.EnableEvent.EnsurePCallList();
                 onTrue.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
                 var onFalse = new GameObject("if False", typeof(LifeCycleEvents)).GetComponent<LifeCycleEvents>();
                 onFalse.transform.parent = dataRoot;
                 onFalse.gameObject.SetActive(false);
+                onFalse.EnableEvent.EnsurePCallList();
                 onFalse.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
 
                 // inject the "figuring" of the conditional:
@@ -432,7 +434,6 @@ public class CommonsCookBook : CookBook
                     // Connect b to Clamp.max
                     if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, clampr, 2).Connect(dataRoot);
                     else clampr.PersistentArguments[2].Float = node.DataInputs[1].DefaultFloatValue;
-
                     evt.PersistentCallsList.Add(clampr);
 
                     // if clamp_out == b, a > b
