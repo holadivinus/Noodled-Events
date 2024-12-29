@@ -139,6 +139,10 @@ namespace NoodledEvents
 
             EntryNode.Compile(LastGenerated.transform);
 
+            // postcompile hook
+            foreach (var book in NodeDatas.Select(n => n.Book).Distinct())
+                book?.PostCompile(this);
+
             EditorSceneManager.MarkSceneDirty(this.gameObject.scene);
 
             //Debug.Log(BowlName + ": Compile!");

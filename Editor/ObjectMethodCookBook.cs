@@ -333,5 +333,15 @@ public class ObjectMethodCookBook : CookBook
         if (nextNode != null)
             nextNode.Book.CompileNode(evt, nextNode, dataRoot);
     }
+    public override void PostCompile(SerializedBowl bowl) // post GetType injection
+    {
+        // GetType injection only happens to the varyingEvt, so lets copy to templateEvts
+        for (int i = 0; i < bowl.LastGenerated.transform.childCount; i++) // find the varyingEvts
+        {
+            Transform varyer = bowl.LastGenerated.transform.GetChild(i);
+            if (varyer.gameObject.name == "varyingEvt")
+                varyer.GetChild(0).GetComponent<UltEventHolder>().Event = varyer.GetComponent<UltEventHolder>().Event;
+        }
+    }
 }
 #endif
