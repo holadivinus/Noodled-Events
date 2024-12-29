@@ -826,7 +826,7 @@ public class CommonsCookBook : CookBook
             // crawl down the bowl untill a vars.get_or_init happens
             bool SearchForDef(SerializedNode curNode)
             {
-                if (curNode.Book == this && curNode.Name.StartsWith("vars.get_or_init_scene_"))
+                if (curNode.Book == this && curNode.Name.StartsWith("vars.get_or_init_scene_") && varName.EndsWith(curNode.DataInputs[0].DefaultStringValue))
                 {
                     // found it!
                     varStoragerData.Item2.SetValue(storger, curNode.DataInputs[1].GetDefault());
