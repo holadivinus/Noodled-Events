@@ -31,6 +31,7 @@ public class UltNoodleNodeUI : VisualElement
 
         // hide Delete BT only if it's the "InOut node
         this.Q<Button>("DeleteBT").visible = serializedNode.NoadType != SerializedNode.NodeType.BowlInOut;
+        this.Q<Button>("DuplicateBT").visible = serializedNode.NoadType != SerializedNode.NodeType.BowlInOut;
 
         // Create Invoke BT only if that's possible (aka the evt doesn't need inputs.)
         if (serializedNode.NoadType == SerializedNode.NodeType.BowlInOut && bowl.Event.GetType().GetEvtGenerics().Length == 0)
@@ -97,7 +98,13 @@ public class UltNoodleNodeUI : VisualElement
             Bowl.SerializedData.NodeDatas.Remove(Node);
             Bowl.Validate();
         };
-
+        this.Q<Button>("DuplicateBT").clicked += () =>
+        {
+            var newnode = new SerializedNode().CopyFrom(serializedNode);
+            serializedNode.Bowl.NodeDatas.Add(newnode);
+            newnode.Position = serializedNode.Position + (Vector2.up * (this.resolvedStyle.height+10));
+            Bowl.Validate();
+        };
     }
     private void OnEnable(AttachToPanelEvent evt)
     {
