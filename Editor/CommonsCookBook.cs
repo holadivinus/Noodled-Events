@@ -801,6 +801,25 @@ public class CommonsCookBook : CookBook
 
         bowl.Event.Clear(); // god
 
+        // I FORGOR ABT PARAMS
+        // we need to transfer params to the moved entry evt :(
+        foreach (var pcall in movedEntryEvt.Event.PersistentCallsList.ToArray())
+            for (int i = 0; i < pcall.PersistentArguments.Length; i++)
+            {
+                PersistentArgument argument = pcall.PersistentArguments[i];
+                if (argument.Type == PersistentArgumentType.Parameter)
+                {
+                    new PendingConnection(bowl.EntryNode.DataOutputs[argument.FGetInt()], movedEntryEvt.Event, pcall, i).Connect(bowl.LastGenerated.transform);
+                    // so this is awkward
+                    // PendingConnection.Connect is expected to run before a pcall is in the list, not after
+                    var getr = movedEntryEvt.Event.PersistentCallsList[movedEntryEvt.Event.PersistentCallsList.Count - 1];
+                    movedEntryEvt.Event.PersistentCallsList.Remove(getr);
+                    movedEntryEvt.Event.PersistentCallsList.SafeInsert(movedEntryEvt.Event.PersistentCallsList.IndexOf(pcall), getr);
+                    pcall.PersistentArguments[i].FSetInt(movedEntryEvt.Event.PersistentCallsList.IndexOf(pcall) - 1);
+                }
+            }
+
+
         var varEnsurementRoot = bowl.LastGenerated.transform.StoreTransform("Scene Var Ensurement");
 
         foreach ((GameObject, Type) varData in vars)
@@ -962,8 +981,9 @@ public class CommonsCookBook : CookBook
             postEnsurementEvt.PersistentCallsList.Add(delCall);
         }
         // make entry event enable varEnsurementRoot, causing the ensurers to ensure & die
-        bowl.Event.PersistentCallsList.Add(new PersistentCall(typeof(GameObject).GetMethod("SetActive"), varEnsurementRoot.gameObject));
-        bowl.Event.PersistentCallsList[0].PersistentArguments[0].Bool = true;
+        var sact = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), varEnsurementRoot.gameObject);
+        sact.PersistentArguments[0].Bool = true;
+        bowl.Event.PersistentCallsList.Add(sact);
         bowl.Event.PersistentCallsList.Add(new PersistentCall(typeof(UltEventHolder).GetMethod("Invoke", new Type[] { }), movedEntryEvt));
     }
     [SerializeField] GameObject VarEnsurer;
