@@ -6,22 +6,17 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-#if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.PackageManager;
-#endif
 using UnityEngine;
 
 namespace NoodledEvents
 {
-    #if UNITY_EDITOR
     [InitializeOnLoad]
-    #endif
     static class EnsureXRPackage
     {
         static EnsureXRPackage() 
         {
-            #if UNITY_EDITOR
             Client.Add("https://github.com/holadivinus/BLXRComp.git");
 
 
@@ -41,7 +36,6 @@ namespace NoodledEvents
                 scripPath += "MathUtilities.cs";
                 File.WriteAllText(scripPath, fixedMathCS);
             }
-            #endif
         }
         const string fixedMathCS = "using System.Runtime.CompilerServices;\r\n\r\nnamespace SLZ.Bonelab.VoidLogic\r\n{\r\n\tinternal static class MathUtilities\r\n\t{\r\n\t\t[MethodImpl(256)]\r\n\t\tpublic static bool IsApproximatelyEqualToOrGreaterThan(this float num1, float num2)\r\n\t\t{\r\n\t\t\treturn num1 >= num2;\r\n\t\t}\r\n\r\n\t\t[MethodImpl(256)]\r\n\t\tpublic static bool IsApproximatelyEqualToOrLessThan(this float num1, float num2)\r\n\t\t{\r\n\t\t\treturn num1 <= num2;\r\n\t\t}\r\n\t}\r\n}\r\n";
     }
