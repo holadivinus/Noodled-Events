@@ -19,7 +19,7 @@ MonoImporter:
   - CommonsCookBook: {fileID: 11400000, guid: 901e016ff6c33fd4da034153e7242251, type: 2}
   - StaticCookBook: {fileID: 11400000, guid: fd6f7bcaa596bc640b3d509dada399ba, type: 2}
   - ObjectCookBook: {fileID: 11400000, guid: 97fafb592a7f3f442b952fdee70edf10, type: 2}
-  - PackageData: {fileID: 4900000, guid: 6e4a207cc17e71845b31bab54663369c, type: 3}
+  - ObjectFCookBook: {fileID: 11400000, guid: a4cd300a552e93f439747b316c826027, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

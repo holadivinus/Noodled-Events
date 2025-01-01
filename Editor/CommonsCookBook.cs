@@ -811,7 +811,7 @@ public class CommonsCookBook : CookBook
                 {
                     new PendingConnection(bowl.EntryNode.DataOutputs[argument.FGetInt()], movedEntryEvt.Event, pcall, i).Connect(bowl.LastGenerated.transform);
                     // so this is awkward
-                    // PendingConnection.Connect is expected to run before a pcall is in the list, not after
+                    // PendingConnection.Connect() is expected to run before a pcall is in the list, not after
                     var getr = movedEntryEvt.Event.PersistentCallsList[movedEntryEvt.Event.PersistentCallsList.Count - 1];
                     movedEntryEvt.Event.PersistentCallsList.Remove(getr);
                     movedEntryEvt.Event.PersistentCallsList.SafeInsert(movedEntryEvt.Event.PersistentCallsList.IndexOf(pcall), getr);
