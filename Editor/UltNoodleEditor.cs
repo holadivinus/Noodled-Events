@@ -41,15 +41,15 @@ public class UltNoodleEditor : EditorWindow
     [SerializeField] public CookBook CommonsCookBook;
     [SerializeField] public CookBook StaticCookBook;
     [SerializeField] public CookBook ObjectCookBook;
+    [SerializeField] public CookBook ObjectFCookBook;
 
 
 
     //[MenuItem("NoodledEvents/test")]
     public static void test()
     {
-        Debug.Log(typeof(Rigidbody).AssemblyQualifiedName);
         //Selection.activeGameObject.GetComponent<UltEventHolder>().Event.PersistentCallsList[0].SetMethod(typeof(NavMeshHit).GetConstructors(UltEventUtils.AnyAccessBindings)[0], null);
-        //AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<CommonsCookBook>(), "Assets/CommonsCookBook.asset");
+        AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<ObjectFieldCookBook>(), "Assets/ObjectFieldCookBook.asset");
         return; 
         
     }
@@ -200,6 +200,7 @@ public class UltNoodleEditor : EditorWindow
         if (!cookBooks.Contains(CommonsCookBook)) cookBooks = cookBooks.Append(CommonsCookBook);
         if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
         if (!cookBooks.Contains(ObjectCookBook)) cookBooks = cookBooks.Append(ObjectCookBook);
+        if (!cookBooks.Contains(ObjectFCookBook)) cookBooks = cookBooks.Append(ObjectFCookBook);
         foreach (CookBook sdenhr in cookBooks)
         {
             CookBook book = sdenhr; //lol (this is like this for a reason trust me)
