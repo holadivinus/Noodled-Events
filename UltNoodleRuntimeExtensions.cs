@@ -109,6 +109,19 @@ public static class UltNoodleRuntimeExtensions
                 throw new Exception("MethodBase has no retval: " + method.DeclaringType.Name + "." + method.Name);
         }
     }
+    public static List<SerializedNode> GatherDescendants(this SerializedNode node, List<SerializedNode> list = null)
+    {
+        if (list == null) list = new List<SerializedNode>();
+        foreach (var o in node.FlowOutputs)
+        {
+            if (o.Target != null)
+            {
+                list.Add(o.Target.Node);
+                GatherDescendants(o.Target.Node, list);
+            }
+        }
+        return list;
+    }
     public static SerializedNode MatchDef(this SerializedNode nod, CookBook.NodeDef def)
     {
         foreach (var @in in def.Inputs)

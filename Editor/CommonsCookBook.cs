@@ -18,6 +18,7 @@ public class CommonsCookBook : CookBook
 {
     public override void CollectDefs(List<NodeDef> allDefs)
     {
+        // flow.if
         allDefs.Add(new NodeDef(this, "flow.if", 
             inputs:() => new[] { new Pin("Exec"), new Pin("condition", typeof(bool)) },
             outputs:() => new[] { new Pin("true"), new Pin("false") },
@@ -38,6 +39,7 @@ public class CommonsCookBook : CookBook
                 o.text = def.Name;
                 return o;
             }));
+
         #region MATH
         allDefs.Add(new NodeDef(this, "math.add_floats",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
@@ -166,6 +168,8 @@ public class CommonsCookBook : CookBook
             }));
         #endregion
 
+        #region VARIABLES
+        // vars.set_bowl_float_var
         allDefs.Add(new NodeDef(this, "vars.set_bowl_float_var",
             inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", typeof(float)) },
             outputs: () => new[] { new Pin("done") },
@@ -187,6 +191,7 @@ public class CommonsCookBook : CookBook
                 return o;
             }));
 
+        // vars.set_bowl_float_var
         allDefs.Add(new NodeDef(this, "vars.set_bowl_float_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const:true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", typeof(float)) },
@@ -333,6 +338,29 @@ public class CommonsCookBook : CookBook
                     return o;
                 }));
         }
+        #endregion
+
+        // Async
+        allDefs.Add(new NodeDef(this, "async.Wait",
+            inputs: () => new[] { new Pin("Start"), new Pin("seconds", typeof(float)) },
+            outputs: () => new[] { new Pin("On Started"), new Pin("After \"seconds\"") },
+            (def) => 
+            {
+                var o = new Button(() =>
+                {
+                    // create serialized node.
+
+                    if (UltNoodleEditor.NewNodeBowl == null) return;
+                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
+
+                    nod.BookTag = "wait";
+
+                    nod.Position = UltNoodleEditor.NewNodePos;
+                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
+                });
+                o.text = def.Name;
+                return o;
+            }));
     }
     private static MethodInfo SetActive = typeof(GameObject).GetMethod("SetActive");
     private static PropertyInfo GetSetLocPos = typeof(Transform).GetProperty("localPosition");
@@ -424,6 +452,89 @@ public class CommonsCookBook : CookBook
         }
         switch (node.BookTag)
         {
+            case "wait":
+                // first, we need to figure what data needs transfer
+                // i mean do we? PendingConnection handles this shit
+                /*
+                List<NoodleDataOutput> transfz = new List<NoodleDataOutput>();
+                bool IsBeforeWait(SerializedNode node)
+                {
+                    // if next node is Wait, ret true
+                    foreach (var flow in node.FlowOutputs)
+                    {
+                        if (flow.Target != null && flow.Target.Node == node)
+                            return true;
+                    }
+                    // else, run above again for next nodes
+                    // if next node finds it, ret true
+                    // else false
+                    foreach (var flow in node.FlowOutputs)
+                    {
+                        if (flow.Target != null && IsBeforeWait(flow.Target.Node))
+                            return true;
+                    }
+                    return false;
+                }
+                foreach (var descendent in node.GatherDescendants())
+                    foreach (var postWaitInput in descendent.DataInputs)
+                        if (postWaitInput.Source != null && IsBeforeWait(postWaitInput.Source.Node))
+                            transfz.Add(postWaitInput.Source);
+
+                transfz.Distinct();*/
+
+                // just make the evts and proceed under the root.
+
+                var immediateNext = node.FlowOutputs[0].Target?.Node;
+                if (immediateNext != null)
+                    immediateNext.Book.CompileNode(evt, immediateNext, dataRoot);
+
+                var slowNext = node.FlowOutputs[1].Target?.Node;
+                if (slowNext != null)
+                {
+                    Transform ats = dataRoot.Find("async templates");
+                    if (!ats) ats = dataRoot.StoreTransform("async templates");
+
+                    
+                    // okay so like this is supposed to be async
+                    // new, copied on run dataroot:
+                    var slowDataRoot = ats.StoreComp<LifeCycleEvents>("Async DataRoot");
+                    slowDataRoot.gameObject.SetActive(true); // so OnEnabled runs when cloned
+                    slowDataRoot.EnableEvent.EnsurePCallList();
+
+                    var delayedEvt = slowDataRoot.gameObject.AddComponent<DelayedUltEventHolder>();
+                    delayedEvt.Event.EnsurePCallList();
+
+                    var startDelay = new PersistentCall(typeof(DelayedUltEventHolder).GetMethod("Invoke", new Type[] { }), delayedEvt);
+                    slowDataRoot.EnableEvent.PersistentCallsList.Add(startDelay);
+
+                    slowNext.Book.CompileNode(delayedEvt.Event, slowNext, slowDataRoot.transform);
+
+                    // okay now we just need to insert cloning pcalls to original evt!
+                    // since PendingConnection naturally put compstoragers under slowDataRoot.transform :3
+                    
+                    // delay pin in functionality
+                    if (node.DataInputs[0].Source == null) delayedEvt.Delay = node.DataInputs[0].DefaultFloatValue;
+                    else
+                    {
+                        var setTimer = new PersistentCall(typeof(DelayedUltEventHolder).GetProperty("Delay").SetMethod, delayedEvt);
+                        new PendingConnection(node.DataInputs[0].Source, evt, setTimer, 0).Connect(dataRoot);
+                        evt.PersistentCallsList.Add(setTimer);
+                    }
+
+                    // cloning bs
+                    var cloneCall = new PersistentCall(typeof(UnityEngine.Object).GetMethod("Instantiate", new Type[] { typeof(UnityEngine.Object), typeof(Transform) }), null);
+                    cloneCall.PersistentArguments[0].FSetString(typeof(UnityEngine.Object).AssemblyQualifiedName).FSetType(PersistentArgumentType.Object).Object = slowDataRoot.gameObject;
+                    cloneCall.PersistentArguments[1].FSetString(typeof(UnityEngine.Transform).AssemblyQualifiedName).FSetType(PersistentArgumentType.Object);
+                    evt.PersistentCallsList.Add(cloneCall);
+
+                    // cleanup
+                    var delCall = new PersistentCall(typeof(UnityEngine.Object).GetMethod("DestroyImmediate", new Type[] { typeof(UnityEngine.Object) }), null);
+                    delCall.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = slowDataRoot.gameObject;
+                    delayedEvt.Event.PersistentCallsList.Add(delCall);
+
+                    // i can't believe how easy this one was
+                }
+                return;
             case "if":
                 // if statementtt :/
                 // requires two evts, one for true 1 for false
