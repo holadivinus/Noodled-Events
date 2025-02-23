@@ -21,11 +21,11 @@ namespace NoodledEvents
 
 
             // also fix up MathUtilities.cs
+           
             string[] existingMaths = AssetDatabase.FindAssets("MathUtilities t:MonoScript").Select(g => AssetDatabase.GUIDToAssetPath(g)).Where(p => !p.Contains("com.stresslevelzero.marrow.sdk.extended")).ToArray();
             if (existingMaths.Length > 0)
-            {
-                string existingMathPath = Application.dataPath + AssetDatabase.GUIDToAssetPath(existingMaths[0]).Substring(6);
-                Debug.Log(existingMathPath);
+            { 
+                string existingMathPath = Application.dataPath + existingMaths[0].Substring(6);
                 if (File.ReadAllText(existingMathPath) != fixedMathCS)
                     File.WriteAllText(existingMathPath, fixedMathCS);
             } else

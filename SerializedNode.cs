@@ -232,6 +232,7 @@ namespace NoodledEvents
     [Serializable]
     public class NoodleDataInput // has 1 source
     {
+        public NoodleDataInput() { }
         public NoodleDataInput(SerializedNode node, Type t, string paramName, object defaultValue) 
         {
             Node = node; Type = new SerializedType(t); Name = paramName;
@@ -317,6 +318,8 @@ namespace NoodledEvents
         [NonSerialized] public UltEventBase CompEvt;
         [NonSerialized] public PersistentCall CompCall;
         [NonSerialized] public PersistentArgument CompArg;
+
+        [SerializeField] public string EditorConstName;
 
         public void Connect(NoodleDataOutput output)
         {

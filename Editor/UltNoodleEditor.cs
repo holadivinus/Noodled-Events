@@ -133,7 +133,7 @@ public class UltNoodleEditor : EditorWindow
                         c += .01f * 5   ;
                         if (c > 300) c = 0;
                         updateBT.text = "Updating";
-                        for (global::System.Int32 i = 0; i < (int)(c / 20); i++)
+                        for (int i = 0; i < (int)(c / 20); i++)
                         {
                             updateBT.text += ".";
                         }
@@ -270,25 +270,28 @@ public class UltNoodleEditor : EditorWindow
 
         // autogen bowlsUIs
         foreach (var bowl in Resources.FindObjectsOfTypeAll<SerializedBowl>())
-            if (bowl.gameObject.scene == curScene && !BowlUIs.Any(b => b.SerializedData == bowl) && bowl.gameObject.activeInHierarchy)
+            if (bowl.gameObject.scene == curScene && !BowlUIs.Any(b => b.SerializedData == bowl) && bowl.gameObject.activeInHierarchy && !PrefabUtility.IsPartOfAnyPrefab(bowl))
                 UltNoodleBowlUI.New(this, D, bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath);
 
         
     }
 
     #region Noodle Bowl Prompts
+    [MenuItem("CONTEXT/UltEventHolder/Noodle Bowl", true)] static bool v1(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/UltEventHolder/Noodle Bowl")]
     static void BowlSingle(MenuCommand command)
     {
             if (s_Editor == null) ShowExample();
             UltNoodleBowlUI.New(s_Editor, s_Editor.D, (UltEventHolder)command.context, new SerializedType(typeof(UltEventHolder)), "_Event");
     }
+    [MenuItem("CONTEXT/CrateSpawner/Noodle Bowl", true)] static bool v2(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/CrateSpawner/Noodle Bowl")]
     static void CrateBowl(MenuCommand command)
     {
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, (CrateSpawner)command.context, new SerializedType(typeof(CrateSpawner)), "onSpawnEvent");
     }
+    [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Awake()", true)] static bool v3(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Awake()")]
     static void LifeCycleEvents_Awake(MenuCommand command)
     {
@@ -297,6 +300,7 @@ public class UltNoodleEditor : EditorWindow
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_AwakeEvent");
         
     }
+    [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Start()", true)] static bool v4(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Start()")]
     static void LifeCycleEvents_StartEvent(MenuCommand command)
     {
@@ -304,6 +308,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_StartEvent");
     }
+    [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Enable()", true)] static bool v5(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Enable()")]
     static void LifeCycleEvents_EnableEvent(MenuCommand command)
     {
@@ -311,6 +316,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_EnableEvent");
     }
+    [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Disable()", true)] static bool v6(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Disable()")]
     static void LifeCycleEvents_DisableEvent(MenuCommand command)
     {
@@ -319,6 +325,7 @@ public class UltNoodleEditor : EditorWindow
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_DisableEvent");    
     }
     
+    [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Destroy()", true)] static bool v7(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Destroy()")]
     static void LifeCycleEvents_DestroyEvent(MenuCommand command)
     {
@@ -327,6 +334,7 @@ public class UltNoodleEditor : EditorWindow
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_DestroyEvent");
         
     }
+    [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Update()", true)] static bool v8(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Update()")]
     static void UpdateEvents_UpdateEvent(MenuCommand command)
     {
@@ -334,6 +342,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_UpdateEvent");
     }
+    [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Late Update()", true)] static bool v9(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Late Update()")]
     static void UpdateEvents_LateUpdateEvent(MenuCommand command)
     {
@@ -341,6 +350,7 @@ public class UltNoodleEditor : EditorWindow
             if (s_Editor == null) ShowExample();
             UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_LateUpdateEvent");
     }
+    [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Fixed Update()", true)] static bool v10(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Fixed Update()")]
     static void UpdateEvents_FixedUpdateEvent(MenuCommand command)
     {
@@ -348,6 +358,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_FixedUpdateEvent");
     }
+    [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Enter()", true)] static bool v11(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Enter()")]
     static void CollisionEvents3D_CollisionEnterEvent(MenuCommand command)
     {
@@ -355,6 +366,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionEnterEvent");
     }
+    [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Stay()", true)] static bool v12(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Stay()")]
     static void CollisionEvents3D_CollisionStayEvent(MenuCommand command)
     {
@@ -362,6 +374,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionStayEvent");
     }
+    [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Exit()", true)] static bool v13(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Exit()")]
     static void CollisionEvents3D_CollisionExitEvent(MenuCommand command)
     {
@@ -369,6 +382,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionExitEvent");
     }
+    [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Enter()", true)] static bool v14(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Enter()")]
     static void ZoneEvents_onZoneEnter(MenuCommand command)
     {
@@ -376,6 +390,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(ZoneEvents)), "onZoneEnter");
     }
+    [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Enter OneShot()", true)] static bool v15(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Enter OneShot()")]
     static void ZoneEvents_onZoneEnterOneShot(MenuCommand command)
     {
@@ -383,6 +398,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(ZoneEvents)), "onZoneEnterOneShot");
     }
+    [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Exit()", true)] static bool v16(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Exit()")]
     static void ZoneEvents_onZoneExit(MenuCommand command)
     {
@@ -391,6 +407,7 @@ public class UltNoodleEditor : EditorWindow
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(ZoneEvents)), "onZoneExit");
     }
 
+    [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Enter()", true)] static bool v17(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Enter()")]
     static void TriggerEvents3D_TriggerEnterEvent(MenuCommand command)
     {
@@ -398,6 +415,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerEnterEvent");
     }
+    [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Stay()", true)] static bool v18(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Stay()")]
     static void TriggerEvents3D_TriggerStayEvent(MenuCommand command)
     {
@@ -405,6 +423,7 @@ public class UltNoodleEditor : EditorWindow
         if (s_Editor == null) ShowExample();
         UltNoodleBowlUI.New(s_Editor, s_Editor.D, targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerStayEvent");
     }
+    [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Exit()", true)] static bool v19(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Exit()")]
     static void TriggerEvents3D_TriggerExitEvent(MenuCommand command)
     {
