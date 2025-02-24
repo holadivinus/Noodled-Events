@@ -1,6 +1,7 @@
 ﻿#if UNITY_EDITOR
 using NoodledEvents;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UltEvents;
 using UnityEditor;
@@ -22,10 +23,14 @@ public class UltNoodleDataInPoint : VisualElement
     }
     public VisualElement HideWhenConnected;
     private VisualElement ConstVis;
+    private DropdownField EditorConst;
+    private VisualElement MyField;
+    private VisualElement SysObjRoot;
     private void setupInternal(UltNoodleNodeUI node, NoodleDataInput input)
     {
         NodeUI = node; SData = input;
         SData.UI = this.Q("ConnectionPoint");
+        EditorConst = this.Q<DropdownField>();
         SData.UI.visible = !input.UIConst; // hide if const
         // Inform the bowl about drags
         SData.UI.RegisterCallback<MouseEnterEvent>(e => { SData.HasMouse = true; UltNoodleEditor.TypeHinter.visible = true; UltNoodleEditor.TypeHinter.text = SData.Type.Type.GetFriendlyName(); });
@@ -38,7 +43,7 @@ public class UltNoodleDataInPoint : VisualElement
         Label = this.Q<Label>("InputName");
         
         var SysObjEnum = new EnumField("", SData.ConstInput);
-        this.Q("System_Object").Add(SysObjEnum);
+        (SysObjRoot=this.Q("System_Object")).Add(SysObjEnum);
         Label.text = input.Name;
 
         if (SData.Type.Type.IsSubclassOf(typeof(UnityEngine.Object)) || SData.Type == typeof(UnityEngine.Object))
@@ -58,6 +63,7 @@ public class UltNoodleDataInPoint : VisualElement
         void d() // onchange lol
         {
             EditorSceneManager.MarkSceneDirty(node.Node.Bowl.gameObject.scene);
+            EditorUtility.SetDirty(node.Node.Bowl);
         };
         // also add field for it
         VisualElement newField = null;
@@ -235,10 +241,70 @@ public class UltNoodleDataInPoint : VisualElement
             SData.Connect(null);
             UpdateLine();
         });
-        
 
+        MyField = newField;
+
+        EditorConst.parent.BringToFront();
+        EditorConst.ElementAt(0).style.minWidth = 0;
+        EditorConst.RegisterValueChangedCallback(e =>
+        {
+            if (e.newValue != "none")
+            {
+                SData.EditorConstName = e.newValue;
+                var newVar = NodeUI.Bowl.VarManVars.FirstOrDefault(vmv => vmv.Type.Type == SData.Type.Type && vmv.Name == e.newValue);
+                if (newVar != null)
+                {
+                    SData.ValDefs = newVar.ValDefs;
+                    SData.DefaultObject = newVar.DefaultObject;
+                    SData.DefaultStringValue = newVar.DefaultStringValue;
+                }
+            }
+            else
+            {
+                SData.EditorConstName = "";
+                EditorConst.value = "";
+            }
+        });
+        VarManValidation();
 
         NodeUI.InputsElement.Add(this);
+    }
+    public void Validate()
+    {
+        VarManValidation();
+    }
+    private void VarManValidation()
+    {
+        // editorconst is the varman selection!
+        EditorConst.visible = false;
+        EditorConst.style.display = DisplayStyle.None;
+        EditorConst.value = SData.EditorConstName;
+
+        if (NodeUI.Bowl.VarMans.Length > 0 && SData.Source == null)
+        {
+            var applicables = NodeUI.Bowl.VarManVars.Where(var => var.Type.Type.IsAssignableFrom(SData.Type));
+            if (applicables.Any())
+            {
+                EditorConst.visible = true;
+                EditorConst.style.display = DisplayStyle.Flex;
+
+                List<string> choices = new()
+                {
+                    "none"
+                };
+                foreach (var var in applicables)
+                    choices.Add(var.Name);
+                EditorConst.choices = choices;
+            }   
+        }
+        var showField = !(EditorConst.visible && !string.IsNullOrWhiteSpace(EditorConst.value)) ? DisplayStyle.Flex : DisplayStyle.None;
+        if (MyField != null)
+            MyField.style.display = showField;
+        /*if (SData.Type == typeof(object))
+        {
+            SysObjRoot.style.display = showField;
+            if (showField == DisplayStyle.Flex) SData.ConstInput = 
+        }*/
     }
     private Color green = new Color(0.7490196f, 1f, 0.8196079f, 0.4627451f);
     private Color normalCol = new Color(0.7490196f, 1f, 0.8196079f, 0.4627451f);

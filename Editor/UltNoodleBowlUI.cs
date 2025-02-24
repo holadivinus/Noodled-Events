@@ -1,5 +1,6 @@
 ﻿#if UNITY_EDITOR
 using NoodledEvents;
+using NoodledEvents.Assets.Noodled_Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +8,7 @@ using UltEvents;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static UnityEditor.UIElements.ToolbarMenu;
 
 
 public class UltNoodleBowlUI : VisualElement
@@ -22,6 +24,9 @@ public class UltNoodleBowlUI : VisualElement
     public NoodleDataInput CurHoveredDataInput;
     public NoodleDataOutput CurHoveredDataOutput;
     VisualElement ConnectionLine;
+
+    public VarMan[] VarMans = new VarMan[0];
+    public NoodleDataInput[] VarManVars = new NoodleDataInput[0];
     public void ConnectNodes() // looks at the above sources, finds the not null and connects it with the target
     {
         EditorApplication.delayCall += Validate;
@@ -279,6 +284,10 @@ public class UltNoodleBowlUI : VisualElement
         {
             Visual?.parent?.Remove(Visual);
             Editor.BowlUIs.Remove(this);
+        } else
+        {
+            VarMans = SerializedData.GetComponentsInParent<VarMan>(true);
+            VarManVars = VarMans.SelectMany(vm => vm.Vars).ToArray();
         }
         foreach (var nodeUI in NodeUIs.ToArray()) // validate my nodeUIs
             nodeUI.Validate();

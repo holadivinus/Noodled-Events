@@ -253,6 +253,8 @@ public class UltNoodleNodeUI : VisualElement
             return;
         }
         Node.OnBeforeSerialize(); // called so that the connections are good 
+        foreach (var ip in InPoints)
+            ip.Validate();
         UpdateLineUIs();
     }
 

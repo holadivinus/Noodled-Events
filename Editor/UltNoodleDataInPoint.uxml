@@ -4,6 +4,9 @@
         <ui:VisualElement name="Entries" style="flex-direction: row; min-height: 22px; margin-left: 6px;">
             <ui:Label text="Label" display-tooltip-when-elided="true" name="InputName" style="height: 22px; -unity-text-align: lower-center;" />
             <ui:VisualElement name="System_Object" style="flex-shrink: 0; display: none; visibility: hidden;" />
+            <ui:VisualElement name="EditorConst" style="justify-content: flex-end; top: 5px;">
+                <ui:DropdownField index="0" style="display: none; visibility: hidden;" />
+            </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="Line" style="position: absolute; left: 0; top: 0; min-height: 3px; min-width: 40px; background-color: rgba(191, 255, 209, 0.46); transform-origin: left; visibility: hidden;" />
     </UltNoodleDataInPoint>
