@@ -12,6 +12,7 @@ using System.Reflection;
 using UltEvents;
 using UnityEditor;
 using UnityEditor.PackageManager;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
@@ -278,9 +279,14 @@ public class UltNoodleEditor : EditorWindow
             bowl.Validate();
 
         // autogen bowlsUIs
-        foreach (var bowl in Resources.FindObjectsOfTypeAll<SerializedBowl>())
-            if (bowl.gameObject.scene == curScene && !BowlUIs.Any(b => b.SerializedData == bowl) && (Selection.activeGameObject == bowl.gameObject || !EditorPrefs.GetBool("SelectedBowlsOnly", true)) && !PrefabUtility.IsPartOfAnyPrefab(bowl))
+        PrefabStage prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+        foreach (var bowl in prefabStage?.prefabContentsRoot.GetComponentsInChildren<SerializedBowl>(true) ?? Resources.FindObjectsOfTypeAll<SerializedBowl>())
+        {
+            if (prefabStage == null && bowl.gameObject.scene != curScene) 
+                continue;
+            if (!BowlUIs.Any(b => b.SerializedData == bowl) && (Selection.activeGameObject == bowl.gameObject || !EditorPrefs.GetBool("SelectedBowlsOnly", true)) && !PrefabUtility.IsPartOfAnyPrefab(bowl))
                 UltNoodleBowlUI.New(this, D, bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath);
+        }
 
         
     }

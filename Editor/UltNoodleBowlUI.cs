@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UltEvents;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static UnityEditor.UIElements.ToolbarMenu;
@@ -280,7 +281,9 @@ public class UltNoodleBowlUI : VisualElement
     public UltNoodleEditor Editor;
     public void Validate() // validate this bowl UI and its nodes
     {
-        if (Component == null || (Selection.activeGameObject != SerializedData.gameObject && EditorPrefs.GetBool("SelectedBowlsOnly", true))) //kms if no evt / unfocused
+        if (Component == null //kms if no evt
+        || (Selection.activeGameObject != SerializedData.gameObject && EditorPrefs.GetBool("SelectedBowlsOnly", true)) // kms if unselected
+        || !(PrefabStageUtility.GetCurrentPrefabStage()?.IsPartOfPrefabContents(SerializedData.gameObject) ?? true) ) // kms if not in a prefab when prefab mode is active
         {
             Visual?.parent?.Remove(Visual);
             Editor.BowlUIs.Remove(this);
