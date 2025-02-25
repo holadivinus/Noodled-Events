@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using NoodledEvents;
 using SLZ.Marrow.Interaction;
 using SLZ.Marrow.Utilities;
@@ -38,14 +38,14 @@ public class ObjectFieldCookBook : CookBook
                     allDefs.Add(new NodeDef(this, $"{t.GetFriendlyName()}.getf_{field.Name}",
                         inputs: () => new Pin[] { new Pin("Get"), new Pin(t.GetFriendlyName(), t) },
                         outputs: () => new[] { new NodeDef.Pin("got"), new NodeDef.Pin(field.Name, field.FieldType) },
-                        bookTag: JsonUtility.ToJson(new SerializedField() { Field = field },
-                        overrideTooltip: $"{t.Namespace}.{t.GetFriendlyName()}.getf_{field.Name}"))
+                        bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }),
+                        tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.getf_{field.Name}")
                     ); 
                     allDefs.Add(new NodeDef(this, $"{t.GetFriendlyName()}.setf_{field.Name}",
                         inputs: () => new Pin[] { new Pin("Set"), new Pin(t.GetFriendlyName(), t), new NodeDef.Pin(field.Name, field.FieldType) },
                         outputs: () => new[] { new NodeDef.Pin("sot") },
-                        bookTag: JsonUtility.ToJson(new SerializedField() { Field = field },
-                        overrideTooltip: $"{t.Namespace}.{t.GetFriendlyName()}.setf_{field.Name}"))
+                        bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }),
+                        tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.setf_{field.Name}")
                     );
                 }
             } catch(TypeLoadException) { };
