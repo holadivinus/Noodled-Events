@@ -25,6 +25,6 @@
         <ui:Button display-tooltip-when-elided="true" name="SettingsBT" enable-rich-text="true" style="position: absolute; right: auto; left: 101%; margin-left: 0; margin-right: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0;">
             <ui:VisualElement name="cog" picking-mode="Ignore" usage-hints="DynamicTransform" style="background-image: url(&apos;project://database/Assets/Noodled-Events/Editor/UI%20Assets/cog.png?fileID=2800000&amp;guid=8cbd3d352e7b23d4388bd19f3e201d71&amp;type=3#cog&apos;); width: 15px; height: 15px; padding-left: 0; padding-right: 0; margin-left: 2px; margin-right: 2px; margin-top: 2px; margin-bottom: 2px; -unity-background-image-tint-color: rgb(195, 195, 195);" />
         </ui:Button>
-        <ui:VisualElement name="SearchSettings" style="position: absolute; left: 101%; width: 173px; height: 104px; top: 30px; background-color: rgba(115, 115, 115, 0.45); display: none; visibility: hidden;" />
+        <ui:VisualElement name="SearchSettings" style="position: absolute; left: 101%; width: 173px; height: 125px; top: 30px; background-color: rgba(115, 115, 115, 0.45); display: none; visibility: hidden;" />
     </ui:VisualElement>
 </ui:UXML>

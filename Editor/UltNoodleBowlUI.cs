@@ -280,7 +280,7 @@ public class UltNoodleBowlUI : VisualElement
     public UltNoodleEditor Editor;
     public void Validate() // validate this bowl UI and its nodes
     {
-        if (Component == null) //kms if no evt
+        if (Component == null || (Selection.activeGameObject != SerializedData.gameObject && EditorPrefs.GetBool("SelectedBowlsOnly", true))) //kms if no evt / unfocused
         {
             Visual?.parent?.Remove(Visual);
             Editor.BowlUIs.Remove(this);
