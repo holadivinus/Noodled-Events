@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using Codice.CM.SEIDInfo;
 using NoodledEvents;
 using System;
@@ -30,8 +30,26 @@ public class StaticMethodCookBook : CookBook
                 if (meth.DeclaringType != t) continue;
                 if (!meth.IsStatic) continue;
                 
+                string searchText = $"static {t.GetFriendlyName()}.{meth.Name}";
+                string descriptiveText = $"static {meth.ReturnType.GetFriendlyName()} {t.Namespace}.{t.GetFriendlyName()}.{meth.Name}";
 
-                //if (meth.IsConstructor) continue;
+                var parames = meth.GetParameters();
+                if (parames.Length == 0) descriptiveText += "()";
+                else
+                {
+                    descriptiveText += "(";
+                    searchText += "(";
+                    foreach (var param in parames)
+                    {
+                        searchText += $"{param.ParameterType.GetFriendlyName()}, ";
+                        descriptiveText += $"{param.ParameterType.GetFriendlyName()} {param.Name}, ";
+                    }
+                    descriptiveText = descriptiveText.Substring(0, descriptiveText.Length - 2);
+                    searchText = searchText.Substring(0, searchText.Length - 2);
+                    descriptiveText += ")";
+                    searchText += ")";
+                }
+
                 
                 allDefs.Add(new NodeDef(this, t.GetFriendlyName() + "." + meth.Name, 
                     inputs:() => 
@@ -46,39 +64,9 @@ public class StaticMethodCookBook : CookBook
                             return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.Name, meth.ReturnType) };
                         else return new[] { new NodeDef.Pin("Done") };
                     },
-                    searchItem:(def) =>
-                    {
-                        var o = new Button(() =>
-                        {
-                            // create serialized node.
-                            if (UltNoodleEditor.NewNodeBowl == null) return;
-                            var nod = UltNoodleEditor.NewNodeBowl.AddNode("static " + meth.Name, this).MatchDef(def);
-
-                            nod.BookTag = JsonUtility.ToJson(new SerializedMethod() { Method = meth });
-
-                            nod.Position = UltNoodleEditor.NewNodePos;
-                            UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                        });
-                        o.text = "static " + meth.DeclaringType.GetFriendlyName() + "." + meth.Name;
-                        var p = meth.GetParameters();
-                        if (p.Length == 0) o.text += "()";
-                        else
-                        {
-                            o.text += "(";
-                            foreach (var paramType in p)
-                            {
-                                o.text += paramType.ParameterType.GetFriendlyName() + " " + paramType.Name + ", ";
-                            }
-                            o.text = o.text.Substring(0, o.text.Length - 2);
-                            o.text += ")";
-                        }
-
-                        if (meth.ReturnType != typeof(void))
-                            o.text += " -> " + meth.ReturnType.GetFriendlyName();
-
-
-                        return o;
-                    })
+                    bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
+                    searchTextOverride: searchText,
+                    tooltipOverride: descriptiveText)
                 );
             }
         }

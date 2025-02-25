@@ -455,7 +455,7 @@ public class UltNoodleEditor : EditorWindow
     private bool _dragging;
     private void NodeFrameMouseDown(MouseDownEvent evt)
     {
-        if (evt.button == 1)
+        if (evt.button == 1 || evt.button == 2)
         {
             NodesFrame.CaptureMouse(); // to ensure we get MouseUp
             _dragging = true;
@@ -477,7 +477,7 @@ public class UltNoodleEditor : EditorWindow
     }
     private void NodeFrameMouseUp(MouseUpEvent evt)
     {
-        if (evt.button == 1)
+        if (evt.button == 1 || evt.button == 2)
         {
             NodesFrame.ReleaseMouse();
             _dragging = false;
@@ -597,6 +597,7 @@ public class UltNoodleEditor : EditorWindow
                         continue;
 
                 i--;
+                nd.SearchItem.style.unityTextAlign = TextAnchor.MiddleLeft;
                 SearchedTypes.Add(nd.SearchItem);
             }
         } 
