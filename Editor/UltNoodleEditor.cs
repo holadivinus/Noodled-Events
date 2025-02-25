@@ -446,7 +446,7 @@ public class UltNoodleEditor : EditorWindow
     private bool _dragging;
     private void NodeFrameMouseDown(MouseDownEvent evt)
     {
-        else if (evt.button == 1 || evt.button == 2)
+        if (evt.button == 1 || evt.button == 2)
         {
             NodesFrame.CaptureMouse(); // to ensure we get MouseUp
             _dragging = true;
