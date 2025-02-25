@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using Codice.CM.SEIDInfo;
 using NoodledEvents;
 using System;
@@ -33,15 +33,15 @@ public class StaticMethodCookBook : CookBook
                 string searchText = $"static {t.GetFriendlyName()}.{meth.Name}";
                 string descriptiveText = $"static {t.Namespace}.{t.GetFriendlyName()}.{meth.Name}";
 
-                var params = meth.GetParameters();
-                if (params.Length == 0) descriptiveText += "()";
+                var parames = meth.GetParameters();
+                if (parames.Length == 0) descriptiveText += "()";
                 else
                 {
                     descriptiveText += "(";
                     searchText += "(";
-                    foreach (var param in params)
+                    foreach (var param in parames)
                     {
-                        searchText += $"{param.ParameterType.GetFriendlyName()}, "
+                        searchText += $"{param.ParameterType.GetFriendlyName()}, ";
                         descriptiveText += $"{param.ParameterType.GetFriendlyName()} {param.Name}, ";
                     }
                     descriptiveText = descriptiveText.Substring(0, descriptiveText.Length - 2);
@@ -67,7 +67,7 @@ public class StaticMethodCookBook : CookBook
                     },
                     bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
                     searchTextOverride: searchText,
-                    overrideTooltip: descriptiveText)
+                    tooltipOverride: descriptiveText)
                 );
             }
         }
