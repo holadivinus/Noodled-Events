@@ -193,6 +193,15 @@ public class UltNoodleEditor : EditorWindow
         });
         SearchSettings.Add(spcTog);
 
+        // search autorefresh tog
+        var selectedOnlyTog = new Toggle("Show Selected Bowls Only") { value = EditorPrefs.GetBool("SelectedBowlsOnly", true) };
+        selectedOnlyTog.RegisterValueChangedCallback(e =>
+        {
+            EditorPrefs.SetBool("SelectedBowlsOnly", e.newValue);
+            this.OnFocus(); // update displays
+        });
+        root.Q("GroupPath").Insert(1, selectedOnlyTog);
+
 
 
         AllNodeDefs.Clear();
@@ -270,7 +279,7 @@ public class UltNoodleEditor : EditorWindow
 
         // autogen bowlsUIs
         foreach (var bowl in Resources.FindObjectsOfTypeAll<SerializedBowl>())
-            if (bowl.gameObject.scene == curScene && !BowlUIs.Any(b => b.SerializedData == bowl) && Selection.activeGameObject == bowl.gameObject && !PrefabUtility.IsPartOfAnyPrefab(bowl))
+            if (bowl.gameObject.scene == curScene && !BowlUIs.Any(b => b.SerializedData == bowl) && (Selection.activeGameObject == bowl.gameObject || !EditorPrefs.GetBool("SelectedBowlsOnly", true)) && !PrefabUtility.IsPartOfAnyPrefab(bowl))
                 UltNoodleBowlUI.New(this, D, bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath);
 
         
