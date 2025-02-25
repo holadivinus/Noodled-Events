@@ -31,7 +31,7 @@ public class StaticMethodCookBook : CookBook
                 if (!meth.IsStatic) continue;
                 
                 string searchText = $"static {t.GetFriendlyName()}.{meth.Name}";
-                string descriptiveText = $"static {t.Namespace}.{t.GetFriendlyName()}.{meth.Name}";
+                string descriptiveText = $"static {meth.ReturnType.GetFriendlyName()} {t.Namespace}.{t.GetFriendlyName()}.{meth.Name}";
 
                 var parames = meth.GetParameters();
                 if (parames.Length == 0) descriptiveText += "()";
@@ -49,7 +49,6 @@ public class StaticMethodCookBook : CookBook
                     descriptiveText += ")";
                     searchText += ")";
                 }
-                descriptiveText = $"{meth.ReturnType.GetFriendlyName()} {descriptiveText}";
 
                 
                 allDefs.Add(new NodeDef(this, t.GetFriendlyName() + "." + meth.Name, 
