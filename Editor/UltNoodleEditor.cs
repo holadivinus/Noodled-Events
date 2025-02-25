@@ -593,7 +593,6 @@ public class UltNoodleEditor : EditorWindow
                         continue;
 
                 i--;
-                nd.SearchItem.tooltip = ((Button)nd.SearchItem).text;
                 nd.SearchItem.style.unityTextAlign = TextAnchor.MiddleLeft;
                 SearchedTypes.Add(nd.SearchItem);
             }
