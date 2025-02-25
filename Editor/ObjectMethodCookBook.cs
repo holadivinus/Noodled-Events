@@ -24,24 +24,26 @@ public class ObjectMethodCookBook : CookBook
             {
                 if (meth.DeclaringType != t || meth.IsStatic) continue;
 
-                string descriptiveText = t.GetFriendlyName() + "." + meth.Name;
-                if(meth.ReturnType != typeof(void))
-                    descriptiveText = $"{meth.ReturnType.GetFriendlyName()} {descriptiveText}";
-                else
-                    descriptiveText = $"void {descriptiveText}";
+                string searchText = t.GetFriendlyName() + "." + meth.Name;
+                string descriptiveText = $"{t.Namespace}.{t.GetFriendlyName()}.{meth.Name}";
 
-                var p = meth.GetParameters();
-                if (p.Length == 0) descriptiveText += "()";
+                var params = meth.GetParameters();
+                if (params.Length == 0) descriptiveText += "()";
                 else
                 {
                     descriptiveText += "(";
-                    foreach (var paramType in p)
+                    searchText += "(";
+                    foreach (var param in params)
                     {
-                        o.text += $"{paramType.ParameterType.GetFriendlyName()} {paramType.Name}, ";
+                        searchText += $"{param.ParameterType.GetFriendlyName()}, "
+                        descriptiveText += $"{param.ParameterType.GetFriendlyName()} {param.Name}, ";
                     }
-                    descriptiveText = o.text.Substring(0, descriptiveText.Length - 2);
+                    descriptiveText = descriptiveText.Substring(0, descriptiveText.Length - 2);
+                    searchText = searchText.Substring(0, searchText.Length - 2);
                     descriptiveText += ")";
+                    searchText += ")";
                 }
+                descriptiveText = $"{meth.ReturnType.GetFriendlyName()} {descriptiveText}";
 
                 allDefs.Add(new NodeDef(this, t.GetFriendlyName() + "." + meth.Name, 
                     inputs:() => 
@@ -57,6 +59,7 @@ public class ObjectMethodCookBook : CookBook
                         else return new[] { new NodeDef.Pin("Done") };
                     },
                     bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
+                    searchTextOverride: searchText,
                     overrideTooltip: descriptiveText
                     // searchItem:(def) =>
                     // {

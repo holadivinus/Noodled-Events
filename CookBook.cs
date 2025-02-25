@@ -176,7 +176,6 @@ namespace NoodledEvents
         }
         public class NodeDef
         {
-            //public NodeDef() { }
             public NodeDef(CookBook book, string name, Func<Pin[]> inputs, Func<Pin[]> outputs, Func<NodeDef, VisualElement> searchItem) 
             {
                 CookBook = book; Name = name; Inputs = inputs?.Invoke() ?? new Pin[0]; Outputs = outputs?.Invoke() ?? new Pin[0];
