@@ -20,7 +20,7 @@ public class ObjectMethodCookBook : CookBook
                 continue;
 
             
-            foreach (var meth in t.GetMethods(UltEventUtils.AnyAccessBindings)) // haha very funny meth
+            foreach (var meth in t.GetMethods(UltEventUtils.AnyAccessBindings))
             {
                 if (meth.DeclaringType != t || meth.IsStatic) continue;
 
@@ -60,44 +60,7 @@ public class ObjectMethodCookBook : CookBook
                     },
                     bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
                     searchTextOverride: searchText,
-                    overrideTooltip: descriptiveText
-                    // searchItem:(def) =>
-                    // {
-                    //     var o = new Button(() =>
-                    //     {
-                    //         // create serialized node.
-                            
-                    //         if (UltNoodleEditor.NewNodeBowl == null) return;
-                    //         var nod = UltNoodleEditor.NewNodeBowl.AddNode(meth.Name, this).MatchDef(def);
-
-                    //         nod.BookTag = JsonUtility.ToJson(new SerializedMethod() { Method = meth });
-
-                    //         nod.Position = UltNoodleEditor.NewNodePos;
-                    //         UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                    //     });
-
-                    //     // button text
-                    //     o.text = meth.DeclaringType.GetFriendlyName() + "." + meth.Name;
-                    //     var p = meth.GetParameters();
-                    //     if (p.Length == 0) o.text += "()";
-                    //     else
-                    //     {
-                    //         o.text += "(";
-                    //         foreach (var paramType in p)
-                    //         {
-                    //             o.text += paramType.ParameterType.GetFriendlyName() + " " + paramType.Name + ", ";
-                    //         }
-                    //         o.text = o.text.Substring(0, o.text.Length - 2);
-                    //         o.text += ")";
-                    //     }
-
-                    //     if (meth.ReturnType != typeof(void))
-                    //         o.text += " -> " + meth.ReturnType.GetFriendlyName();
-
-
-                    //     return o;
-                    // }
-                    )
+                    overrideTooltip: descriptiveText)
                 );
             }
         }
