@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -183,12 +183,12 @@ namespace NoodledEvents
             }
             public NodeDef(CookBook book, string name, Func<Pin[]> inputs, Func<Pin[]> outputs, string bookTag = "", string searchTextOverride = "", string tooltipOverride = "") : this(book, name, inputs, outputs, (def) => 
                 {
-                    var o = new Button(() =>
+                    var o = new UnityEngine.UIElements.Button(() =>
                     {
                         if (UltNoodleEditor.NewNodeBowl == null) return;
                         var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, book).MatchDef(def);
 
-                        nod.BookTag = bookTag != string.Empty ? bookTag : def.name;
+                        nod.BookTag = bookTag != string.Empty ? bookTag : def.Name;
 
                         nod.Position = UltNoodleEditor.NewNodePos;
                         UltNoodleEditor.NewNodeBowl.Validate();
