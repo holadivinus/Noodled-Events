@@ -182,6 +182,29 @@ namespace NoodledEvents
                 CookBook = book; Name = name; Inputs = inputs?.Invoke() ?? new Pin[0]; Outputs = outputs?.Invoke() ?? new Pin[0];
                 createSearchItem = searchItem;
             }
+            public NodeDef(CookBook book, string name, Func<Pin[]> inputs, Func<Pin[]> outputs, string bookTag = "", string searchTextOverride = "", string tooltipOverride = "") 
+            {
+                CookBook = book; 
+                Name = name; 
+                Inputs = inputs?.Invoke() ?? new Pin[0]; 
+                Outputs = outputs?.Invoke() ?? new Pin[0];
+                createSearchItem = (def) => 
+                {
+                    var o = new Button(() =>
+                    {
+                        if (UltNoodleEditor.NewNodeBowl == null) return;
+                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, book).MatchDef(def);
+
+                        nod.BookTag = bookTag != string.Empty ? bookTag : def.name;
+
+                        nod.Position = UltNoodleEditor.NewNodePos;
+                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
+                    });
+                    o.text = searchTextOverride == string.Empty ? def.Name : searchTextOverride;
+                    o.tooltip = tooltipOverride == string.Empty ? o.text : tooltipOverride;
+                    return o;
+                };
+            }
             public string Name;
             public CookBook CookBook;
             public Pin[] Inputs;

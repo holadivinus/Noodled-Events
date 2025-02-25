@@ -22,150 +22,38 @@ public class CommonsCookBook : CookBook
         allDefs.Add(new NodeDef(this, "flow.if", 
             inputs:() => new[] { new Pin("Exec"), new Pin("condition", typeof(bool)) },
             outputs:() => new[] { new Pin("true"), new Pin("false") },
-            searchItem:(def) => 
-            {
-                var o = new Button(() =>
-                {
-                    // create serialized node.
-
-                    if (UltNoodleEditor.NewNodeBowl == null) return;
-                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                    nod.BookTag = "if";
-
-                    nod.Position = UltNoodleEditor.NewNodePos;
-                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                });
-                o.text = def.Name;
-                return o;
-            }));
+            bookTag: "if"));
 
         #region MATH
         allDefs.Add(new NodeDef(this, "math.add_floats",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
             outputs: () => new[] { new Pin("done"), new Pin("a+b", typeof(float)) },
-            searchItem: (def) =>
-            {
-                var o = new Button(() =>
-                {
-                    // create serialized node.
-
-                    if (UltNoodleEditor.NewNodeBowl == null) return;
-                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                    nod.BookTag = "add_floats";
-
-                    nod.Position = UltNoodleEditor.NewNodePos;
-                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                });
-                o.text = def.Name;
-                return o;
-            }));
+            bookTag: "add_floats"));
 
         allDefs.Add(new NodeDef(this, "math.sub_floats",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
             outputs: () => new[] { new Pin("done"), new Pin("a-b", typeof(float)) },
-            searchItem: (def) =>
-            {
-                var o = new Button(() =>
-                {
-                    // create serialized node.
-
-                    if (UltNoodleEditor.NewNodeBowl == null) return;
-                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                    nod.BookTag = "sub_floats";
-
-                    nod.Position = UltNoodleEditor.NewNodePos;
-                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                });
-                o.text = def.Name;
-                return o;
-            }));
+            bookTag: "sub_floats"));
 
         allDefs.Add(new NodeDef(this, "math.mul_floats",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
             outputs: () => new[] { new Pin("done"), new Pin("a*b", typeof(float)) },
-            searchItem: (def) =>
-            {
-                var o = new Button(() =>
-                {
-                    // create serialized node.
-
-                    if (UltNoodleEditor.NewNodeBowl == null) return;
-                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                    nod.BookTag = "mul_floats";
-
-                    nod.Position = UltNoodleEditor.NewNodePos;
-                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                });
-                o.text = def.Name;
-                return o;
-            }));
+            bookTag: "mul_floats"));
 
         allDefs.Add(new NodeDef(this, "math.div_floats",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
             outputs: () => new[] { new Pin("done"), new Pin("a/b", typeof(float)) },
-            searchItem: (def) =>
-            {
-                var o = new Button(() =>
-                {
-                    // create serialized node.
-
-                    if (UltNoodleEditor.NewNodeBowl == null) return;
-                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                    nod.BookTag = "div_floats";
-
-                    nod.Position = UltNoodleEditor.NewNodePos;
-                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                });
-                o.text = def.Name;
-                return o;
-            }));
+            bookTag: "div_floats"));
 
         allDefs.Add(new NodeDef(this, "math.greater",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
             outputs: () => new[] { new Pin("done"), new Pin("a > b", typeof(bool)) },
-            searchItem: (def) =>
-            {
-                var o = new Button(() =>
-                {
-                    // create serialized node.
-
-                    if (UltNoodleEditor.NewNodeBowl == null) return;
-                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                    nod.BookTag = "greater";
-
-                    nod.Position = UltNoodleEditor.NewNodePos;
-                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                });
-                o.text = def.Name;
-                return o;
-            }));
+            bookTag: "greater"));
 
         allDefs.Add(new NodeDef(this, "math.lesser",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
             outputs: () => new[] { new Pin("done"), new Pin("a < b", typeof(bool)) },
-            searchItem: (def) =>
-            {
-                var o = new Button(() =>
-                {
-                    // create serialized node.
-
-                    if (UltNoodleEditor.NewNodeBowl == null) return;
-                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                    nod.BookTag = "lesser";
-
-                    nod.Position = UltNoodleEditor.NewNodePos;
-                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                });
-                o.text = def.Name;
-                return o;
-            }));
+            bookTag: "lesser"));
         #endregion
 
         #region VARIABLES
@@ -173,45 +61,14 @@ public class CommonsCookBook : CookBook
         allDefs.Add(new NodeDef(this, "vars.set_bowl_float_var",
             inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", typeof(float)) },
             outputs: () => new[] { new Pin("done") },
-            searchItem: (def) =>
-            {
-                var o = new Button(() =>
-                {
-                    // create serialized node.
-
-                    if (UltNoodleEditor.NewNodeBowl == null) return;
-                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                    nod.BookTag = "set_bowl_float_var";
-
-                    nod.Position = UltNoodleEditor.NewNodePos;
-                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                });
-                o.text = def.Name;
-                return o;
-            }));
+            bookTag: "set_bowl_float_var"
+            ));
 
         // vars.set_bowl_float_var
-        allDefs.Add(new NodeDef(this, "vars.set_bowl_float_var",
+        allDefs.Add(new NodeDef(this, "vars.get_bowl_float_var", // Is this supposed to be SET? Book tag says Get
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const:true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", typeof(float)) },
-                searchItem: (def) =>
-                {
-                    var o = new Button(() =>
-                    {
-                        // create serialized node.
-
-                        if (UltNoodleEditor.NewNodeBowl == null) return;
-                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                        nod.BookTag = "get_bowl_float_var";
-
-                        nod.Position = UltNoodleEditor.NewNodePos;
-                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                    });
-                    o.text = def.Name;
-                    return o;
-                }));
+                bookTag: "get_bowl_float_var"));
 
         foreach (var storager in PendingConnection.CompStoragers)
         {
@@ -219,124 +76,28 @@ public class CommonsCookBook : CookBook
             allDefs.Add(new NodeDef(this, $"vars.set_scene_{storager.Key.GetFriendlyName()}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", storager.Key) },
                 outputs: () => new[] { new Pin("done") },
-                searchItem: (def) =>
-                {
-                    var o = new Button(() =>
-                    {
-                        // create serialized node.
-
-                        if (UltNoodleEditor.NewNodeBowl == null) return;
-                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                        nod.BookTag = $"set_scene_{storager.Key.GetFriendlyName()}_var";
-
-                        nod.Position = UltNoodleEditor.NewNodePos;
-                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                    });
-                    o.text = def.Name;
-                    return o;
-                }));
+                bookTag: $"set_scene_{storager.Key.GetFriendlyName()}_var"));
             allDefs.Add(new NodeDef(this, $"vars.get_scene_{storager.Key.GetFriendlyName()}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
-                searchItem: (def) =>
-                {
-                    var o = new Button(() =>
-                    {
-                        // create serialized node.
-
-                        if (UltNoodleEditor.NewNodeBowl == null) return;
-                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                        nod.BookTag = $"get_scene_{storager.Key.GetFriendlyName()}_var";
-
-                        nod.Position = UltNoodleEditor.NewNodePos;
-                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                    });
-                    o.text = def.Name;
-                    return o;
-                }));
+                bookTag: $"get_scene_{storager.Key.GetFriendlyName()}_var"));
             allDefs.Add(new NodeDef(this, $"vars.get_or_init_scene_{storager.Key.GetFriendlyName()}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("default/init value", storager.Key, @const: true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
-                searchItem: (def) =>
-                {
-                    var o = new Button(() =>
-                    {
-                        // create serialized node.
-
-                        if (UltNoodleEditor.NewNodeBowl == null) return;
-                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                        nod.BookTag = $"get_scene_{storager.Key.GetFriendlyName()}_var";
-
-                        nod.Position = UltNoodleEditor.NewNodePos;
-                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                    });
-                    o.text = def.Name;
-                    return o;
-                }));
+                bookTag: $"get_or_init_scene_{storager.Key.GetFriendlyName()}_var"));
             // gobj storagers
             allDefs.Add(new NodeDef(this, $"vars.set_gobj_{storager.Key.GetFriendlyName()}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", storager.Key), new Pin("gobj", typeof(GameObject), true) },
                 outputs: () => new[] { new Pin("done") },
-                searchItem: (def) =>
-                {
-                    var o = new Button(() =>
-                    {
-                        // create serialized node.
-
-                        if (UltNoodleEditor.NewNodeBowl == null) return;
-                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                        nod.BookTag = $"set_gobj_{storager.Key.GetFriendlyName()}_var";
-
-                        nod.Position = UltNoodleEditor.NewNodePos;
-                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                    });
-                    o.text = def.Name;
-                    return o;
-                }));
+                bookTag: $"set_gobj_{storager.Key.GetFriendlyName()}_var"));
             allDefs.Add(new NodeDef(this, $"vars.get_gobj_{storager.Key.GetFriendlyName()}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("gobj", typeof(GameObject), true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
-                searchItem: (def) =>
-                {
-                    var o = new Button(() =>
-                    {
-                        // create serialized node.
-
-                        if (UltNoodleEditor.NewNodeBowl == null) return;
-                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                        nod.BookTag = $"get_gobj_{storager.Key.GetFriendlyName()}_var";
-
-                        nod.Position = UltNoodleEditor.NewNodePos;
-                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                    });
-                    o.text = def.Name;
-                    return o;
-                }));
+                bookTag: $"get_gobj_{storager.Key.GetFriendlyName()}_var"));
             allDefs.Add(new NodeDef(this, $"vars.get_or_init_gobj_{storager.Key.GetFriendlyName()}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("gobj", typeof(GameObject), true), new Pin("default/init value", storager.Key, @const: true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
-                searchItem: (def) =>
-                {
-                    var o = new Button(() =>
-                    {
-                        // create serialized node.
-
-                        if (UltNoodleEditor.NewNodeBowl == null) return;
-                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                        nod.BookTag = $"get_gobj_{storager.Key.GetFriendlyName()}_var";
-
-                        nod.Position = UltNoodleEditor.NewNodePos;
-                        UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                    });
-                    o.text = def.Name;
-                    return o;
-                }));
+                bookTag: $"get_or_init_gobj_{storager.Key.GetFriendlyName()}_var"));
         }
         #endregion
 
@@ -344,23 +105,7 @@ public class CommonsCookBook : CookBook
         allDefs.Add(new NodeDef(this, "async.Wait",
             inputs: () => new[] { new Pin("Start"), new Pin("seconds", typeof(float)) },
             outputs: () => new[] { new Pin("On Started"), new Pin("After \"seconds\"") },
-            (def) => 
-            {
-                var o = new Button(() =>
-                {
-                    // create serialized node.
-
-                    if (UltNoodleEditor.NewNodeBowl == null) return;
-                    var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                    nod.BookTag = "wait";
-
-                    nod.Position = UltNoodleEditor.NewNodePos;
-                    UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                });
-                o.text = def.Name;
-                return o;
-            }));
+            bookTag: "wait"));
     }
     private static MethodInfo SetActive = typeof(GameObject).GetMethod("SetActive");
     private static PropertyInfo GetSetLocPos = typeof(Transform).GetProperty("localPosition");

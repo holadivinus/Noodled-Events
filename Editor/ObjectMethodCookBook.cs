@@ -20,9 +20,29 @@ public class ObjectMethodCookBook : CookBook
                 continue;
 
             
-            foreach (var meth in t.GetMethods(UltEventUtils.AnyAccessBindings))
+            foreach (var meth in t.GetMethods(UltEventUtils.AnyAccessBindings)) // haha very funny meth
             {
                 if (meth.DeclaringType != t || meth.IsStatic) continue;
+
+                string descriptiveText = t.GetFriendlyName() + "." + meth.Name;
+                if(meth.ReturnType != typeof(void))
+                    descriptiveText = $"{meth.ReturnType.GetFriendlyName()} {descriptiveText}";
+                else
+                    descriptiveText = $"void {descriptiveText}";
+
+                var p = meth.GetParameters();
+                if (p.Length == 0) descriptiveText += "()";
+                else
+                {
+                    descriptiveText += "(";
+                    foreach (var paramType in p)
+                    {
+                        o.text += $"{paramType.ParameterType.GetFriendlyName()} {paramType.Name}, ";
+                    }
+                    descriptiveText = o.text.Substring(0, descriptiveText.Length - 2);
+                    descriptiveText += ")";
+                }
+
                 allDefs.Add(new NodeDef(this, t.GetFriendlyName() + "." + meth.Name, 
                     inputs:() => 
                     {
@@ -36,42 +56,45 @@ public class ObjectMethodCookBook : CookBook
                             return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.Name, meth.ReturnType) };
                         else return new[] { new NodeDef.Pin("Done") };
                     },
-                    searchItem:(def) =>
-                    {
-                        var o = new Button(() =>
-                        {
-                            // create serialized node.
+                    bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
+                    overrideTooltip: descriptiveText
+                    // searchItem:(def) =>
+                    // {
+                    //     var o = new Button(() =>
+                    //     {
+                    //         // create serialized node.
                             
-                            if (UltNoodleEditor.NewNodeBowl == null) return;
-                            var nod = UltNoodleEditor.NewNodeBowl.AddNode(meth.Name, this).MatchDef(def);
+                    //         if (UltNoodleEditor.NewNodeBowl == null) return;
+                    //         var nod = UltNoodleEditor.NewNodeBowl.AddNode(meth.Name, this).MatchDef(def);
 
-                            nod.BookTag = JsonUtility.ToJson(new SerializedMethod() { Method = meth });
+                    //         nod.BookTag = JsonUtility.ToJson(new SerializedMethod() { Method = meth });
 
-                            nod.Position = UltNoodleEditor.NewNodePos;
-                            UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                        });
+                    //         nod.Position = UltNoodleEditor.NewNodePos;
+                    //         UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
+                    //     });
 
-                        // button text
-                        o.text = meth.DeclaringType.GetFriendlyName() + "." + meth.Name;
-                        var p = meth.GetParameters();
-                        if (p.Length == 0) o.text += "()";
-                        else
-                        {
-                            o.text += "(";
-                            foreach (var paramType in p)
-                            {
-                                o.text += paramType.ParameterType.GetFriendlyName() + " " + paramType.Name + ", ";
-                            }
-                            o.text = o.text.Substring(0, o.text.Length - 2);
-                            o.text += ")";
-                        }
+                    //     // button text
+                    //     o.text = meth.DeclaringType.GetFriendlyName() + "." + meth.Name;
+                    //     var p = meth.GetParameters();
+                    //     if (p.Length == 0) o.text += "()";
+                    //     else
+                    //     {
+                    //         o.text += "(";
+                    //         foreach (var paramType in p)
+                    //         {
+                    //             o.text += paramType.ParameterType.GetFriendlyName() + " " + paramType.Name + ", ";
+                    //         }
+                    //         o.text = o.text.Substring(0, o.text.Length - 2);
+                    //         o.text += ")";
+                    //     }
 
-                        if (meth.ReturnType != typeof(void))
-                            o.text += " -> " + meth.ReturnType.GetFriendlyName();
+                    //     if (meth.ReturnType != typeof(void))
+                    //         o.text += " -> " + meth.ReturnType.GetFriendlyName();
 
 
-                        return o;
-                    })
+                    //     return o;
+                    // }
+                    )
                 );
             }
         }

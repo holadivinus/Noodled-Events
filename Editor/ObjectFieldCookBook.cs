@@ -34,62 +34,14 @@ public class ObjectFieldCookBook : CookBook
                     if (!(field.IsPublic || field.GetCustomAttribute<SerializeField>() != null)) continue;
 
                     allDefs.Add(new NodeDef(this, t.GetFriendlyName() + ".getf_" + field.Name,
-                        inputs: () =>
-                        {
-                            return new Pin[] { new Pin("Get"), new Pin(t.GetFriendlyName(), t) };
-                        },
-                        outputs: () =>
-                        {
-                            return new[] { new NodeDef.Pin("got"), new NodeDef.Pin(field.Name, field.FieldType) };
-                        },
-                        searchItem: (def) =>
-                        {
-                            var o = new Button(() =>
-                            {
-                                // create serialized node.
-
-                                if (UltNoodleEditor.NewNodeBowl == null) return;
-                                var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                                nod.BookTag = JsonUtility.ToJson(new SerializedField() { Field = field });
-
-                                nod.Position = UltNoodleEditor.NewNodePos;
-                                UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                            });
-
-                            // button text
-                            o.text = field.DeclaringType.GetFriendlyName() + ".getf_" + field.Name;
-                            return o;
-                        })
+                        inputs: () => new Pin[] { new Pin("Get"), new Pin(t.GetFriendlyName(), t) },
+                        outputs: () => new[] { new NodeDef.Pin("got"), new NodeDef.Pin(field.Name, field.FieldType) },
+                        bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }))
                     ); 
                     allDefs.Add(new NodeDef(this, t.GetFriendlyName() + ".setf_" + field.Name,
-                        inputs: () =>
-                        {
-                            return new Pin[] { new Pin("Set"), new Pin(t.GetFriendlyName(), t), new NodeDef.Pin(field.Name, field.FieldType) };
-                        },
-                        outputs: () =>
-                        {
-                            return new[] { new NodeDef.Pin("sot") };
-                        },
-                        searchItem: (def) =>
-                        {
-                            var o = new Button(() =>
-                            {
-                                // create serialized node.
-
-                                if (UltNoodleEditor.NewNodeBowl == null) return;
-                                var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, this).MatchDef(def);
-
-                                nod.BookTag = JsonUtility.ToJson(new SerializedField() { Field = field });
-
-                                nod.Position = UltNoodleEditor.NewNodePos;
-                                UltNoodleEditor.NewNodeBowl.Validate(); // update ui 
-                            });
-
-                            // button text
-                            o.text = field.DeclaringType.GetFriendlyName() + ".setf_" + field.Name;
-                            return o;
-                        })
+                        inputs: () => new Pin[] { new Pin("Set"), new Pin(t.GetFriendlyName(), t), new NodeDef.Pin(field.Name, field.FieldType) },
+                        outputs: () => new[] { new NodeDef.Pin("sot") },
+                        bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }))
                     );
                 }
             } catch(TypeLoadException) { };
