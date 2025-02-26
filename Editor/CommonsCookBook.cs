@@ -245,6 +245,7 @@ public class CommonsCookBook : CookBook
                     var slowDataRoot = ats.StoreComp<LifeCycleEvents>("Async DataRoot");
                     slowDataRoot.gameObject.SetActive(true); // so OnEnabled runs when cloned
                     slowDataRoot.EnableEvent.EnsurePCallList();
+                    slowDataRoot.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
 
                     var delayedEvt = slowDataRoot.gameObject.AddComponent<DelayedUltEventHolder>();
                     delayedEvt.Event.EnsurePCallList();

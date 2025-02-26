@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using Codice.Client.BaseCommands.BranchExplorer;
 using NoodledEvents;
 using System;
 using System.Collections.Generic;
@@ -64,15 +65,225 @@ public class ObjectMethodCookBook : CookBook
                 );
             }
         }
+
+        allDefs.Add(new NodeDef(this, "UltSwap",
+            inputs: () => new Pin[] { new("") },
+            outputs: () => new Pin[] { new("On Cache"), new("Post Cache"), new("Cached", typeof(UnityEngine.Object)) },
+            bookTag: "UltSwap-Head",
+            searchTextOverride: "Ult Swap",
+            tooltipOverride: "Cache and Use a found UnityObject."));
+
+        allDefs.Add(new NodeDef(this, "UltSwap Cacher",
+            inputs: () => new Pin[] { new("Finish Cache"), new("Cached", typeof(UnityEngine.Object)) },
+            outputs: () => new Pin[] { },
+            bookTag: "UltSwap-Foot",
+            searchTextOverride: "Ult Swap Cacher",
+            tooltipOverride: "Caches an UnityObject for an Ultswap"));
     }
     
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
-        // figure node method
-        SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
-
         // sanity check (AddComponent() leaves this field empty)
         if (evt.PersistentCallsList == null) evt.FSetPCalls(new());
+
+        if (!node.BookTag.StartsWith('{')) // UltSwap stuff
+        {
+            (Type, PropertyInfo) BLXRData = PendingConnection.CompStoragers[typeof(UnityEngine.Object)];
+            switch (node.BookTag)
+            {
+                case "UltSwap-Head":
+                    {
+                        // Here's what the heirarchy will look like:
+                        // bowl_generated/UltSwap/OnCache/OnEnable
+                        // bowl_generated/UltSwap/PostCache/Safety/OnEnable
+                        //
+                        // on Invoke, we'll enable "bowl_generated/UltSwap/OnCache";
+                        //    OnCache will run (finding the targ obj as the user specifies)
+                        //    will "ultswap" "bowl_generated/UltSwap/PostCache"
+                        //    will enable bowl_generated/UltSwap/PostCache/Safety
+                        //    will kill itself (as an optimization)
+                        //
+                        // then we'll enable "bowl_generated/UltSwap/PostCache" (will only do final exec if OnCache succeeded! :>)
+
+                        var swapRoot = dataRoot.StoreTransform("UltSwap");
+                        swapRoot.gameObject.SetActive(true);
+                        var onCache = swapRoot.StoreTransform("OnCache");
+                        var onCacheEvt = onCache.StoreComp<LifeCycleEvents>("OnEnable");
+                        onCacheEvt.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+                        onCacheEvt.gameObject.SetActive(true);
+                        var postCacheA = swapRoot.StoreTransform("PostCache");
+                        var postCacheB = postCacheA.StoreTransform("Safety");
+                        var postCache = postCacheB.StoreComp<LifeCycleEvents>("PostCache");
+                        postCache.gameObject.SetActive(true);
+                        postCache.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+                        var BLXRStorager = swapRoot.StoreComp(BLXRData.Item1, "Obj Storage");
+                        BLXRData.Item2.SetMethod.Invoke(BLXRStorager, new[] { node.Bowl.EventHolder });
+
+                        // activate OnCache
+                        var pcal1 = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), onCache.gameObject);
+                        pcal1.PersistentArguments[0].Bool = true;
+                        evt.PersistentCallsList.Add(pcal1);
+                        // reset
+                        var pcala = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), onCache.gameObject);
+                        pcala.PersistentArguments[0].Bool = false;
+                        evt.PersistentCallsList.Add(pcala);
+
+                        // Try Invoke PostCache
+                        var pcal2 = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), postCacheA.gameObject);
+                        pcal2.PersistentArguments[0].Bool = true;
+                        evt.PersistentCallsList.Add(pcal2);
+                        // reset
+                        var pcal3 = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), postCacheA.gameObject);
+                        pcal3.PersistentArguments[0].Bool = false;
+                        evt.PersistentCallsList.Add(pcal3);
+
+
+                        // Compile PostCache, having the Cache Output being BLXR Getter
+                        node.DataOutputs[0].CompEvt = postCache.EnableEvent;
+                        postCache.EnableEvent.FSetPCalls(new List<PersistentCall>());
+                        postCache.EnableEvent.PersistentCallsList.Add(node.DataOutputs[0].CompCall = new PersistentCall(BLXRData.Item2.GetMethod, BLXRStorager));
+
+                        var postCacheNode = node.FlowOutputs[1].Target?.Node;
+                        if (postCacheNode != null)
+                            postCacheNode.Book.CompileNode(postCache.EnableEvent, postCacheNode, postCache.gameObject.transform);
+
+                        // compile the footer
+                        var onCacheNode = node.FlowOutputs[0].Target?.Node;
+                        if (onCacheNode != null)
+                        {
+                            onCacheEvt.EnableEvent.FSetPCalls(new List<PersistentCall>());
+                            onCacheNode.Book.CompileNode(onCacheEvt.EnableEvent, onCacheNode, onCacheEvt.gameObject.transform);
+                        }
+                        break;
+                    }
+                case "UltSwap-Foot":
+                    {
+                        // this node will seek up to its head;
+                        // find the bowl_generated/UltSwap/PostCache event;
+                        // generate ult-swapping code for all descending evts that ref Head's "Cached" output
+
+                        // find first "OnCache" in parents!
+                        Transform p = dataRoot.transform;
+                        while (p != null && p.gameObject.name != "OnCache")
+                            p = p.parent;
+                        if (p == null) return; // user error lol
+
+                        var BLXRComp = p.parent.GetChild(2).GetComponent(BLXRData.Item1);
+
+                        // if a PCall has this as its source, it needs to be retargetted.
+                        UnityEngine.Object SourceMarker = (UnityEngine.Object)BLXRData.Item2.GetMethod.Invoke(BLXRComp, null);
+
+
+                        // ToJson the BLXRComp, and get the ID string to replace on the target events.
+                        var blxrTojson = new PersistentCall(typeof(JsonUtility).GetMethod("ToJson", new Type[] { typeof(object) }), null);
+                        blxrTojson.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = BLXRComp;
+                        evt.PersistentCallsList.Add(blxrTojson);
+
+                        // cut off the start of this tojson 
+                        var cutStart = new PersistentCall();
+                        cutStart.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
+                        cutStart.FSetArguments(
+                            new PersistentArgument().ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
+                            new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("^(.*\"m_InteractorSource\":)"),
+                            new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("")
+                            );
+                        evt.PersistentCallsList.Add(cutStart);
+
+                        // and the end
+                        var cutEnd = new PersistentCall();
+                        cutEnd.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
+                        cutEnd.FSetArguments(
+                            new PersistentArgument().ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
+                            new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString(",\"m_I(.)*"),
+                            new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("")
+                            );
+                        evt.PersistentCallsList.Add(cutEnd); // Alr, this call's retval is the "to be replaced" ID!
+
+                        var blxrChange = new PersistentCall(BLXRData.Item2.SetMethod, BLXRComp);
+                        if (node.DataInputs[0].Source != null)
+                            new PendingConnection(node.DataInputs[0].Source, evt, blxrChange, 0).Connect(dataRoot);
+                        else blxrChange.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = node.DataInputs[0].DefaultObject;
+                        evt.PersistentCallsList.Add(blxrChange);
+
+                        // ToJson the BLXRComp, and get the ID string to replace WITH on the target events.
+                        var blxrTojson2 = new PersistentCall(typeof(JsonUtility).GetMethod("ToJson", new Type[] { typeof(object) }), null);
+                        blxrTojson2.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = BLXRComp;
+                        evt.PersistentCallsList.Add(blxrTojson2);
+
+                        // cut off the start of this tojson 
+                        var cutStart2 = new PersistentCall();
+                        cutStart2.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
+                        cutStart2.FSetArguments(
+                            new PersistentArgument().ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
+                            new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("^(.*\"m_InteractorSource\":)"),
+                            new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("")
+                            );
+                        evt.PersistentCallsList.Add(cutStart2);
+
+                        // and the end
+                        var cutEnd2 = new PersistentCall();
+                        cutEnd2.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
+                        cutEnd2.FSetArguments(
+                            new PersistentArgument().ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
+                            new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString(",\"m_I(.)*"),
+                            new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("")
+                            );
+                        evt.PersistentCallsList.Add(cutEnd2); // Alr, this call's retval is the "to be replaced WITH" ID!
+
+                        int replacedID = evt.PersistentCallsList.IndexOf(cutEnd);
+                        int replaceWithID = evt.PersistentCallsList.IndexOf(cutEnd2);
+
+                        // now we'll tojson all descendent comps that ref SourceMarker.
+                        foreach (Component comp in p.parent.GetChild(1).GetComponentsInChildren<Component>(true))
+                        {
+                            foreach (var compField in comp.GetType().GetFields(UltEventUtils.AnyAccessBindings))
+                            {
+                                if (typeof(UltEventBase).IsAssignableFrom(compField.FieldType)) // this field is an ultevent!
+                                {
+                                    // So, we'll do the whole shebang with this comp.
+
+                                    // ToJson this comp:
+                                    var toJson = new PersistentCall(typeof(JsonUtility).GetMethod("ToJson", new Type[] { typeof(object) }), null);
+                                    toJson.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = comp;
+                                    evt.PersistentCallsList.Add(toJson);
+                                    // Replace old ID with new 
+                                    var replaceIDcall = new PersistentCall();
+                                    replaceIDcall.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
+                                    replaceIDcall.FSetArguments(
+                                        new PersistentArgument().ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
+                                        new PersistentArgument().ToRetVal(replacedID, typeof(string)),
+                                        new PersistentArgument().ToRetVal(replaceWithID, typeof(string))
+                                        );
+                                    evt.PersistentCallsList.Add(replaceIDcall);
+                                    // FromJson this comp:
+                                    var fromJson = new PersistentCall(typeof(JsonUtility).GetMethod("FromJsonOverwrite", new Type[] { typeof(string), typeof(object) }), null);
+                                    fromJson.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
+                                    fromJson.PersistentArguments[1].FSetType(PersistentArgumentType.Object).Object = comp;
+                                    evt.PersistentCallsList.Add(fromJson);
+
+                                    break; // move to next comp
+                                }
+                            }
+                        }
+                        // enable PostCache's safety, so it'll get called by head in all future invokes:
+                        var safetyOff = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), p.parent.GetChild(1).GetChild(0).gameObject);
+                        safetyOff.PersistentArguments[0].Bool = true;
+                        evt.PersistentCallsList.Add(safetyOff);
+
+                        // and finally delete ourself
+                        // okay editor hates deleting for a multitude of reasons, so we'll just deactivate lol
+                        var deactivation = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), p.GetChild(0).gameObject);
+                        deactivation.PersistentArguments[0].Bool = false;
+                        evt.PersistentCallsList.Add(deactivation);
+
+                        break;
+                    }
+            }
+            return;
+        }
+
+        // figure node method
+        SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 
         // make my PCall    
         PersistentCall myCall = new PersistentCall();
@@ -83,15 +294,24 @@ public class ObjectMethodCookBook : CookBook
         UltEventHolder varyEvt = null;
         UltEventBase pre = evt;
         // if the source varies
-        if (node.DataInputs[0].Source != null)
-        {
-            // we need to json
-            // make event for jsonning
-            varyEvt = dataRoot.StoreComp<UltEventHolder>("varyingEvt");
-            varyEvt.Event = new UltEvent();
-            varyEvt.Event.FSetPCalls(new());
-            evt = varyEvt.Event; // move stuff to the targevt
-            myCall.FSetTarget(null);
+        if (node.DataInputs[0].Source != null) // Okay, for Ult-Swap-Caching: uhhh
+        {                                      // if the source node is an ult-swap head, we ref a template object (lets just use the src evt)
+                                               // then, in OnCache, we get the temp obj ref as a string; tojson child evts; replace temp ref with real ref; fromJson.
+            if (node.DataInputs[0].Source.Node.BookTag == "UltSwap-Head")
+            {
+                myCall.FSetTarget(node.DataInputs[0].Source.Node.Bowl.EventHolder);
+            }
+            else
+            {
+                // we need to json
+                // make event for jsonning
+                // TODO: UltSwap Cach chip
+                varyEvt = dataRoot.StoreComp<UltEventHolder>("varyingEvt");
+                varyEvt.Event = new UltEvent();
+                varyEvt.Event.FSetPCalls(new());
+                evt = varyEvt.Event; // move stuff to the targevt
+                myCall.FSetTarget(null);
+            }
         }
         
         
@@ -172,7 +392,7 @@ public class ObjectMethodCookBook : CookBook
 
         evt.PersistentCallsList.Add(myCall);
 
-        if (node.DataInputs[0].Source != null)
+        if (node.DataInputs[0].Source != null && myCall.Target == null)
         {
             // if evt had data output, get data
             Component retValStore = null;

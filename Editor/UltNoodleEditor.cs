@@ -287,8 +287,6 @@ public class UltNoodleEditor : EditorWindow
             if (!BowlUIs.Any(b => b.SerializedData == bowl) && (Selection.activeGameObject == bowl.gameObject || !EditorPrefs.GetBool("SelectedBowlsOnly", true)) && !PrefabUtility.IsPartOfAnyPrefab(bowl))
                 UltNoodleBowlUI.New(this, D, bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath);
         }
-
-        
     }
 
     #region Noodle Bowl Prompts
