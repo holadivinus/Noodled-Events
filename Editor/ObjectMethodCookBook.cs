@@ -66,18 +66,16 @@ public class ObjectMethodCookBook : CookBook
             }
         }
 
-        allDefs.Add(new NodeDef(this, "UltSwap",
+        allDefs.Add(new NodeDef(this, "flow.ult_swap",
             inputs: () => new Pin[] { new("") },
             outputs: () => new Pin[] { new("On Cache"), new("Post Cache"), new("Cached", typeof(UnityEngine.Object)) },
             bookTag: "UltSwap-Head",
-            searchTextOverride: "Ult Swap",
             tooltipOverride: "Cache and Use a found UnityObject."));
 
-        allDefs.Add(new NodeDef(this, "UltSwap Cacher",
+        allDefs.Add(new NodeDef(this, "flow.ult_swap_end",
             inputs: () => new Pin[] { new("Finish Cache"), new("Cached", typeof(UnityEngine.Object)) },
             outputs: () => new Pin[] { },
             bookTag: "UltSwap-Foot",
-            searchTextOverride: "Ult Swap Cacher",
             tooltipOverride: "Caches an UnityObject for an Ultswap"));
     }
     

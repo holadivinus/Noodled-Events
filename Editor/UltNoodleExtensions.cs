@@ -65,14 +65,14 @@ namespace NoodledEvents
                 }
             }*/
             
-            EditorUtility.DisplayProgressBar("Finding Types...", "", 0);
+            //EditorUtility.DisplayProgressBar("Finding Types...", "", 0);
             var assembs = AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.FullName.StartsWith("UnityEditor"));
             float n = (float)assembs.Count();
             int i = 0;
             var types = assembs
                 .SelectMany(assembly =>
                 {
-                    EditorUtility.DisplayProgressBar("Finding Types...", assembly.FullName, (++i)/n);
+                    //EditorUtility.DisplayProgressBar("Finding Types...", assembly.FullName, (++i)/n);
                     try
                     {
                         return assembly.GetTypes();

@@ -43,6 +43,7 @@ public class UltNoodleEditor : EditorWindow
     [SerializeField] public CookBook StaticCookBook;
     [SerializeField] public CookBook ObjectCookBook;
     [SerializeField] public CookBook ObjectFCookBook;
+    [SerializeField] public CookBook LoopsCookBook;
 
 
 
@@ -50,7 +51,7 @@ public class UltNoodleEditor : EditorWindow
     public static void test()
     {
         //Selection.activeGameObject.GetComponent<UltEventHolder>().Event.PersistentCallsList[0].SetMethod(typeof(NavMeshHit).GetConstructors(UltEventUtils.AnyAccessBindings)[0], null);
-        AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<ObjectFieldCookBook>(), "Assets/ObjectFieldCookBook.asset");
+        AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<LoopsCookBook>(), "Assets/LoopsCookBook.asset");
         return; 
         
     }
@@ -211,9 +212,15 @@ public class UltNoodleEditor : EditorWindow
         if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
         if (!cookBooks.Contains(ObjectCookBook)) cookBooks = cookBooks.Append(ObjectCookBook);
         if (!cookBooks.Contains(ObjectFCookBook)) cookBooks = cookBooks.Append(ObjectFCookBook);
+        if (!cookBooks.Contains(LoopsCookBook)) cookBooks = cookBooks.Append(ObjectCookBook);
+        EditorUtility.DisplayProgressBar("Loading Noodle Editor...", "", 0);
+        int cur = 0;
+        int final = cookBooks.Count();
         foreach (CookBook sdenhr in cookBooks)
         {
             CookBook book = sdenhr; //lol (this is like this for a reason trust me)
+            cur++;
+            EditorUtility.DisplayProgressBar("Loading Noodle Editor...", book.name, (float)cur/final);
             book.CollectDefs(AllNodeDefs);
 
             //also search toggle
@@ -226,6 +233,7 @@ public class UltNoodleEditor : EditorWindow
             BookFilters[book] = true;
             SearchSettings.Add(tog);
         }
+        EditorUtility.ClearProgressBar();
     }
     Dictionary<CookBook, bool> BookFilters = new Dictionary<CookBook, bool>();
     private bool _created = false;
