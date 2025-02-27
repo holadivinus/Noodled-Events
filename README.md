@@ -10,3 +10,5 @@ Node-Based Editor for Unity Ult-Events, with special nodes for the MarrowSDK.<br
  - Press Add <br />
  
 Once installed, Create & View a "Bowl" by right clicking on an Event Holder > Noodle Bowl.<br />
+
+[Custom Nodes Docs](CustomNodes.md)
