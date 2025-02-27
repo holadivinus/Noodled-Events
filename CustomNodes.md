@@ -66,3 +66,17 @@ If you don't hit either, the loop wont continue or end, and instead will just di
 ![picture of for loop](Docs/forloop.png)<br>
 (fyi loops.continue and loops.break are compatible with async.wait)<br>
 </details>
+
+<details>
+<summary>UltSwapping/Caching</summary>
+  The flow.ult_swap node will run "On Cache" untill a flow.ult_swap_end node reports a found object;<br>
+  Then, all future execution will run "Post Cache", with access to the found object.<br>
+  Refferences to the found object will be UltSwapped in, so users won't need to perform hefty operations every frame.<br>
+  <br>
+  
+  ![picture of an ultswap setup](Docs/ultswap.png)
+</details>
+
+### Bonus Features:<br>
+ - Use outputs as Targets<br>
+ - Get and Set Fields<br>
