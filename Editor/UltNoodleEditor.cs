@@ -149,6 +149,8 @@ public class UltNoodleEditor : EditorWindow
         });
 
         NodesFrame.RegisterCallback<WheelEvent>(OnScroll);
+        NodesFrame.RegisterCallback<MouseEnterEvent>(a => shouldShake = true);
+        NodesFrame.RegisterCallback<MouseLeaveEvent>(b => shouldShake = false);
         NodesFrame.RegisterCallback<MouseDownEvent>(NodeFrameMouseDown);
         NodesFrame.RegisterCallback<MouseMoveEvent>(NodeFrameMouseMove);
         NodesFrame.RegisterCallback<MouseUpEvent>(NodeFrameMouseUp);
@@ -831,18 +833,25 @@ public class UltNoodleEditor : EditorWindow
     public static Dictionary<Type, Foldout> TypeFolds = new();
 
     bool jig = false;
+    bool shouldShake = false;
     private void OnUpdate()
     {
         //if (SearchMenu.visible)
         //    LoadVisibleSearchResults();
         cog.style.rotate = new Rotate(cog.style.rotate.value.angle.value + .01f);
 
-        float f = 1.0001f;
-        jig = !jig;
-        if (jig)
-            C.transform.scale *= f;
-        else 
-            C.transform.scale /= f;
+        // we do this so text stops magically dissapearing.
+        // However, this somehow generates garbage faster than the garbage collector.
+        // so, we'll only do this while the mouse is over the window.
+        if (shouldShake) 
+        { 
+            float f = 1.0001f;
+            jig = !jig;
+            if (jig)
+                C.transform.scale *= f;
+            else
+                C.transform.scale /= f;
+        }
     }
     private void OnDestroy()
     {
