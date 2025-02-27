@@ -14,5 +14,6 @@ Once installed, Create & View a "Bowl" by right clicking on an Event Holder > No
 Create Nodes with the Search Bar via Space,<br />
 Make connections by dragging output to input,<br />
 and disconnect wires by CTRL+Clicking on them.<br />
+Use Middle-Click or Right-Click to drag your view arround.<br />
 <br />
 [Custom Nodes Docs](CustomNodes.md)
