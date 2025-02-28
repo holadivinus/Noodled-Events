@@ -77,6 +77,12 @@ public class ObjectMethodCookBook : CookBook
             outputs: () => new Pin[] { },
             bookTag: "UltSwap-Foot",
             tooltipOverride: "Caches an UnityObject for an Ultswap"));
+
+        allDefs.Add(new NodeDef(this, "flow.ult_swap_reset",
+            inputs: () => new Pin[] { new("Reset Cache"), new("Re-cache Immediately?", typeof(bool), @const:true) },
+            outputs: () => new Pin[] { },
+            bookTag: "UltSwap-Reset",
+            tooltipOverride: "Resets an Ultswap, use in the Post Cache exec."));
     }
     
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
@@ -118,20 +124,20 @@ public class ObjectMethodCookBook : CookBook
                         BLXRData.Item2.SetMethod.Invoke(BLXRStorager, new[] { node.Bowl.EventHolder });
 
                         // activate OnCache
-                        var pcal1 = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), onCache.gameObject);
+                        var pcal1 = new PersistentCall(SetActive, onCache.gameObject);
                         pcal1.PersistentArguments[0].Bool = true;
                         evt.PersistentCallsList.Add(pcal1);
                         // reset
-                        var pcala = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), onCache.gameObject);
+                        var pcala = new PersistentCall(SetActive, onCache.gameObject);
                         pcala.PersistentArguments[0].Bool = false;
                         evt.PersistentCallsList.Add(pcala);
 
                         // Try Invoke PostCache
-                        var pcal2 = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), postCacheA.gameObject);
+                        var pcal2 = new PersistentCall(SetActive, postCacheA.gameObject);
                         pcal2.PersistentArguments[0].Bool = true;
                         evt.PersistentCallsList.Add(pcal2);
                         // reset
-                        var pcal3 = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), postCacheA.gameObject);
+                        var pcal3 = new PersistentCall(SetActive, postCacheA.gameObject);
                         pcal3.PersistentArguments[0].Bool = false;
                         evt.PersistentCallsList.Add(pcal3);
 
@@ -264,16 +270,85 @@ public class ObjectMethodCookBook : CookBook
                             }
                         }
                         // enable PostCache's safety, so it'll get called by head in all future invokes:
-                        var safetyOff = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), p.parent.GetChild(1).GetChild(0).gameObject);
+                        var safetyOff = new PersistentCall(SetActive, p.parent.GetChild(1).GetChild(0).gameObject);
                         safetyOff.PersistentArguments[0].Bool = true;
                         evt.PersistentCallsList.Add(safetyOff);
 
                         // and finally delete ourself
                         // okay editor hates deleting for a multitude of reasons, so we'll just deactivate lol
-                        var deactivation = new PersistentCall(typeof(GameObject).GetMethod("SetActive"), p.GetChild(0).gameObject);
+                        var deactivation = new PersistentCall(SetActive, p.GetChild(0).gameObject);
                         deactivation.PersistentArguments[0].Bool = false;
                         evt.PersistentCallsList.Add(deactivation);
 
+                        break;
+                    }
+                case "UltSwap-Reset":
+                    {
+                        // bowl_generated/UltSwap/OnCache/OnEnable
+                        // bowl_generated/UltSwap/PostCache/Safety/OnEnable
+                        // this one is stored somewhere in PostCache;
+                        // We'll seek upwards untill we find Safety with PostCache above
+                        
+                        Transform p = dataRoot.transform;
+                        while(p != null && p.name != "Safety") // again we need a more "secure" system for in-book tagging.
+                            p = p.parent;
+                        if (p == null) return; //user error lol 3000
+
+                        // turn safety back on (aka disabled
+                        var safeOff = new PersistentCall(SetActive, p.gameObject);
+                        safeOff.PersistentArguments[0].Bool = false;
+                        evt.PersistentCallsList.Add(safeOff);
+
+                        // tell OnEnable that recaching is go. :)
+                        var OnCache = p.parent.parent.GetChild(0).GetChild(0).gameObject;
+                        var cacheOn = new PersistentCall(SetActive, OnCache);
+                        cacheOn.PersistentArguments[0].Bool = true;
+                        evt.PersistentCallsList.Add(cacheOn);
+
+                        // turn off postcache preemtively (since root hasn't yet :/
+                        var postcacheOff = new PersistentCall(SetActive, p.parent.gameObject);
+                        postcacheOff.PersistentArguments[0].Bool = false;
+                        evt.PersistentCallsList.Add(postcacheOff);
+
+                        if (node.DataInputs[0].DefaultBoolValue)
+                        {
+                            var reset = dataRoot.StoreTransform("off").StoreComp<LifeCycleEvents>("Reset");
+                            reset.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+                            reset.EnableEvent.FSetPCalls(new());
+                            reset.gameObject.SetActive(true);
+
+                            //  real resetcall
+                            var resetCall = new PersistentCall(typeof(UnityEngine.Object).GetMethod("Instantiate", new Type[] { typeof(UnityEngine.Object), typeof(Transform) }), reset);
+                            resetCall.PersistentArguments[0].Object = reset.gameObject;
+                            resetCall.PersistentArguments[1].Object = null;
+                            resetCall.PersistentArguments[1].FSetString(typeof(Transform).AssemblyQualifiedName);
+                            evt.PersistentCallsList.Add(resetCall);
+
+                            // now we on-off cache;
+                            var rs1 = new PersistentCall(SetActive, OnCache.transform.parent.gameObject);
+                            rs1.PersistentArguments[0].Bool = true;
+                            reset.EnableEvent.PersistentCallsList.Add(rs1);
+
+                            var rs2 = new PersistentCall(SetActive, OnCache.transform.parent.gameObject);
+                            rs2.PersistentArguments[0].Bool = false;
+                            reset.EnableEvent.PersistentCallsList.Add(rs2);
+                            // then on-off postcache.
+                            var rs3 = new PersistentCall(SetActive, p.parent.gameObject);
+                            rs3.PersistentArguments[0].Bool = true;
+                            reset.EnableEvent.PersistentCallsList.Add(rs3);
+
+                            var rs4 = new PersistentCall(SetActive, p.parent.gameObject);
+                            rs4.PersistentArguments[0].Bool = false;
+                            reset.EnableEvent.PersistentCallsList.Add(rs4);
+
+                            //var dbg = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
+                            //dbg.PersistentArguments[0].FSetType(PersistentArgumentType.String).FSetString("aaa");
+                            //reset.EnableEvent.PersistentCallsList.Add(dbg);
+                            var del = new PersistentCall(typeof(UnityEngine.Object).GetMethod("DestroyImmediate", new Type[] { typeof(UnityEngine.Object) }), null);
+                            del.PersistentArguments[0].Object = reset.gameObject;
+                            reset.EnableEvent.PersistentCallsList.Add(del);
+                        }
+                        // do note that sadly, this behavior cannot loop. use a while loop
                         break;
                     }
             }

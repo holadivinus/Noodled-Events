@@ -34,6 +34,10 @@ namespace NoodledEvents
                 catch (TypeLoadException) { }
             return null;
         }
+        // decided these were so usefull, that they should be accessible accross books.
+        protected static MethodInfo SetActive = typeof(GameObject).GetMethod("SetActive");
+        protected static PropertyInfo GetSetLocPos = typeof(Transform).GetProperty("localPosition");
+        protected static MethodInfo Translate = typeof(Transform).GetMethod("Translate", new Type[] { typeof(float), typeof(float), typeof(float) });
         public virtual void CollectDefs(List<NodeDef> allDefs) 
         {
             

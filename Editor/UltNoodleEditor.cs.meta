@@ -20,6 +20,7 @@ MonoImporter:
   - StaticCookBook: {fileID: 11400000, guid: fd6f7bcaa596bc640b3d509dada399ba, type: 2}
   - ObjectCookBook: {fileID: 11400000, guid: 97fafb592a7f3f442b952fdee70edf10, type: 2}
   - ObjectFCookBook: {fileID: 11400000, guid: a4cd300a552e93f439747b316c826027, type: 2}
+  - LoopsCookBook: {fileID: 11400000, guid: 0fc066266ca9e6544aaa7ed249db8835, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

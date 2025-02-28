@@ -107,9 +107,6 @@ public class CommonsCookBook : CookBook
             outputs: () => new[] { new Pin("On Started"), new Pin("After \"seconds\"") },
             bookTag: "wait"));
     }
-    private static MethodInfo SetActive = typeof(GameObject).GetMethod("SetActive");
-    private static PropertyInfo GetSetLocPos = typeof(Transform).GetProperty("localPosition");
-    private static MethodInfo Translate = typeof(Transform).GetMethod("Translate", new Type[] { typeof(float), typeof(float), typeof(float) });
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
         void SetSceneVar(GameObject gobjRoot)

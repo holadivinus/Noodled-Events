@@ -214,7 +214,7 @@ public class UltNoodleEditor : EditorWindow
         if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
         if (!cookBooks.Contains(ObjectCookBook)) cookBooks = cookBooks.Append(ObjectCookBook);
         if (!cookBooks.Contains(ObjectFCookBook)) cookBooks = cookBooks.Append(ObjectFCookBook);
-        if (!cookBooks.Contains(LoopsCookBook)) cookBooks = cookBooks.Append(ObjectCookBook);
+        if (!cookBooks.Contains(LoopsCookBook)) cookBooks = cookBooks.Append(LoopsCookBook);
         EditorUtility.DisplayProgressBar("Loading Noodle Editor...", "", 0);
         int cur = 0;
         int final = cookBooks.Count();
