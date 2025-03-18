@@ -1,16 +1,10 @@
 ﻿#if UNITY_EDITOR
-using Codice.CM.SEIDInfo;
-using Codice.CM.WorkspaceServer;
 using NoodledEvents;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using TMPro;
 using UltEvents;
 using UnityEngine;
-using UnityEngine.UIElements;
-using WebSocketSharp;
 using static NoodledEvents.CookBook.NodeDef;
 
 

@@ -1,5 +1,4 @@
 #if UNITY_EDITOR
-using Codice.Client.BaseCommands.BranchExplorer;
 using NoodledEvents;
 using System;
 using System.Collections.Generic;
@@ -7,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using UltEvents;
 using UnityEngine;
-using UnityEngine.UIElements;
 using static NoodledEvents.CookBook.NodeDef;
 
 
