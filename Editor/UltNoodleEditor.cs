@@ -538,6 +538,17 @@ public class UltNoodleEditor : EditorWindow
                 }
             } catch(TypeLoadException) { /* ignore evil types */ }
         }
+        FilteredNodeDefs.Sort((a, b) =>
+        {
+            var aTs = pinIn ? a.Inputs : a.Outputs;
+            var bTs = pinIn ? b.Inputs : b.Outputs;
+            bool aHasT = aTs.Any(p => p.Type == t);
+            bool bHasT = bTs.Any(p => p.Type == t);
+            if (aHasT && !bHasT) return -1;
+            if (aHasT == bHasT) return 0;
+            if (bHasT && !aHasT) return 1;
+            throw new NotImplementedException();
+        });
         // awesome
     }
     public void CloseSearchMenu()

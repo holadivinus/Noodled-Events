@@ -6,7 +6,6 @@
         <ui:Label text="Current Version: 1.0.0" display-tooltip-when-elided="true" name="CurVersionNum" style="-unity-text-align: middle-left;" />
         <ui:Button text="Button" display-tooltip-when-elided="true" name="NextVersionBT" />
     </ui:VisualElement>
-    <ui:Label text="Type Name Hyere" display-tooltip-when-elided="true" name="TypeHinter" picking-mode="Ignore" style="position: absolute; background-color: rgb(0, 0, 63); left: 0; top: 0; display: flex; visibility: hidden;" />
     <ui:VisualElement name="NodesFrame" usage-hints="DynamicTransform" style="flex-basis: 100%; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; overflow: hidden; visibility: visible; transform-origin: right;">
         <ui:VisualElement name="A" usage-hints="DynamicTransform" style="left: 171px; top: 210px; width: 0; height: 0; transform-origin: left top;">
             <ui:VisualElement name="B" usage-hints="DynamicTransform" style="scale: 1 1; transform-origin: left top;">
@@ -27,4 +26,5 @@
         </ui:Button>
         <ui:VisualElement name="SearchSettings" style="position: absolute; left: 101%; width: 173px; height: 125px; top: 30px; background-color: rgba(115, 115, 115, 0.45); display: none; visibility: hidden;" />
     </ui:VisualElement>
+    <ui:Label text="Type Name Hyere" display-tooltip-when-elided="true" name="TypeHinter" picking-mode="Ignore" style="position: absolute; background-color: rgb(0, 0, 63); left: 0; top: 0; display: flex; visibility: hidden;" />
 </ui:UXML>
