@@ -13,6 +13,7 @@ public class ObjectFieldCookBook : CookBook
     private Dictionary<FieldInfo, (NodeDef, NodeDef)> MyDefs = new();
     public override void CollectDefs(List<NodeDef> allDefs)
     {
+        MyDefs.Clear();
         foreach (var t in UltNoodleEditor.SearchableTypes)
         {
             try

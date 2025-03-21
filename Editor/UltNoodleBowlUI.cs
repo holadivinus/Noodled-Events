@@ -341,10 +341,11 @@ public class UltNoodleBowlUI : VisualElement
                     ConnectionLine.visible = true;
                     Vector2 sourceLoc = ConnectionLine.parent.WorldToLocal(ui.LocalToWorld(Vector2.zero));
                     //ConnectionLine.style.transformOrigin = new TransformOrigin(0, new Length(.5f, LengthUnit.Percent));
-                    ConnectionLine.style.left = sourceLoc.x + 4;
-                    ConnectionLine.style.top = sourceLoc.y + 2.5f;
-                    float x = MousePos.x - sourceLoc.x - 4;
-                    float y = MousePos.y - sourceLoc.y - 2.5f;
+                    ConnectionLine.style.left = sourceLoc.x + 8;
+                    ConnectionLine.style.top = sourceLoc.y + 7f;
+                    float x = MousePos.x - sourceLoc.x - 8;
+                    float y = MousePos.y - sourceLoc.y - 7f;
+
                     ConnectionLine.style.width = Mathf.Sqrt((x*x) + (y*y));
                     ConnectionLine.style.rotate = new Rotate(Mathf.Rad2Deg * Mathf.Atan2(y, x));
 

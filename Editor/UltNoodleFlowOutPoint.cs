@@ -58,9 +58,9 @@ public class UltNoodleFlowOutPoint : VisualElement
         {
             Line.visible = true;
             Vector2 start = Line.parent.WorldToLocal(SData.UI.LocalToWorld(Vector2.zero));
-            Vector2 end = Line.parent.WorldToLocal(SData.Target.UI.LocalToWorld(Vector2.zero)) - new Vector2(7, 0);
-            Line.style.left = start.x + 8;
-            Line.style.top = start.y + 3;
+            Vector2 end = Line.parent.WorldToLocal(SData.Target.UI.LocalToWorld(Vector2.zero)) - new Vector2(5, 0);
+            Line.style.left = start.x + 12;
+            Line.style.top = start.y + 8;
             Line.style.minWidth = Vector2.Distance(start, end);
 
             //rotat...

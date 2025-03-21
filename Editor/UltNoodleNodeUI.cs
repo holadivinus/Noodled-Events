@@ -198,18 +198,26 @@ public class UltNoodleNodeUI : VisualElement
             disp.pickingMode = PickingMode.Ignore;
 
 
-            var arrow = new VisualElement();
-            arrow.style.position = Position.Absolute;
-            arrow.style.backgroundImage = Bowl.Editor.ArrowPng;
-            arrow.style.width = 10;
-            arrow.style.height = 10;
-            arrow.style.top = 10;
-            arrow.style.left = -5;
-            disp.Add(arrow);
+            var col = new VisualElement();
+            col.style.position = Position.Absolute;
+            //arrow.style.backgroundImage = Bowl.Editor.ArrowPng;
+            col.style.width = 20;
+            col.style.height = 20;
+            col.style.top = 4;
+            col.style.left = -10;
+            disp.Add(col);
 
+            var ico = new VisualElement();
+            ico.style.position = Position.Absolute;
+            ico.style.backgroundImage = Bowl.Editor.ArrowPng;
+            ico.pickingMode = PickingMode.Ignore;
+            ico.style.width = 10;
+            ico.style.height = 10;
+            ico.style.top = 5;
+            ico.style.left = 5;
+            col.Add(ico);
 
-
-            input.UI = arrow;
+            input.UI = col;
 
             // Inform the bowl about drags
             input.UI.RegisterCallback<MouseEnterEvent>(e => input.HasMouse = true); input.UI.RegisterCallback<MouseLeaveEvent>(e => input.HasMouse = false);
@@ -242,19 +250,27 @@ public class UltNoodleNodeUI : VisualElement
             disp.style.borderBottomColor = new Color(0.2627451f, 0.2627451f, 0.2627451f, 1f);
             disp.style.borderBottomWidth = 1;
 
-            var circle = new VisualElement();
-            circle.style.position = Position.Absolute;
-            circle.style.backgroundColor = new Color(0.5176471f, 0.5176471f, 0.5176471f, 1f);
-            circle.style.borderRightColor = circle.style.borderLeftColor = circle.style.borderTopColor = circle.style.borderBottomColor = Color.black;
-            circle.style.borderBottomLeftRadius = circle.style.borderBottomRightRadius = circle.style.borderTopRightRadius = circle.style.borderTopLeftRadius = 4;
-            circle.style.borderRightWidth = circle.style.borderLeftWidth = circle.style.borderTopWidth = circle.style.borderBottomWidth = 3;
-            circle.style.width = 10;
-            circle.style.height = 10;
-            circle.style.top = 10;
-            circle.style.right = -5;
-            disp.Add(circle);
+            var col = new VisualElement();
+            col.style.position = Position.Absolute;
+            col.style.width = 20;
+            col.style.height = 20;
+            col.style.top = 4;
+            col.style.right = -10;
+            disp.Add(col);
 
-            
+            var circ = new VisualElement();
+            circ.style.position = Position.Absolute;
+            circ.pickingMode = PickingMode.Ignore;
+            circ.style.backgroundColor = new Color(0.5176471f, 0.5176471f, 0.5176471f, 1f);
+            circ.style.borderRightColor = circ.style.borderLeftColor = circ.style.borderTopColor = circ.style.borderBottomColor = Color.black;
+            circ.style.borderBottomLeftRadius = circ.style.borderBottomRightRadius = circ.style.borderTopRightRadius = circ.style.borderTopLeftRadius = 4;
+            circ.style.borderRightWidth = circ.style.borderLeftWidth = circ.style.borderTopWidth = circ.style.borderBottomWidth = 3;
+            circ.style.width = 10;
+            circ.style.height = 10;
+            circ.style.top = 5;
+            circ.style.right = 5;
+            col.Add(circ);
+
 
             var label = new Label(output.Name);
             label.style.paddingTop = 6;
@@ -263,7 +279,7 @@ public class UltNoodleNodeUI : VisualElement
             label.style.right = 7;
             disp.Add(label);
 
-            output.UI = circle;
+            output.UI = col;
 
             // Inform the bowl about drags
             output.UI.RegisterCallback<MouseEnterEvent>(e => { output.HasMouse = true; UltNoodleEditor.TypeHinter.visible = true; UltNoodleEditor.TypeHinter.text = output.Type.Type.GetFriendlyName(); });

@@ -15,6 +15,7 @@ public class StaticMethodCookBook : CookBook
     private Dictionary<MethodInfo, NodeDef> MyDefs = new();
     public override void CollectDefs(List<NodeDef> allDefs)
     {
+        MyDefs.Clear();
         foreach (var t in UltNoodleEditor.SearchableTypes)
         {
             MethodInfo[] methods = null;
