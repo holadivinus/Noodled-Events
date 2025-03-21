@@ -44,6 +44,7 @@ public class UltNoodleEditor : EditorWindow
     [SerializeField] public CookBook ObjectCookBook;
     [SerializeField] public CookBook ObjectFCookBook;
     [SerializeField] public CookBook LoopsCookBook;
+    public CookBook[] AllBooks;
 
 
 
@@ -236,6 +237,8 @@ public class UltNoodleEditor : EditorWindow
             SearchSettings.Add(tog);
         }
         EditorUtility.ClearProgressBar();
+
+        AllBooks = cookBooks.ToArray();
     }
     Dictionary<CookBook, bool> BookFilters = new Dictionary<CookBook, bool>();
     private bool _created = false;

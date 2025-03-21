@@ -6,7 +6,6 @@ using System.Reflection;
 using TMPro;
 using UltEvents;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.UIElements;
 
 namespace NoodledEvents
@@ -51,6 +50,24 @@ namespace NoodledEvents
             // ran when a bowl with a nodedef from this book has been compiled (and GetType injected!)
             // lalala
         }
+        // Ran one-shot when user hovers over the "Alternatives" dropdown bt
+        // string is the button, NodeDef is the node
+        public virtual Dictionary<string, NodeDef> GetAlternatives(SerializedNode node)
+        {
+            // Provides possible replacements for a node
+            return null;
+        }
+        // ran when one node becomes another
+        public virtual void SwapConnections(SerializedNode oldNode, SerializedNode newNode)
+        {
+            if (oldNode.FlowInputs.Length > 0 && newNode.FlowInputs.Length > 0)
+                foreach (var fsrc in oldNode.FlowInputs[0].Sources)
+                    fsrc.Connect(newNode.FlowInputs[0]);
+
+            if (oldNode.FlowOutputs.Length > 0 && newNode.FlowOutputs.Length > 0)
+                if (oldNode.FlowOutputs[0].Target != null)
+                    newNode.FlowOutputs[0].Connect(oldNode.FlowOutputs[0].Target);
+        }
         public class PendingConnection // utility class to link pcalls, with support for cross-event data transfer
         { 
             /// <summary>
@@ -76,7 +93,7 @@ namespace NoodledEvents
                 { typeof(UnityEngine.Object), (GetExtType("XRInteractorAffordanceStateProvider", XRAssembly), GetExtType("XRInteractorAffordanceStateProvider", XRAssembly).GetProperty("interactorSource", UltEventUtils.AnyAccessBindings)) },
                 { typeof(float), (typeof(SphereCollider), RadiusGetSet) },
                 { typeof(Material[]), (typeof(MeshRenderer), typeof(MeshRenderer).GetProperty("sharedMaterials", UltEventUtils.AnyAccessBindings)) },
-                { typeof(bool), (typeof(Mask), typeof(Mask).GetProperty("enabled")) },
+                { typeof(bool), (typeof(UnityEngine.UI.Mask), typeof(UnityEngine.UI.Mask).GetProperty("enabled")) },
                 { typeof(Vector3), (typeof(BoxCollider), typeof(BoxCollider).GetProperty(nameof(BoxCollider.center))) },
                 { typeof(string), (typeof(TextMeshPro), typeof(TMP_Text).GetProperty("text", UltEventUtils.AnyAccessBindings)) },
                 { typeof(int), (typeof(LineRenderer), typeof(LineRenderer).GetProperty("numCapVertices", UltEventUtils.AnyAccessBindings)) }
@@ -180,7 +197,7 @@ namespace NoodledEvents
         }
         public class NodeDef
         {
-            public NodeDef(CookBook book, string name, Func<Pin[]> inputs, Func<Pin[]> outputs, Func<NodeDef, VisualElement> searchItem) 
+            public NodeDef(CookBook book, string name, Func<Pin[]> inputs, Func<Pin[]> outputs, Func<NodeDef, Button> searchItem) 
             {
                 CookBook = book; Name = name; Inputs = inputs?.Invoke() ?? new Pin[0]; Outputs = outputs?.Invoke() ?? new Pin[0];
                 createSearchItem = searchItem;
@@ -192,7 +209,7 @@ namespace NoodledEvents
                         if (UltNoodleEditor.NewNodeBowl == null) return;
                         var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, book).MatchDef(def);
 
-                        nod.BookTag = bookTag != string.Empty ? bookTag : def.Name;
+                        nod.BookTag = def.BookTag != string.Empty ? def.BookTag : def.Name;
 
                         nod.Position = UltNoodleEditor.NewNodePos;
                         UltNoodleEditor.NewNodeBowl.Validate();
@@ -200,16 +217,17 @@ namespace NoodledEvents
                     o.text = searchTextOverride == string.Empty ? def.Name : searchTextOverride;
                     o.tooltip = tooltipOverride == string.Empty ? o.text : tooltipOverride;
                     return o;
-                }){}
+                }){ BookTag = bookTag; }
 
             public string Name;
             public CookBook CookBook;
             public Pin[] Inputs;
             public Pin[] Outputs;
+            public string BookTag;
             public Func<SerializedNode> CreateNode;
-            private Func<NodeDef, VisualElement> createSearchItem;
-            public VisualElement SearchItem => _searchItem ??= createSearchItem.Invoke(this);
-            private VisualElement _searchItem;
+            private Func<NodeDef, Button> createSearchItem;
+            public Button SearchItem => _searchItem ??= createSearchItem.Invoke(this);
+            private Button _searchItem;
 
             public class Pin
             {

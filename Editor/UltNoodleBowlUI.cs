@@ -120,9 +120,35 @@ public class UltNoodleBowlUI : VisualElement
         Visual.RegisterCallback<DragUpdatedEvent>((a) => { DragAndDrop.visualMode = DragAndDropVisualMode.Move; });
         Visual.RegisterCallback<DragPerformEvent>((a) => 
         {
-            Editor.SetSearchFilter(true, DragAndDrop.objectReferences[0].GetType());
-            MousePos = a.mousePosition;
-            Editor.OpenSearchMenu(true); 
+            // PLUHHHH
+            Vector2 mp = a.localMousePosition;
+            UnityEngine.Object targ = DragAndDrop.objectReferences[0];
+            void fin(UnityEngine.Object selectee)
+            {
+                var node = AddNode(selectee.GetType().Name, editor.ObjectCookBook);
+                var m = new SerializedMethod();
+                m.Method = selectee.GetType().GetMethods(UltEventUtils.AnyAccessBindings).FirstOrDefault()
+                ?? selectee.GetType().BaseType.GetMethods(UltEventUtils.AnyAccessBindings).First(); // not setting up a loop rn todo
+                node.BookTag = JsonUtility.ToJson(m);
+                node.Position = mp;
+                
+                Validate();
+            }
+            if (targ is GameObject gobj)
+            {
+                GenericMenu selor = new GenericMenu();
+
+                selor.AddDisabledItem(new GUIContent("Select Target"), false);
+                selor.AddSeparator("");
+                selor.AddItem(new GUIContent("GameObject"), false, () => fin(targ));
+                foreach (var comp in gobj.GetComponents<Component>())
+                {
+                    var c = comp;
+                    selor.AddItem(new GUIContent(comp.GetType().Name), false, () => fin(c));
+                }
+                selor.ShowAsContext();
+            }
+            else fin(targ);
         });
         
         NodeBG.Q("Nodes").RegisterCallback<MouseMoveEvent>(e => MousePos = e.localMousePosition);

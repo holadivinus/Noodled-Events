@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using NoodledEvents;
+using PlasticPipe.PlasticProtocol.Messages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,7 @@ using static NoodledEvents.CookBook.NodeDef;
 
 public class StaticMethodCookBook : CookBook
 {
+    private Dictionary<MethodInfo, NodeDef> MyDefs = new();
     public override void CollectDefs(List<NodeDef> allDefs)
     {
         foreach (var t in UltNoodleEditor.SearchableTypes)
@@ -47,7 +49,7 @@ public class StaticMethodCookBook : CookBook
                 }
 
                 
-                allDefs.Add(new NodeDef(this, t.GetFriendlyName() + "." + meth.Name, 
+                var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name, 
                     inputs:() => 
                     {
                         var @params = meth.GetParameters();
@@ -57,13 +59,14 @@ public class StaticMethodCookBook : CookBook
                     outputs:() => 
                     {
                         if (meth.GetRetType() != typeof(void))
-                            return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.Name, meth.ReturnType) };
+                            return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.GetFriendlyName(), meth.ReturnType) };
                         else return new[] { new NodeDef.Pin("Done") };
                     },
                     bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
                     searchTextOverride: searchText,
-                    tooltipOverride: descriptiveText)
-                );
+                    tooltipOverride: descriptiveText);
+                allDefs.Add(newDef);
+                MyDefs.Add(meth, newDef);
             }
         }
     }
@@ -167,6 +170,67 @@ public class StaticMethodCookBook : CookBook
         var nextNode = node.FlowOutputs[0].Target?.Node;
         if (nextNode != null)
             nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+    }
+
+    public override Dictionary<string, NodeDef> GetAlternatives(SerializedNode node)
+    {
+        Type srcType = null;
+        if (node.Book == this || node.Book.name == "ObjectMethodCookBook")
+        {
+            SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
+            srcType = meth.Method.DeclaringType;
+        }
+        else if (node.Book.name == "ObjectFieldCookBook")
+        {
+            SerializedField srcField = JsonUtility.FromJson<SerializedField>(node.BookTag);
+            srcType = srcField.Field.DeclaringType;
+        }
+        else return null;
+        Dictionary<string, NodeDef> o = new();
+        // figure node method
+
+        List<Type> relatives = new List<Type> { srcType };
+        Type cur = srcType;
+        while (cur != typeof(object))
+        {
+            cur = cur.BaseType;
+            relatives.Add(cur);
+        }
+        relatives.Add(cur);
+
+        foreach (var t in relatives)
+        {
+            string tName = t.GetFriendlyName();
+            PropertyInfo[] props = t.GetProperties(UltEventUtils.AnyAccessBindings).Where(p=> (p.CanRead && p.GetMethod.IsStatic) || (p.CanWrite && p.SetMethod.IsStatic)).ToArray();
+            MethodInfo[] meths = t.GetMethods(UltEventUtils.AnyAccessBindings).Where(m => m.IsStatic && !props.Any(p => p.GetMethod == m || p.SetMethod == m)).ToArray();
+            
+            foreach (var method in meths.Distinct())
+            {
+                if (!MyDefs.TryGetValue(method, out NodeDef def)) continue;
+
+                // lets collapse each overload into a submenu!
+                // also collapse "Injected" methods
+                if (meths.Any(m => m.Name == method.Name && m != method))
+                {
+                    o.TryAdd(tName + "/Static/Methods/" + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text.Split('(').First() + "(...)/("
+                        + string.Join(", ", method.GetParameters().Select(p => p.ParameterType.GetFriendlyName() + " " + p.Name)) + ")", def);
+                }
+                else
+                    o.TryAdd(tName + "/Static/Methods/" + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text, def);
+            }
+            foreach (var prop in props)
+            {
+                if (prop.CanRead && MyDefs.TryGetValue(prop.GetMethod, out NodeDef getter))
+                {
+                    o.TryAdd(tName + "/Static/Properties/" + getter.SearchItem.text.Replace(".get_", ".").Split('(').First() + "/Get", getter);
+                }
+                if (prop.CanWrite && MyDefs.TryGetValue(prop.SetMethod, out NodeDef setter))
+                {
+                    o.TryAdd(tName + "/Static/Properties/" + setter.SearchItem.text.Replace(".set_", ".").Split('(').First() + "/Set", setter);
+                }
+            }
+        }
+        return o;
     }
 }
 #endif

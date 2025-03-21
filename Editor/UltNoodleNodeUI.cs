@@ -1,10 +1,13 @@
 ﻿#if UNITY_EDITOR
 using NoodledEvents;
+using SLZ.Marrow.Warehouse;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static NoodledEvents.CookBook;
 
 /// <summary>
 /// Class the puppeteers a VisualElement to represent and edit a Node.
@@ -28,6 +31,7 @@ public class UltNoodleNodeUI : VisualElement
         // create normal visual for normal nodes
         Visual = this;
         Bowl.Visual.Q("Nodes").Add(Visual);
+        
 
         // hide Delete BT only if it's the "InOut node
         this.Q<Button>("DeleteBT").visible = serializedNode.NoadType != SerializedNode.NodeType.BowlInOut;
@@ -105,6 +109,53 @@ public class UltNoodleNodeUI : VisualElement
             newnode.Position = serializedNode.Position + (Vector2.up * (this.resolvedStyle.height+10));
             Bowl.Validate();
         };
+        
+        if (Node.Book != null) // ignore special IO node
+        {
+            // ON DROPDOWN MOUSEOVER,
+            // we'll ask each availiable book if they'd like to make an entry for this node!
+
+            var dropper = new DropdownField("");
+            dropper[0].style.maxWidth = 15;
+            dropper[0].style.minWidth = 15;
+            dropper.style.marginLeft = 0;
+            this.Q("TypeTitle").parent.Add(dropper);
+
+            bool setup = false;
+            dropper.RegisterCallback<MouseOverEvent>((evt) =>
+            {
+                if (setup) return;    
+                setup = true;
+
+                foreach (CookBook opsgjd in Bowl.Editor.AllBooks)
+                {
+                    CookBook curBook = opsgjd;
+                    Dictionary<string, NodeDef> entries = curBook.GetAlternatives(Node);
+                    if (entries == null || entries.Count == 0) continue;
+
+                    foreach (var item in entries)
+                    {
+                        dropper.choices.Add(item.Key);
+                    }
+                    dropper.RegisterValueChangedCallback((evt) => 
+                    {
+                        if (evt.newValue == null) return;
+                        dropper.index = -1;
+                        if (entries.TryGetValue(evt.newValue, out NodeDef def))
+                        {
+                            //Debug.Log(evt.newValue);
+                            var newNod = bowl.AddNode(def.Name, curBook).MatchDef(def);
+                            newNod.BookTag = def.BookTag != string.Empty ? def.BookTag : def.Name;
+
+                            newNod.Position = Node.Position;
+                            Bowl.SerializedData.NodeDatas.Remove(Node);
+                            bowl.Validate();
+                            curBook.SwapConnections(Node, newNod);
+                        }
+                    });
+                }
+            });
+        }
     }
     private void OnEnable(AttachToPanelEvent evt)
     {

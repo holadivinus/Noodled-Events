@@ -1,21 +1,16 @@
 #if UNITY_EDITOR
 using NoodledEvents;
-using SLZ.Marrow.Interaction;
-using SLZ.Marrow.Utilities;
-using SLZ.Marrow.Warehouse;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UltEvents;
 using UnityEngine;
-using UnityEngine.Assertions.Must;
-using UnityEngine.UIElements;
 using static NoodledEvents.CookBook.NodeDef;
 
 
 public class ObjectFieldCookBook : CookBook
 {
+    private Dictionary<FieldInfo, (NodeDef, NodeDef)> MyDefs = new();
     public override void CollectDefs(List<NodeDef> allDefs)
     {
         foreach (var t in UltNoodleEditor.SearchableTypes)
@@ -35,18 +30,23 @@ public class ObjectFieldCookBook : CookBook
 
                     
 
-                    allDefs.Add(new NodeDef(this, $"{t.GetFriendlyName()}.getf_{field.Name}",
+                    var getter = 
+                    (new NodeDef(this, $"{t.GetFriendlyName()}.getf_{field.Name}",
                         inputs: () => new Pin[] { new Pin("Get"), new Pin(t.GetFriendlyName(), t) },
                         outputs: () => new[] { new NodeDef.Pin("got"), new NodeDef.Pin(field.Name, field.FieldType) },
                         bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }),
                         tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.getf_{field.Name}")
-                    ); 
-                    allDefs.Add(new NodeDef(this, $"{t.GetFriendlyName()}.setf_{field.Name}",
+                    );
+                    allDefs.Add(getter);
+                    var setter =
+                    (new NodeDef(this, $"{t.GetFriendlyName()}.setf_{field.Name}",
                         inputs: () => new Pin[] { new Pin("Set"), new Pin(t.GetFriendlyName(), t), new NodeDef.Pin(field.Name, field.FieldType) },
                         outputs: () => new[] { new NodeDef.Pin("sot") },
                         bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }),
                         tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.setf_{field.Name}")
                     );
+                    allDefs.Add(setter);
+                    MyDefs.Add(field, (getter, setter));
                 }
             } catch(TypeLoadException) { };
         }
@@ -320,6 +320,65 @@ public class ObjectFieldCookBook : CookBook
             // comp next node
             if (node.FlowOutputs[0].Target != null)
                 node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
+        }
+    }
+
+    public override Dictionary<string, NodeDef> GetAlternatives(SerializedNode node)
+    {
+        Type srcType = null;
+        if (node.Book == this)
+        {
+            SerializedField srcField = JsonUtility.FromJson<SerializedField>(node.BookTag);
+            srcType = srcField.Field.DeclaringType;
+        }
+        else if (node.Book.name == "ObjectMethodCookBook")
+        {
+            SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
+            srcType = meth.Method.DeclaringType;
+        }
+        else return null;
+
+        Dictionary<string, NodeDef> o = new();
+
+        List<Type> relatives = new List<Type> { srcType };
+        Type cur = srcType;
+        while (cur != typeof(object))
+        {
+            cur = cur.BaseType;
+            relatives.Add(cur);
+        }
+        relatives.Add(cur);
+
+        foreach (var t in relatives)
+        {
+            if (typeof(UnityEngine.Object).IsAssignableFrom(t) && !typeof(MonoBehaviour).IsAssignableFrom(t) && !typeof(ScriptableObject).IsAssignableFrom(t))
+                continue;
+
+            string tName = t.GetFriendlyName();
+            foreach (var field in t.GetFields(UltEventUtils.AnyAccessBindings))
+            {
+                if (field.DeclaringType != t || field.IsStatic) continue;
+
+                if (!(typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType) || field.FieldType == typeof(string) || field.FieldType == typeof(int) || field.FieldType == typeof(float) || field.FieldType == typeof(bool))) continue;
+                if (field.GetCustomAttribute<NonSerializedAttribute>() != null) continue;
+                if (!(field.IsPublic || field.GetCustomAttribute<SerializeField>() != null)) continue;
+
+                if (!MyDefs.TryGetValue(field, out (NodeDef, NodeDef) nodes)) continue;
+
+                o.Add(tName + "/Fields/" + field.FieldType.GetFriendlyName() + " " + field.Name.Replace('_',' ') + "/Get", nodes.Item1);
+                o.Add(tName + "/Fields/" + field.FieldType.GetFriendlyName() + " " + field.Name.Replace('_', ' ') + "/Set", nodes.Item2);
+            }
+        }
+        return o;
+    }
+    public override void SwapConnections(SerializedNode oldNode, SerializedNode newNode)
+    {
+        base.SwapConnections(oldNode, newNode);
+
+        if (oldNode.DataInputs.Length > 0 && oldNode.DataInputs[0].Source != null)
+        {
+            if (newNode.DataInputs[0].Type.Type.IsAssignableFrom(oldNode.DataInputs[0].Source.Type))
+                oldNode.DataInputs[0].Source.Connect(newNode.DataInputs[0]);
         }
     }
     public override void PostCompile(SerializedBowl bowl) 

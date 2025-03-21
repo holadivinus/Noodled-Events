@@ -11,6 +11,7 @@ using static NoodledEvents.CookBook.NodeDef;
 
 public class ObjectMethodCookBook : CookBook
 {
+    private Dictionary<MethodInfo, NodeDef> MyDefs = new();
     public override void CollectDefs(List<NodeDef> allDefs)
     {
         foreach (var t in UltNoodleEditor.SearchableTypes)
@@ -27,7 +28,7 @@ public class ObjectMethodCookBook : CookBook
                 string descriptiveText = $"{t.Namespace}.{t.GetFriendlyName()}.{meth.Name}";
 
                 var parames = meth.GetParameters();
-                if (parames.Length == 0) descriptiveText += "()";
+                if (parames.Length == 0) { descriptiveText += "()"; searchText += "()"; }
                 else
                 {
                     descriptiveText += "(";
@@ -44,14 +45,14 @@ public class ObjectMethodCookBook : CookBook
                 }
                 descriptiveText = $"{meth.ReturnType.GetFriendlyName()} {descriptiveText}";
 
-                allDefs.Add(new NodeDef(this, t.GetFriendlyName() + "." + meth.Name, 
-                    inputs:() => 
+                var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name,
+                    inputs: () =>
                     {
                         var @params = meth.GetParameters();
                         if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin("Exec"), new Pin(meth.DeclaringType.Name, meth.DeclaringType) };
-                        return @params.Select(p => new Pin(p.Name, p.ParameterType)).Prepend(new Pin(meth.DeclaringType.Name, meth.DeclaringType)).Prepend(new NodeDef.Pin("Exec")).ToArray(); 
+                        return @params.Select(p => new Pin(p.Name, p.ParameterType)).Prepend(new Pin(meth.DeclaringType.Name, meth.DeclaringType)).Prepend(new NodeDef.Pin("Exec")).ToArray();
                     },
-                    outputs:() => 
+                    outputs: () =>
                     {
                         if (meth.ReturnType != typeof(void))
                             return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.Name, meth.ReturnType) };
@@ -59,8 +60,9 @@ public class ObjectMethodCookBook : CookBook
                     },
                     bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
                     searchTextOverride: searchText,
-                    tooltipOverride: descriptiveText)
-                );
+                    tooltipOverride: descriptiveText);
+                allDefs.Add(newDef);
+                MyDefs.Add(meth, newDef);
             }
         }
 
@@ -613,6 +615,82 @@ public class ObjectMethodCookBook : CookBook
         if (nextNode != null)
             nextNode.Book.CompileNode(evt, nextNode, dataRoot);
     }
+
+    public override Dictionary<string, NodeDef> GetAlternatives(SerializedNode node)
+    {
+        Type srcType = null;
+        if (node.Book == this || node.Book.name == "StaticMethodCookBook")
+        {
+            SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
+            srcType = meth.Method.DeclaringType;
+        }
+        else if (node.Book.name == "ObjectFieldCookBook")
+        {
+            SerializedField srcField = JsonUtility.FromJson<SerializedField>(node.BookTag);
+            srcType = srcField.Field.DeclaringType;
+        }
+        else return null;
+        Dictionary<string, NodeDef> o = new();
+        // figure node method
+
+        List<Type> relatives = new List<Type> { srcType };
+        Type cur = srcType;
+        while (cur != typeof(object)) {
+            cur = cur.BaseType;
+            relatives.Add(cur);
+        }
+        relatives.Add(cur);
+
+        foreach (var t in relatives)
+        {
+            string tName = t.GetFriendlyName();
+            PropertyInfo[] props = t.GetProperties(UltEventUtils.AnyAccessBindings);
+            MethodInfo[] meths = t.GetMethods(UltEventUtils.AnyAccessBindings);
+            // this code sucks BUT since it only runs on mouse hover, idc
+            var lasts = meths.Where(m => m.Name.ToLower().StartsWith("internal_") || m.Name.EndsWith("_Injected"));
+            var firsts = meths.Where(m => !lasts.Contains(m));
+            foreach (var method in firsts.Concat(lasts))
+            {
+                if (props.Any(p => p.GetMethod == method || p.SetMethod == method)) continue;
+                if (!MyDefs.TryGetValue(method, out NodeDef def)) continue;
+
+                // lets collapse each overload into a submenu!
+                // also collapse "Injected" methods
+                string inj = method.Name.EndsWith("_Injected") ? "Injected/" : "";
+                string inter = method.Name.ToLower().StartsWith("internal_") ? "Internal/" : "";
+                if (meths.Any(m => (m.Name == method.Name && m != method) && m.DeclaringType == method.DeclaringType))
+                {
+                    o.Add(tName + "/Methods/" + inj + inter + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text.Split('(').First() + "(...)/(" 
+                        + string.Join(", ", method.GetParameters().Select(p => p.ParameterType.GetFriendlyName() + " " + p.Name)) +")", def);
+                } 
+                else
+                    o.Add(tName + "/Methods/"+ inj + inter + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text, def);
+            }
+            foreach (var prop in props)
+            {
+                if (prop.CanRead && MyDefs.TryGetValue(prop.GetMethod, out NodeDef getter))
+                {
+                    o.Add(tName + "/Properties/" + getter.SearchItem.text.Replace(".get_", ".").Split('(').First() + "/Get", getter);
+                }
+                if (prop.CanWrite && MyDefs.TryGetValue(prop.SetMethod, out NodeDef setter))
+                {
+                    o.Add(tName + "/Properties/" + setter.SearchItem.text.Replace(".set_", ".").Split('(').First() + "/Set", setter);
+                }
+            }
+        }
+        return o;
+    }
+    public override void SwapConnections(SerializedNode oldNode, SerializedNode newNode)
+    {
+        base.SwapConnections(oldNode, newNode);
+
+        if (oldNode.DataInputs.Length > 0 && oldNode.DataInputs[0].Source != null)
+        {
+            if (newNode.DataInputs[0].Type.Type.IsAssignableFrom(oldNode.DataInputs[0].Source.Type))
+                oldNode.DataInputs[0].Source.Connect(newNode.DataInputs[0]);
+        }
+    }
+
     public override void PostCompile(SerializedBowl bowl) // post GetType injection
     {
         // GetType injection only happens to the varyingEvt, so lets copy to templateEvts
@@ -623,5 +701,7 @@ public class ObjectMethodCookBook : CookBook
                 varyer.GetChild(0).GetComponent<UltEventHolder>().Event = varyer.GetComponent<UltEventHolder>().Event;
         }
     }
+
+    
 }
 #endif
