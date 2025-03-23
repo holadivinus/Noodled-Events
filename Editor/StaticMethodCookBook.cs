@@ -1,6 +1,5 @@
 #if UNITY_EDITOR
 using NoodledEvents;
-using PlasticPipe.PlasticProtocol.Messages;
 using System;
 using System.Collections.Generic;
 using System.Linq;

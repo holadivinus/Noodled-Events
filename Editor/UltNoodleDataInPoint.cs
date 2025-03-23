@@ -24,7 +24,7 @@ public class UltNoodleDataInPoint : VisualElement
     public VisualElement HideWhenConnected;
     private VisualElement ConstVis;
     private DropdownField EditorConst;
-    private VisualElement MyField;
+    public VisualElement MyField;
     private VisualElement SysObjRoot;
     private void setupInternal(UltNoodleNodeUI node, NoodleDataInput input)
     {

@@ -681,14 +681,20 @@ public class ObjectMethodCookBook : CookBook
         }
         return o;
     }
+    // called once on-swap, on the newNode's book
     public override void SwapConnections(SerializedNode oldNode, SerializedNode newNode)
     {
         base.SwapConnections(oldNode, newNode);
 
-        if (oldNode.DataInputs.Length > 0 && oldNode.DataInputs[0].Source != null)
+        if (oldNode.DataInputs.Length > 0)
         {
-            if (newNode.DataInputs[0].Type.Type.IsAssignableFrom(oldNode.DataInputs[0].Source.Type))
-                oldNode.DataInputs[0].Source.Connect(newNode.DataInputs[0]);
+            if (oldNode.DataInputs[0].Source != null)
+            {
+                if (newNode.DataInputs[0].Type.Type.IsAssignableFrom(oldNode.DataInputs[0].Source.Type))
+                    oldNode.DataInputs[0].Source.Connect(newNode.DataInputs[0]);
+            }
+            else
+                newNode.DataInputs[0].DefaultObject = oldNode.DataInputs[0].DefaultObject;
         }
     }
 

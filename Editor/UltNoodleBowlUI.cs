@@ -9,7 +9,6 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
-using static UnityEditor.UIElements.ToolbarMenu;
 
 
 public class UltNoodleBowlUI : VisualElement
@@ -125,7 +124,9 @@ public class UltNoodleBowlUI : VisualElement
             UnityEngine.Object targ = DragAndDrop.objectReferences[0];
             void fin(UnityEngine.Object selectee)
             {
-                var node = AddNode(selectee.GetType().Name, editor.ObjectCookBook);
+                Type t = selectee.GetType();
+                var node = AddNode(t.Name, editor.ObjectCookBook);
+                node.AddDataIn(t.Name, t, targ);
                 var m = new SerializedMethod();
                 m.Method = selectee.GetType().GetMethods(UltEventUtils.AnyAccessBindings).FirstOrDefault()
                 ?? selectee.GetType().BaseType.GetMethods(UltEventUtils.AnyAccessBindings).First(); // not setting up a loop rn todo
@@ -137,7 +138,7 @@ public class UltNoodleBowlUI : VisualElement
             if (targ is GameObject gobj)
             {
                 GenericMenu selor = new GenericMenu();
-
+                
                 selor.AddDisabledItem(new GUIContent("Select Target"), false);
                 selor.AddSeparator("");
                 selor.AddItem(new GUIContent("GameObject"), false, () => fin(targ));

@@ -1,10 +1,9 @@
 ﻿#if UNITY_EDITOR
 using NoodledEvents;
-using SLZ.Marrow.Warehouse;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static NoodledEvents.CookBook;
@@ -151,6 +150,10 @@ public class UltNoodleNodeUI : VisualElement
                             Bowl.SerializedData.NodeDatas.Remove(Node);
                             bowl.Validate();
                             curBook.SwapConnections(Node, newNod);
+                            // this should probably be handled elsewhere, TODO
+                            foreach (var ip in bowl.NodeUIs.First(nui => nui.Node == newNod).InPoints)
+                                if (ip.MyField is ObjectField of)
+                                    of.value = ip.SData.DefaultObject;
                         }
                     });
                 }
