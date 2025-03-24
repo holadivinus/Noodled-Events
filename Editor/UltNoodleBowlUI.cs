@@ -126,7 +126,7 @@ public class UltNoodleBowlUI : VisualElement
             {
                 Type t = selectee.GetType();
                 var node = AddNode(t.Name, editor.ObjectCookBook);
-                node.AddDataIn(t.Name, t, targ);
+                node.AddDataIn(t.Name, t, selectee);
                 var m = new SerializedMethod();
                 m.Method = selectee.GetType().GetMethods(UltEventUtils.AnyAccessBindings).FirstOrDefault()
                 ?? selectee.GetType().BaseType.GetMethods(UltEventUtils.AnyAccessBindings).First(); // not setting up a loop rn todo
