@@ -19,6 +19,13 @@ namespace NoodledEvents
             // needs bowl
             return SerializedBowl.Create(holder, fieldType, eventFieldPath);
         }
+        /*private static MethodInfo GetTyper = typeof(Type).GetMethod("GetType", new[] { typeof(string), typeof(bool), typeof(bool) });
+        public static int FindOrAddTypePCall(this List<PersistentCall> calls)
+        {
+            var existing = calls.FirstOrDefault(c => c.Method == GetTyper && c.PersistentArguments[0].Type == PersistentArgumentType.String 
+            && c.PersistentArguments[0].String );
+            if (existing != nu)
+        }*/
 
         public static Type[] GetEvtGenerics(this Type evtType)
         {

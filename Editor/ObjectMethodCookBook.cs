@@ -620,12 +620,12 @@ public class ObjectMethodCookBook : CookBook
     public override Dictionary<string, NodeDef> GetAlternatives(SerializedNode node)
     {
         Type srcType = null;
-        if (node.Book == this || node.Book.name == "StaticMethodCookBook")
+        if (node.Book == this || node.Book.GetType() == typeof(StaticMethodCookBook))
         {
             SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
             srcType = meth.Method.DeclaringType;
         }
-        else if (node.Book.name == "ObjectFieldCookBook")
+        else if (node.Book.GetType() == typeof(ObjectFieldCookBook))
         {
             SerializedField srcField = JsonUtility.FromJson<SerializedField>(node.BookTag);
             srcType = srcField.Field.DeclaringType;
