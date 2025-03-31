@@ -176,6 +176,35 @@ public static class UltNoodleRuntimeExtensions
             return null;
         else return Type.GetType(serializedMethodName.Substring(0, lastDot));
     }
+
+    public static void ArrayItemSetter1(Array array, int idx, object obj) => array.SetValue(obj, idx);
+
+    private static MethodInfo[] GetTypeMethods = {
+        typeof(Type).GetMethod("GetType", new[] { typeof(string), typeof(bool), typeof(bool) }),
+        typeof(Type).GetMethod("GetType", new[] { typeof(string), typeof(bool) }),
+        typeof(Type).GetMethod("GetType", new[] { typeof(string) })
+    };
+    public static int FindOrAddGetTyper<T>(this List<PersistentCall> list) => list.FindOrAddGetTyper(typeof(T));
+    public static int FindOrAddGetTyper(this List<PersistentCall> list, Type t)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            PersistentCall call = list[i];
+            if (GetTypeMethods.Contains(call.Method)
+             && call.PersistentArguments[0].Type == PersistentArgumentType.String
+             && Type.GetType(call.PersistentArguments[0].String) == t) // if is GetType call
+            {
+                return i;
+            }
+        }
+        // none found, add
+        var newCall = new PersistentCall(GetTypeMethods[0], null);
+        newCall.PersistentArguments[0].String = t.AssemblyQualifiedName;
+        newCall.PersistentArguments[1].Bool = true;
+        newCall.PersistentArguments[2].Bool = true;
+        list.Add(newCall);
+        return list.Count - 1;
+    }
 }
 public static class TypeTranslator
 {

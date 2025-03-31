@@ -298,6 +298,38 @@ namespace NoodledEvents
                 case "string":
                     return DefaultStringValue;
             }
+            if (Type == typeof(object))
+            {
+                switch (ConstInput)
+                {
+                    case PersistentArgumentType.None:
+                        return null;
+                    case PersistentArgumentType.Bool:
+                        return DefaultBoolValue;
+                    case PersistentArgumentType.String:
+                        return DefaultStringValue;
+                    case PersistentArgumentType.Int:
+                        return DefaultIntValue;
+                    case PersistentArgumentType.Float:
+                        return DefaultFloatValue;
+                    case PersistentArgumentType.Vector2:
+                        return DefaultVector2Value;
+                    case PersistentArgumentType.Vector3:
+                        return DefaultVector3Value;
+                    case PersistentArgumentType.Vector4:
+                        return DefaultVector4Value;
+                    case PersistentArgumentType.Quaternion:
+                        return DefaultQuaternionValue;
+                    case PersistentArgumentType.Color:
+                        return DefaultColorValue;
+                    case PersistentArgumentType.Color32:
+                        return DefaultColorValue;
+                    case PersistentArgumentType.Object:
+                        return DefaultObject;
+                }
+            }
+            if (Type == typeof(UnityEngine.Object))
+                return DefaultObject;
             return null;
         }
 

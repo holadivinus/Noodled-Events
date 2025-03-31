@@ -10,6 +10,7 @@ using UltEvents;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static NoodledEvents.CookBook.NodeDef;
+using static PlasticGui.PlasticTableCell;
 
 
 public class ObjectFieldCookBook : CookBook
@@ -108,42 +109,26 @@ public class ObjectFieldCookBook : CookBook
             // So only 1 pcall needs to be changed for get/set
             // still will be 25~+ nodes tho :/
 
-            PersistentCall typeStringArr = new PersistentCall(typeof(Type).GetMethod("GetType", new Type[] { typeof(string), typeof(bool), typeof(bool) }), null);
-            typeStringArr.PersistentArguments[0].String = "System.String[], mscorlib";
-            typeStringArr.PersistentArguments[1].Bool = true;
-            typeStringArr.PersistentArguments[2].Bool = true;
-            evt.PersistentCallsList.Add(typeStringArr);
+            int typeStringArr = evt.PersistentCallsList.FindOrAddGetTyper<string[]>();
 
             PersistentCall name2arr = new PersistentCall(typeof(JsonConvert).GetMethod("DeserializeObject", new Type[] { typeof(string), typeof(Type) }), null);
             name2arr.PersistentArguments[0].String = $"[\"{field.Field.Name}\"]";
-            name2arr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.IndexOf(typeStringArr), typeof(Type));
+            name2arr.PersistentArguments[1].ToRetVal(typeStringArr, typeof(Type));
             evt.PersistentCallsList.Add(name2arr);
 
-            PersistentCall typeBindingFlagArr = new PersistentCall(typeof(Type).GetMethod("GetType", new Type[] { typeof(string), typeof(bool), typeof(bool) }), null);
-            typeBindingFlagArr.PersistentArguments[0].String = "System.Reflection.BindingFlags[], mscorlib";
-            typeBindingFlagArr.PersistentArguments[1].Bool = true;
-            typeBindingFlagArr.PersistentArguments[2].Bool = true;
-            evt.PersistentCallsList.Add(typeBindingFlagArr);
+            int typeBindingFlagArr = evt.PersistentCallsList.FindOrAddGetTyper<BindingFlags[]>();
 
             PersistentCall getBindingFlag = new PersistentCall(typeof(JsonConvert).GetMethod("DeserializeObject", new Type[] { typeof(string), typeof(Type) }), null);
             getBindingFlag.PersistentArguments[0].String = "[60]";
-            getBindingFlag.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.IndexOf(typeBindingFlagArr), typeof(Type));
+            getBindingFlag.PersistentArguments[1].ToRetVal(typeBindingFlagArr, typeof(Type));
             evt.PersistentCallsList.Add(getBindingFlag);
 
-            PersistentCall typeSysObj = new PersistentCall(typeof(Type).GetMethod("GetType", new Type[] { typeof(string), typeof(bool), typeof(bool) }), null);
-            typeSysObj.PersistentArguments[0].String = typeof(object).AssemblyQualifiedName;
-            typeSysObj.PersistentArguments[1].Bool = true;
-            typeSysObj.PersistentArguments[2].Bool = true;
-            evt.PersistentCallsList.Add(typeSysObj);
+            int typeSysObj = evt.PersistentCallsList.FindOrAddGetTyper<object>();
 
-            PersistentCall typeType = new PersistentCall(typeof(Type).GetMethod("GetType", new Type[] { typeof(string), typeof(bool), typeof(bool) }), null);
-            typeType.PersistentArguments[0].String = typeof(Type).AssemblyQualifiedName;
-            typeType.PersistentArguments[1].Bool = true;
-            typeType.PersistentArguments[2].Bool = true;
-            evt.PersistentCallsList.Add(typeType);
+            int typeType = evt.PersistentCallsList.FindOrAddGetTyper<Type>();
 
             PersistentCall paramSysObjArr = new PersistentCall(typeof(Array).GetMethod("CreateInstance", new Type[] { typeof(Type), typeof(int) }), null);
-            paramSysObjArr.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(typeSysObj), typeof(Type));
+            paramSysObjArr.PersistentArguments[0].ToRetVal(typeSysObj, typeof(Type));
             paramSysObjArr.PersistentArguments[1].Int = 2;
             evt.PersistentCallsList.Add(paramSysObjArr);
 
@@ -167,15 +152,11 @@ public class ObjectFieldCookBook : CookBook
             param2load.PersistentArguments[4].Int = 1;
             evt.PersistentCallsList.Add(param2load);
 
-            PersistentCall typeTypeArr = new PersistentCall(typeof(Type).GetMethod("GetType", new Type[] { typeof(string), typeof(bool), typeof(bool) }), null);
-            typeTypeArr.PersistentArguments[0].String = typeof(Type[]).AssemblyQualifiedName;
-            typeTypeArr.PersistentArguments[1].Bool = true;
-            typeTypeArr.PersistentArguments[2].Bool = true;
-            evt.PersistentCallsList.Add(typeTypeArr);
+            int typeTypeArr = evt.PersistentCallsList.FindOrAddGetTyper<Type[]>();
 
             PersistentCall getParamTypes = new PersistentCall(typeof(JsonConvert).GetMethod("DeserializeObject", new Type[] { typeof(string), typeof(Type) }), null);
             getParamTypes.PersistentArguments[0].String = "[\"System.String, mscorlib\", \"System.Reflection.BindingFlags, mscorlib\"]";
-            getParamTypes.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.IndexOf(typeTypeArr), typeof(Type));
+            getParamTypes.PersistentArguments[1].ToRetVal(typeTypeArr, typeof(Type));
             evt.PersistentCallsList.Add(getParamTypes);
 
             PersistentCall typeFieldInfo = new PersistentCall(typeof(Type).GetMethod("GetType", new Type[] { typeof(string), typeof(bool), typeof(bool) }), null);
@@ -186,23 +167,19 @@ public class ObjectFieldCookBook : CookBook
 
             PersistentCall getGetFieldMethod = new PersistentCall(typeof(System.ComponentModel.MemberDescriptor).GetMethod("FindMethod", UltEventUtils.AnyAccessBindings, null,
                 new Type[] { typeof(Type), typeof(string), typeof(Type[]), typeof(Type), typeof(bool) }, null), null);
-            getGetFieldMethod.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(typeType), typeof(Type));
+            getGetFieldMethod.PersistentArguments[0].ToRetVal(typeType, typeof(Type));
             getGetFieldMethod.PersistentArguments[1].String = "GetField";
             getGetFieldMethod.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(getParamTypes), typeof(Type[]));
             getGetFieldMethod.PersistentArguments[3].ToRetVal(evt.PersistentCallsList.IndexOf(typeFieldInfo), typeof(Type));
             getGetFieldMethod.PersistentArguments[4].Bool = false;
             evt.PersistentCallsList.Add(getGetFieldMethod);
 
-            PersistentCall typeTargType = new PersistentCall(typeof(Type).GetMethod("GetType", new Type[] { typeof(string), typeof(bool), typeof(bool) }), null);
-            typeTargType.PersistentArguments[0].String = field.Field.DeclaringType.AssemblyQualifiedName;
-            typeTargType.PersistentArguments[1].Bool = true;
-            typeTargType.PersistentArguments[2].Bool = true;
-            evt.PersistentCallsList.Add(typeTargType);
+            int typeTargType = evt.PersistentCallsList.FindOrAddGetTyper(field.Field.DeclaringType);
 
             PersistentCall getFieldInfo = new PersistentCall(Type.GetType("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true, true).GetMethod("MethodInfoInvoke", UltEventUtils.AnyAccessBindings, null,
                 new Type[] { typeof(MethodInfo), typeof(object), typeof(object[]) }, null), null);
             getFieldInfo.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(getGetFieldMethod), typeof(MethodInfo));
-            getFieldInfo.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.IndexOf(typeTargType), typeof(object));
+            getFieldInfo.PersistentArguments[1].ToRetVal(typeTargType, typeof(object));
             getFieldInfo.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(paramSysObjArr), typeof(object[]));
             evt.PersistentCallsList.Add(getFieldInfo);
 
@@ -597,8 +574,8 @@ public class ObjectFieldCookBook : CookBook
 
                 if (!MyDefs.TryGetValue(field, out (NodeDef, NodeDef) nodes)) continue;
 
-                o.Add(tName + "/Fields/" + field.FieldType.GetFriendlyName() + " " + field.Name.Replace('_',' ') + "/Get", nodes.Item1);
-                o.Add(tName + "/Fields/" + field.FieldType.GetFriendlyName() + " " + field.Name.Replace('_', ' ') + "/Set", nodes.Item2);
+                o.TryAdd(tName + "/Fields/" + field.FieldType.GetFriendlyName() + " " + field.Name.Replace('_',' ') + "/Get", nodes.Item1);
+                o.TryAdd(tName + "/Fields/" + field.FieldType.GetFriendlyName() + " " + field.Name.Replace('_', ' ') + "/Set", nodes.Item2);
             }
         }
         return o;

@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using Newtonsoft.Json;
 using NoodledEvents;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Reflection;
 using UltEvents;
 using UnityEngine;
 using static NoodledEvents.CookBook.NodeDef;
+using static PlasticGui.PlasticTableCell;
 
 
 public class ObjectMethodCookBook : CookBook
@@ -17,54 +19,58 @@ public class ObjectMethodCookBook : CookBook
         MyDefs.Clear();
         foreach (var t in UltNoodleEditor.SearchableTypes)
         {
-            if (!(t.IsSubclassOf(typeof(UnityEngine.Object)) || t == typeof(UnityEngine.Object)))
-                continue;
 
             
-            foreach (var meth in t.GetMethods(UltEventUtils.AnyAccessBindings))
+            try
             {
-                if (meth.DeclaringType != t || meth.IsStatic) continue;
-
-                string searchText = t.GetFriendlyName() + "." + meth.Name;
-                string descriptiveText = $"{t.Namespace}.{t.GetFriendlyName()}.{meth.Name}";
-
-                var parames = meth.GetParameters();
-                if (parames.Length == 0) { descriptiveText += "()"; searchText += "()"; }
-                else
+                foreach (var meth in t.GetMethods(UltEventUtils.AnyAccessBindings))
                 {
-                    descriptiveText += "(";
-                    searchText += "(";
-                    foreach (var param in parames)
-                    {
-                        searchText += $"{param.ParameterType.GetFriendlyName()}, ";
-                        descriptiveText += $"{param.ParameterType.GetFriendlyName()} {param.Name}, ";
-                    }
-                    descriptiveText = descriptiveText.Substring(0, descriptiveText.Length - 2);
-                    searchText = searchText.Substring(0, searchText.Length - 2);
-                    descriptiveText += ")";
-                    searchText += ")";
-                }
-                descriptiveText = $"{meth.ReturnType.GetFriendlyName()} {descriptiveText}";
+                    if (meth.DeclaringType != t || meth.IsStatic) continue;
 
-                var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name,
-                    inputs: () =>
+                    string searchText = t.GetFriendlyName() + "." + meth.Name;
+                    string descriptiveText = $"{t.Namespace}.{t.GetFriendlyName()}.{meth.Name}";
+
+                    var parames = meth.GetParameters();
+                    if (parames.Length == 0) { descriptiveText += "()"; searchText += "()"; }
+                    else
                     {
-                        var @params = meth.GetParameters();
-                        if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin("Exec"), new Pin(meth.DeclaringType.Name, meth.DeclaringType) };
-                        return @params.Select(p => new Pin(p.Name, p.ParameterType)).Prepend(new Pin(meth.DeclaringType.Name, meth.DeclaringType)).Prepend(new NodeDef.Pin("Exec")).ToArray();
-                    },
-                    outputs: () =>
-                    {
-                        if (meth.ReturnType != typeof(void))
-                            return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.Name, meth.ReturnType) };
-                        else return new[] { new NodeDef.Pin("Done") };
-                    },
-                    bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
-                    searchTextOverride: searchText,
-                    tooltipOverride: descriptiveText);
-                allDefs.Add(newDef);
-                MyDefs.Add(meth, newDef);
+                        descriptiveText += "(";
+                        searchText += "(";
+                        foreach (var param in parames)
+                        {
+                            searchText += $"{param.ParameterType.GetFriendlyName()}, ";
+                            descriptiveText += $"{param.ParameterType.GetFriendlyName()} {param.Name}, ";
+                        }
+                        descriptiveText = descriptiveText.Substring(0, descriptiveText.Length - 2);
+                        searchText = searchText.Substring(0, searchText.Length - 2);
+                        descriptiveText += ")";
+                        searchText += ")";
+                    }
+                    descriptiveText = $"{meth.ReturnType.GetFriendlyName()} {descriptiveText}";
+
+
+                    string execPinMsg = NeedsReflection(meth) ? "Reflection Exec" : "Exec";
+                    var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name,
+                        inputs: () =>
+                        {
+                            var @params = meth.GetParameters();
+                            if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin(execPinMsg), new Pin(meth.DeclaringType.Name, meth.DeclaringType) };
+                            return @params.Select(p => new Pin(p.Name, p.ParameterType)).Prepend(new Pin(meth.DeclaringType.Name, meth.DeclaringType)).Prepend(new NodeDef.Pin(execPinMsg)).ToArray();
+                        },
+                        outputs: () =>
+                        {
+                            if (meth.ReturnType != typeof(void))
+                                return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.Name, meth.ReturnType) };
+                            else return new[] { new NodeDef.Pin("Done") };
+                        },
+                        bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
+                        searchTextOverride: searchText,
+                        tooltipOverride: descriptiveText);
+                    allDefs.Add(newDef);
+                    MyDefs.Add(meth, newDef);
+                }
             }
+            catch (TypeLoadException) { } // bro
         }
 
         allDefs.Add(new NodeDef(this, "flow.ult_swap",
@@ -85,7 +91,13 @@ public class ObjectMethodCookBook : CookBook
             bookTag: "UltSwap-Reset",
             tooltipOverride: "Resets an Ultswap, use in the Post Cache exec."));
     }
-    
+
+    private bool NeedsReflection(MethodBase meth) =>
+        (!typeof(UnityEngine.Object).IsAssignableFrom(meth.DeclaringType) // Not Targettable by Pcalls?
+        || meth.DeclaringType.ContainsGenericParameters  // ex: List<T> vs List<bool>
+        || meth.ContainsGenericParameters // yea
+        || meth.GetParameters().Any(p => p.IsOut || p.ParameterType.IsByRef));
+
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
         // sanity check (AddComponent() leaves this field empty)
@@ -359,6 +371,92 @@ public class ObjectMethodCookBook : CookBook
         // figure node method
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 
+        #region Reflection Based Method
+        if (NeedsReflection(meth.Method)) // bonus retvals!
+        {
+            // UAHGAHGAUGUAAAAAAS
+
+            int typeArrType = evt.PersistentCallsList.FindOrAddGetTyper<Type[]>();
+            int targType = evt.PersistentCallsList.FindOrAddGetTyper(meth.Method.DeclaringType);
+            int retValType = evt.PersistentCallsList.FindOrAddGetTyper(meth.Method.GetReturnType());
+
+            // get Type[] of params
+            var paramTypeArr = new PersistentCall(typeof(JsonConvert).GetMethod(nameof(JsonConvert.DeserializeObject), new[] { typeof(string), typeof(Type) }), null);
+            paramTypeArr.PersistentArguments[0].String = "[";
+            ParameterInfo[] methodParams = meth.Method.GetParameters();
+            foreach (var p in methodParams)
+                paramTypeArr.PersistentArguments[0].String += "\"" + p.ParameterType.AssemblyQualifiedName + "\", ";
+            if (paramTypeArr.PersistentArguments[0].String.EndsWith(", "))
+                paramTypeArr.PersistentArguments[0].String = paramTypeArr.PersistentArguments[0].String.Substring(0, paramTypeArr.PersistentArguments[0].String.Length - 2);
+            paramTypeArr.PersistentArguments[0].String += "]";
+            paramTypeArr.PersistentArguments[1].ToRetVal(typeArrType, typeof(Type));
+            evt.PersistentCallsList.Add(paramTypeArr);
+
+            var getTargMethod = new PersistentCall(typeof(System.ComponentModel.MemberDescriptor).GetMethod("FindMethod", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(Type), typeof(string), typeof(Type[]), typeof(Type), typeof(bool) }, null), null);
+            getTargMethod.PersistentArguments[0].ToRetVal(targType, typeof(Type));
+            getTargMethod.PersistentArguments[1].String = meth.Method.Name;
+            getTargMethod.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(paramTypeArr), typeof(Type[]));
+            getTargMethod.PersistentArguments[3].ToRetVal(retValType, typeof(Type));
+            getTargMethod.PersistentArguments[4].Bool = false;
+            evt.PersistentCallsList.Add(getTargMethod);
+
+            // aight, we got the MethodInfo
+            // just gotta compose the Param Array
+
+            int objType = evt.PersistentCallsList.FindOrAddGetTyper<object>();
+            var paramArr = new PersistentCall(typeof(Array).GetMethod("CreateInstance", new[] { typeof(Type), typeof(int) }), null);
+            paramArr.PersistentArguments[0].ToRetVal(objType, typeof(Type));
+            paramArr.PersistentArguments[1].Int = methodParams.Length;
+            evt.PersistentCallsList.Add(paramArr);
+
+            for (int i = 0; i < methodParams.Length; i++)
+            {
+                ParameterInfo p = methodParams[i];
+
+                var editorSetCall = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
+                editorSetCall.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(paramArr), typeof(Array));
+                editorSetCall.PersistentArguments[1].Int = i;
+                if (node.DataInputs[i+1].Source != null)
+                    new PendingConnection(node.DataInputs[i+1].Source, evt, editorSetCall, 2).Connect(dataRoot);
+                else editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[i+1].ConstInput).Value = node.DataInputs[i+1].GetDefault();
+                evt.PersistentCallsList.Add(editorSetCall);
+
+                var ingameSetCall = new PersistentCall();
+                ingameSetCall.CopyFrom(editorSetCall);
+                ingameSetCall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
+                ingameSetCall.FSetMethod(null);
+                evt.PersistentCallsList.Add(ingameSetCall);
+
+            }
+            // paramArr is now full of data;
+            // invoke the method upon the target.
+
+            PersistentCall invokeMethod = new PersistentCall(Type.GetType("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true, true).GetMethod("MethodInfoInvoke", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(MethodInfo), typeof(object), typeof(object[]) }, null), null);
+            invokeMethod.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(getTargMethod), typeof(MethodInfo));
+
+            if (node.DataInputs[0].Source != null)
+                new PendingConnection(node.DataInputs[0].Source, evt, invokeMethod, 1).Connect(dataRoot);
+            else invokeMethod.PersistentArguments[1].FSetType(node.DataInputs[0].ConstInput).Value = node.DataInputs[0].GetDefault();
+
+            invokeMethod.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(paramArr), typeof(object[]));
+            evt.PersistentCallsList.Add(invokeMethod);
+
+            if (node.DataOutputs.Length > 0)
+            {
+                node.DataOutputs[0].CompCall = invokeMethod;
+                node.DataOutputs[0].CompEvt = evt;
+            }
+
+            var nnextNode = node.FlowOutputs[0].Target?.Node;
+            if (nnextNode != null)
+                nnextNode.Book.CompileNode(evt, nnextNode, dataRoot);
+            return;
+        }
+        #endregion
+
+        #region PCall Based Method
         // make my PCall    
         PersistentCall myCall = new PersistentCall();
         myCall.SetMethod(meth.Method, node.DataInputs[0].DefaultObject);
@@ -615,6 +713,7 @@ public class ObjectMethodCookBook : CookBook
         var nextNode = node.FlowOutputs[0].Target?.Node;
         if (nextNode != null)
             nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+        #endregion
     }
 
     public override Dictionary<string, NodeDef> GetAlternatives(SerializedNode node)
@@ -661,21 +760,21 @@ public class ObjectMethodCookBook : CookBook
                 string inter = method.Name.ToLower().StartsWith("internal_") ? "Internal/" : "";
                 if (meths.Any(m => (m.Name == method.Name && m != method) && m.DeclaringType == method.DeclaringType))
                 {
-                    o.Add(tName + "/Methods/" + inj + inter + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text.Split('(').First() + "(...)/(" 
+                    o.TryAdd(tName + "/Methods/" + inj + inter + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text.Split('(').First() + "(...)/(" 
                         + string.Join(", ", method.GetParameters().Select(p => p.ParameterType.GetFriendlyName() + " " + p.Name)) +")", def);
                 } 
                 else
-                    o.Add(tName + "/Methods/"+ inj + inter + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text, def);
+                    o.TryAdd(tName + "/Methods/"+ inj + inter + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text, def);
             }
             foreach (var prop in props)
             {
                 if (prop.CanRead && MyDefs.TryGetValue(prop.GetMethod, out NodeDef getter))
                 {
-                    o.Add(tName + "/Properties/" + getter.SearchItem.text.Replace(".get_", ".").Split('(').First() + "/Get", getter);
+                    o.TryAdd(tName + "/Properties/" + getter.SearchItem.text.Replace(".get_", ".").Split('(').First() + "/Get", getter);
                 }
                 if (prop.CanWrite && MyDefs.TryGetValue(prop.SetMethod, out NodeDef setter))
                 {
-                    o.Add(tName + "/Properties/" + setter.SearchItem.text.Replace(".set_", ".").Split('(').First() + "/Set", setter);
+                    o.TryAdd(tName + "/Properties/" + setter.SearchItem.text.Replace(".set_", ".").Split('(').First() + "/Set", setter);
                 }
             }
         }
