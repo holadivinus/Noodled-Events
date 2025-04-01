@@ -8,7 +8,6 @@ using System.Reflection;
 using UltEvents;
 using UnityEngine;
 using static NoodledEvents.CookBook.NodeDef;
-using static PlasticGui.PlasticTableCell;
 
 
 public class ObjectMethodCookBook : CookBook
