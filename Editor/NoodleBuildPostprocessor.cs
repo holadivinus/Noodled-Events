@@ -4,7 +4,9 @@ using NoodledEvents;
 using NoodledEvents.Assets.Noodled_Events;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 public static class NoodleBuildPostprocessor
@@ -13,6 +15,14 @@ public static class NoodleBuildPostprocessor
     [UnityEditor.Callbacks.PostProcessScene(0)]
     public static void BuildCallBack()
     {
+        var openPrefab = PrefabStageUtility.GetCurrentPrefabStage();
+        if (openPrefab != null)
+        {
+            MethodInfo savePrefabMethod = typeof(PrefabStage).GetMethod("SavePrefab", BindingFlags.NonPublic | BindingFlags.Instance);
+            savePrefabMethod.Invoke(openPrefab, null);
+
+            StageUtility.GoBackToPreviousStage();
+        }
         foreach (var t in new[] { typeof(SerializedBowl), typeof(LifeCycleEvtEditorRunner), typeof(VarMan) })
         {
             foreach (var comp in UnityEngine.Resources.FindObjectsOfTypeAll(t))
