@@ -204,6 +204,8 @@ public class ObjectFieldCookBook : CookBook
                 if (node.DataInputs[0].Source == null) setValue.PersistentArguments[1].FSetType(PersistentArgumentType.Object).Object = node.DataInputs[0].DefaultObject;
                 else new PendingConnection(node.DataInputs[0].Source, evt, setValue, 1).Connect(dataRoot);
 
+                setValue.PersistentArguments[2].FSetType(PersistentArgumentType.Object);
+
                 if (node.DataInputs[1].Source == null)
                 {
                     switch (node.DataInputs[1].Type.Type.GetFriendlyName())
