@@ -12,13 +12,34 @@ using static NoodledEvents.CookBook.NodeDef;
 public class ObjectFieldCookBook : CookBook
 {
     private Dictionary<FieldInfo, (NodeDef, NodeDef)> MyDefs = new();
-    public override void CollectDefs(List<NodeDef> allDefs)
+    public override void CollectDefs(List<NodeDef> allDefs) // why aren't these threaded
     {
         MyDefs.Clear();
         foreach (var t in UltNoodleEditor.SearchableTypes)
         {
             try
             {
+                foreach (var field in t.GetFields(UltEventUtils.AnyAccessBindings))
+                {
+                    var getter =
+                        (new NodeDef(this, $"{t.GetFriendlyName()}.getf_{field.Name}",
+                            inputs: () => new Pin[] { new Pin("Reflection Get"), new Pin(t.GetFriendlyName(), t) },
+                            outputs: () => new[] { new NodeDef.Pin("got"), new NodeDef.Pin(field.Name, field.FieldType) },
+                            bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }),
+                            tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.getf_{field.Name} (Reflection)")
+                        );
+                    allDefs.Add(getter);
+                    var setter =
+                    (new NodeDef(this, $"{t.GetFriendlyName()}.setf_{field.Name}",
+                        inputs: () => new Pin[] { new Pin("Reflection Set"), new Pin(t.GetFriendlyName(), t), new NodeDef.Pin(field.Name, field.FieldType) },
+                        outputs: () => new[] { new NodeDef.Pin("sot") },
+                        bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }),
+                        tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.setf_{field.Name} (Reflection)")
+                    );
+                    allDefs.Add(setter);
+                    MyDefs.Add(field, (getter, setter));
+                }
+                continue;
                 if (typeof(UnityEngine.Object).IsAssignableFrom(t) && !typeof(MonoBehaviour).IsAssignableFrom(t) && !typeof(ScriptableObject).IsAssignableFrom(t))
                     continue;
 
@@ -96,10 +117,6 @@ public class ObjectFieldCookBook : CookBook
         SerializedField field = JsonUtility.FromJson<SerializedField>(node.BookTag);
         evt.EnsurePCallList();
 
-
-        if (!(typeof(UnityEngine.Object).IsAssignableFrom(field.Field.FieldType) || field.Field.FieldType == typeof(string) || field.Field.FieldType == typeof(int) || field.Field.FieldType == typeof(float) || field.Field.FieldType == typeof(bool))
-        || (field.Field.GetCustomAttribute<NonSerializedAttribute>() != null)
-        || (!(field.Field.IsPublic || field.Field.GetCustomAttribute<SerializeField>() != null)))
         {
             #region Reflection Type
             // So only 1 pcall needs to be changed for get/set
@@ -155,18 +172,14 @@ public class ObjectFieldCookBook : CookBook
             getParamTypes.PersistentArguments[1].ToRetVal(typeTypeArr, typeof(Type));
             evt.PersistentCallsList.Add(getParamTypes);
 
-            PersistentCall typeFieldInfo = new PersistentCall(typeof(Type).GetMethod("GetType", new Type[] { typeof(string), typeof(bool), typeof(bool) }), null);
-            typeFieldInfo.PersistentArguments[0].String = typeof(FieldInfo).AssemblyQualifiedName;
-            typeFieldInfo.PersistentArguments[1].Bool = true;
-            typeFieldInfo.PersistentArguments[2].Bool = true;
-            evt.PersistentCallsList.Add(typeFieldInfo);
+            int typeFieldInfo = evt.PersistentCallsList.FindOrAddGetTyper<FieldInfo>();
 
             PersistentCall getGetFieldMethod = new PersistentCall(typeof(System.ComponentModel.MemberDescriptor).GetMethod("FindMethod", UltEventUtils.AnyAccessBindings, null,
                 new Type[] { typeof(Type), typeof(string), typeof(Type[]), typeof(Type), typeof(bool) }, null), null);
             getGetFieldMethod.PersistentArguments[0].ToRetVal(typeType, typeof(Type));
             getGetFieldMethod.PersistentArguments[1].String = "GetField";
             getGetFieldMethod.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(getParamTypes), typeof(Type[]));
-            getGetFieldMethod.PersistentArguments[3].ToRetVal(evt.PersistentCallsList.IndexOf(typeFieldInfo), typeof(Type));
+            getGetFieldMethod.PersistentArguments[3].ToRetVal(typeFieldInfo, typeof(Type));
             getGetFieldMethod.PersistentArguments[4].Bool = false;
             evt.PersistentCallsList.Add(getGetFieldMethod);
 
@@ -178,6 +191,131 @@ public class ObjectFieldCookBook : CookBook
             getFieldInfo.PersistentArguments[1].ToRetVal(typeTargType, typeof(object));
             getFieldInfo.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(paramSysObjArr), typeof(object[]));
             evt.PersistentCallsList.Add(getFieldInfo);
+
+            // GRAHHH Getter/Setter needs shitass rewrite :/
+            //oki
+            //System.ComponentModel.MemberDescriptor.FindMethod(typeof(FieldInfo), "FieldInfo.SetValue", ["obj", "obj"], null, false):
+              //Array.CreateInstance<object>(2)
+              //Array[0] = targ obj
+              //Array[1] = targ val
+              //System.SecurityUtils.MethodInfoInvoke(set, fieldinfo, arr)
+            //System.ComponentModel.MemberDescriptor.FindMethod(typeof(FieldInfo), "FieldInfo.GetValue", ["obj"], typof(object), false):
+              //Array.CreateInstance<object>(1)
+              //Array[0] = targ obj
+              //return System.SecurityUtils.MethodInfoInvoke(get, fieldinfo, arr)
+
+            if (node.DataInputs.Length == 1) // getter 
+            {
+                PersistentCall objObjArr1 = new PersistentCall(typeof(JsonConvert).GetMethod("DeserializeObject", new Type[] { typeof(string), typeof(Type) }), null);
+                objObjArr1.PersistentArguments[0].String = "[\"System.Object, mscorlib\"]";
+                objObjArr1.PersistentArguments[1].ToRetVal(typeTypeArr, typeof(Type));
+                evt.PersistentCallsList.Add(objObjArr1);
+
+                PersistentCall getGetValueMethod = new PersistentCall(typeof(System.ComponentModel.MemberDescriptor).GetMethod("FindMethod", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(Type), typeof(string), typeof(Type[]), typeof(Type), typeof(bool) }, null), null);
+                getGetValueMethod.PersistentArguments[0].ToRetVal(typeFieldInfo, typeof(Type));
+                getGetValueMethod.PersistentArguments[1].String = "GetValue";
+                getGetValueMethod.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(objObjArr1), typeof(Type[]));
+                getGetValueMethod.PersistentArguments[3].ToRetVal(typeSysObj, typeof(Type));
+                getGetValueMethod.PersistentArguments[4].Bool = false;
+                evt.PersistentCallsList.Add(getGetValueMethod);
+
+                PersistentCall smallTargArr = new PersistentCall(typeof(Array).GetMethod("CreateInstance", new Type[] { typeof(Type), typeof(int) }), null);
+                smallTargArr.PersistentArguments[0].ToRetVal(typeSysObj, typeof(Type));
+                smallTargArr.PersistentArguments[1].Int = 1;
+                evt.PersistentCallsList.Add(smallTargArr);
+
+                var editorSetCall = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
+                editorSetCall.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(smallTargArr), typeof(Array));
+                editorSetCall.PersistentArguments[1].Int = 0;
+                if (node.DataInputs[0].Source != null)
+                    new PendingConnection(node.DataInputs[0].Source, evt, editorSetCall, 2).Connect(dataRoot);
+                else editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[0].GetPCallType()).Value = node.DataInputs[0].GetDefault();
+                evt.PersistentCallsList.Add(editorSetCall);
+
+                var ingameSetCall = new PersistentCall();
+                ingameSetCall.CopyFrom(editorSetCall);
+                ingameSetCall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
+                ingameSetCall.FSetMethod(null);
+                evt.PersistentCallsList.Add(ingameSetCall);
+
+                PersistentCall getValue = new PersistentCall(Type.GetType("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true, true).GetMethod("MethodInfoInvoke", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(MethodInfo), typeof(object), typeof(object[]) }, null), null);
+                getValue.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(getGetValueMethod), typeof(MethodInfo));
+
+                getValue.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.IndexOf(getFieldInfo), typeof(object));
+
+                getValue.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(smallTargArr), typeof(object[]));
+                evt.PersistentCallsList.Add(getValue);
+
+                node.DataOutputs[0].CompEvt = evt;
+                node.DataOutputs[0].CompCall = getValue;
+
+                if (node.FlowOutputs[0].Target != null)
+                    node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
+            }
+            else // setter
+            {
+                PersistentCall objObjArr2 = new PersistentCall(typeof(JsonConvert).GetMethod("DeserializeObject", new Type[] { typeof(string), typeof(Type) }), null);
+                objObjArr2.PersistentArguments[0].String = "[\"System.Object, mscorlib\", \"System.Object, mscorlib\"]";
+                objObjArr2.PersistentArguments[1].ToRetVal(typeTypeArr, typeof(Type));
+                evt.PersistentCallsList.Add(objObjArr2);
+
+                PersistentCall getSetValueMethod = new PersistentCall(typeof(System.ComponentModel.MemberDescriptor).GetMethod("FindMethod", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(Type), typeof(string), typeof(Type[]), typeof(Type), typeof(bool) }, null), null);
+                getSetValueMethod.PersistentArguments[0].ToRetVal(typeFieldInfo, typeof(Type));
+                getSetValueMethod.PersistentArguments[1].String = "SetValue";
+                getSetValueMethod.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(objObjArr2), typeof(Type[]));
+                getSetValueMethod.PersistentArguments[3].ToRetVal(evt.PersistentCallsList.FindOrAddGetTyper(typeof(void)), typeof(Type));
+                getSetValueMethod.PersistentArguments[4].Bool = false;
+                evt.PersistentCallsList.Add(getSetValueMethod); 
+
+                PersistentCall twoTargArr = new PersistentCall(typeof(Array).GetMethod("CreateInstance", new Type[] { typeof(Type), typeof(int) }), null);
+                twoTargArr.PersistentArguments[0].ToRetVal(typeSysObj, typeof(Type));
+                twoTargArr.PersistentArguments[1].Int = 2;
+                evt.PersistentCallsList.Add(twoTargArr);
+
+                var editorSetCall = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
+                editorSetCall.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(twoTargArr), typeof(Array));
+                editorSetCall.PersistentArguments[1].Int = 0;
+                if (node.DataInputs[0].Source != null)
+                    new PendingConnection(node.DataInputs[0].Source, evt, editorSetCall, 2).Connect(dataRoot);
+                else editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[0].GetPCallType()).Value = node.DataInputs[0].GetDefault();
+                evt.PersistentCallsList.Add(editorSetCall);
+
+                var ingameSetCall = new PersistentCall();
+                ingameSetCall.CopyFrom(editorSetCall);
+                ingameSetCall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
+                ingameSetCall.FSetMethod(null);
+                evt.PersistentCallsList.Add(ingameSetCall);
+
+                var editorSetCall2 = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
+                editorSetCall2.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(twoTargArr), typeof(Array));
+                editorSetCall2.PersistentArguments[1].Int = 1;
+                if (node.DataInputs[1].Source != null)
+                    new PendingConnection(node.DataInputs[1].Source, evt, editorSetCall2, 2).Connect(dataRoot);
+                else editorSetCall2.PersistentArguments[2].FSetType(node.DataInputs[1].GetPCallType()).Value = node.DataInputs[1].GetDefault();
+                evt.PersistentCallsList.Add(editorSetCall2);
+
+                var ingameSetCall2 = new PersistentCall();
+                ingameSetCall2.CopyFrom(editorSetCall2);
+                ingameSetCall2.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
+                ingameSetCall2.FSetMethod(null);
+                evt.PersistentCallsList.Add(ingameSetCall2);
+
+                PersistentCall setValue = new PersistentCall(Type.GetType("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true, true).GetMethod("MethodInfoInvoke", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(MethodInfo), typeof(object), typeof(object[]) }, null), null);
+                setValue.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(getSetValueMethod), typeof(MethodInfo));
+
+                setValue.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.IndexOf(getFieldInfo), typeof(object));
+
+                setValue.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(twoTargArr), typeof(object[]));
+                evt.PersistentCallsList.Add(setValue);
+
+                if (node.FlowOutputs[0].Target != null)
+                    node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
+            }
+            return;// early exit. Old newtonsoft based code below
 
             if (node.DataInputs.Length == 1) // getter 
             {
@@ -195,7 +333,8 @@ public class ObjectFieldCookBook : CookBook
                 if (node.FlowOutputs[0].Target != null)
                     node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
 
-            } else // setter
+            }
+            else // setter
             {
                 PersistentCall setValue = new PersistentCall(Type.GetType("Newtonsoft.Json.Utilities.ReflectionUtils, Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed", true, true).GetMethod("SetMemberValue", UltEventUtils.AnyAccessBindings, null,
                     new Type[] { typeof(MemberInfo), typeof(object), typeof(object) }, null), null);
@@ -256,275 +395,6 @@ public class ObjectFieldCookBook : CookBook
                     node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
             }
 
-            #endregion
-        }
-        else
-        {
-            #region Json Type
-
-            if (node.DataInputs.Length == 1) // getter
-            {
-                var toJson = new PersistentCall(typeof(JsonUtility).GetMethod("ToJson", new Type[] { typeof(object) }), null);
-                if (node.DataInputs[0].Source == null) toJson.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = node.DataInputs[0].DefaultObject;
-                else new PendingConnection(node.DataInputs[0].Source, evt, toJson, 0).Connect(dataRoot);
-                evt.PersistentCallsList.Add(toJson);
-
-                string startTidBit = "";
-                if (field.Field.FieldType == typeof(string)) startTidBit += '\"';
-                // regex cut everything b4 the fieldName
-                var cutStart = new PersistentCall();
-                cutStart.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
-                cutStart.FSetArguments(
-                    new PersistentArgument(typeof(string)).ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
-                    new PersistentArgument(typeof(string)).FSetString($".*\"{field.Field.Name}\":" + startTidBit),
-                    new PersistentArgument(typeof(string)).FSetString("")
-                );
-                evt.PersistentCallsList.Add(cutStart);
-
-                string endSnipper = "";
-                if (typeof(UnityEngine.Object).IsAssignableFrom(field.Field.FieldType)) endSnipper = "(?<=}).*$";
-                else if (field.Field.FieldType == typeof(string)) endSnipper = "\".*";
-                else if (field.Field.FieldType == typeof(int) || field.Field.FieldType == typeof(float)) endSnipper = ".(?<=[^0-9\\.\\-]).*$";
-                else if (field.Field.FieldType == typeof(bool)) endSnipper = "(?<=false|true).*$";
-                // regex cut everything after the field data
-                var cutEnd = new PersistentCall();
-                cutEnd.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
-                cutEnd.FSetArguments(
-                    new PersistentArgument(typeof(string)).ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
-                    new PersistentArgument(typeof(string)).FSetString(endSnipper),
-                    new PersistentArgument(typeof(string)).FSetString("")
-                );
-                evt.PersistentCallsList.Add(cutEnd);
-
-
-                // at this point we have our field, as string!
-                // destringify
-                // varies by type :/
-                if (typeof(UnityEngine.Object).IsAssignableFrom(field.Field.FieldType))
-                {
-                    // XR COMP YASSSS
-                    var xrCompStorData = PendingConnection.CompStoragers[typeof(UnityEngine.Object)];
-                    Component xrComp = dataRoot.StoreComp(xrCompStorData.Item1, "got " + field.Field.Name);
-                    var jsForm = new PersistentCall(typeof(string).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) }), null);
-                    jsForm.PersistentArguments[0].String = "{\"m_InteractorSource\":";
-                    jsForm.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    jsForm.PersistentArguments[2].String = "}";
-                    evt.PersistentCallsList.Add(jsForm);
-
-                    var fromJson = new PersistentCall(typeof(JsonUtility).GetMethod("FromJsonOverwrite", new Type[] { typeof(string), typeof(object) }), null);
-                    fromJson.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    fromJson.PersistentArguments[1].FSetType(PersistentArgumentType.Object).Object = xrComp;
-                    evt.PersistentCallsList.Add(fromJson);
-
-                    var getResult = new PersistentCall(xrCompStorData.Item2.GetMethod, xrComp);
-                    evt.PersistentCallsList.Add(getResult);
-
-                    node.DataOutputs[0].CompEvt = evt;
-                    node.DataOutputs[0].CompCall = getResult;
-                    if (node.FlowOutputs[0].Target != null)
-                        node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
-                }
-                else if (field.Field.FieldType == typeof(string))
-                {
-                    node.DataOutputs[0].CompEvt = evt;
-                    node.DataOutputs[0].CompCall = cutEnd;
-
-                    if (node.FlowOutputs[0].Target != null)
-                        node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
-                }
-                else if (field.Field.FieldType == typeof(int))
-                {
-                    var parser = new PersistentCall(typeof(int).GetMethod("Parse", new Type[] { typeof(string) }), null);
-                    parser.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    evt.PersistentCallsList.Add(parser);
-                    node.DataOutputs[0].CompEvt = evt;
-                    node.DataOutputs[0].CompCall = parser;
-
-                    if (node.FlowOutputs[0].Target != null)
-                        node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
-                }
-                else if (field.Field.FieldType == typeof(float))
-                {
-                    var parser = new PersistentCall(typeof(float).GetMethod("Parse", new Type[] { typeof(string) }), null);
-                    parser.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    evt.PersistentCallsList.Add(parser);
-                    node.DataOutputs[0].CompEvt = evt;
-                    node.DataOutputs[0].CompCall = parser;
-
-                    if (node.FlowOutputs[0].Target != null)
-                        node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
-                }
-                else if (field.Field.FieldType == typeof(bool))
-                {
-                    var parser = new PersistentCall(typeof(bool).GetMethod("Parse", new Type[] { typeof(string) }), null);
-                    parser.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    evt.PersistentCallsList.Add(parser);
-                    node.DataOutputs[0].CompEvt = evt;
-                    node.DataOutputs[0].CompCall = parser;
-
-                    if (node.FlowOutputs[0].Target != null)
-                        node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
-                }
-            }
-            else
-            {
-                // SETTER :(
-
-                // vary by type
-                if (typeof(UnityEngine.Object).IsAssignableFrom(field.Field.FieldType))
-                {
-                    //serialize the Obj first
-                    // set XRComp
-                    var xrCompStorData = PendingConnection.CompStoragers[typeof(UnityEngine.Object)];
-                    Component xrComp = dataRoot.StoreComp(xrCompStorData.Item1, "sot " + field.Field.Name);
-
-                    var setXR = new PersistentCall(xrCompStorData.Item2.SetMethod, xrComp);
-                    if (node.DataInputs[1].Source == null) setXR.PersistentArguments[0].Object = node.DataInputs[1].DefaultObject;
-                    else new PendingConnection(node.DataInputs[1].Source, evt, setXR, 0).Connect(dataRoot);
-                    evt.PersistentCallsList.Add(setXR);
-
-
-                    // json xrcomp
-                    var jsXR = new PersistentCall(typeof(JsonUtility).GetMethod("ToJson", new Type[] { typeof(object) }), null);
-                    jsXR.PersistentArguments[0].FSetType(PersistentArgumentType.Object).Object = xrComp;
-                    evt.PersistentCallsList.Add(jsXR);
-
-                    // cut out start
-                    var snipXR = new PersistentCall();
-                    snipXR.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
-                    snipXR.FSetArguments(
-                        new PersistentArgument(typeof(string)).ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
-                        new PersistentArgument(typeof(string)).FSetString(".*\"m_InteractorSource\":"),
-                        new PersistentArgument(typeof(string)).FSetString("")
-                    );
-                    evt.PersistentCallsList.Add(snipXR);
-
-                    // cut out end
-                    var snipXR2 = new PersistentCall();
-                    snipXR2.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
-                    snipXR2.FSetArguments(
-                        new PersistentArgument(typeof(string)).ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
-                        new PersistentArgument(typeof(string)).FSetString("(?<=}).*$"),
-                        new PersistentArgument(typeof(string)).FSetString("")
-                    );
-                    evt.PersistentCallsList.Add(snipXR2);
-
-                    // make deserz string
-                    var overwrStr = new PersistentCall(typeof(string).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) }), null);
-                    overwrStr.PersistentArguments[0].String = "{\"" + field.Field.Name + "\":";
-                    overwrStr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    overwrStr.PersistentArguments[2].String = "}";
-                    evt.PersistentCallsList.Add(overwrStr);
-
-                    // do the deserz
-                    var fromJson = new PersistentCall(typeof(JsonUtility).GetMethod("FromJsonOverwrite", new Type[] { typeof(string), typeof(object) }), null);
-                    fromJson.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    if (node.DataInputs[0].Source == null) fromJson.PersistentArguments[1].FSetType(PersistentArgumentType.Object).Object = node.DataInputs[0].DefaultObject;
-                    else new PendingConnection(node.DataInputs[0].Source, evt, fromJson, 1).Connect(dataRoot);
-                    evt.PersistentCallsList.Add(fromJson);
-                }
-                else if (field.Field.FieldType == typeof(string))
-                {
-                    // make deserz string
-                    var overwrStr = new PersistentCall(typeof(string).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) }), null);
-                    overwrStr.PersistentArguments[0].String = "{\"" + field.Field.Name + "\":\"";
-                    if (node.DataInputs[1].Source == null) overwrStr.PersistentArguments[1].String = node.DataInputs[1].DefaultStringValue;
-                    else new PendingConnection(node.DataInputs[1].Source, evt, overwrStr, 1).Connect(dataRoot);
-                    overwrStr.PersistentArguments[2].String = "\"}";
-                    evt.PersistentCallsList.Add(overwrStr);
-
-                    // do the deserz
-                    var fromJson = new PersistentCall(typeof(JsonUtility).GetMethod("FromJsonOverwrite", new Type[] { typeof(string), typeof(object) }), null);
-                    fromJson.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    if (node.DataInputs[0].Source == null) fromJson.PersistentArguments[1].FSetType(PersistentArgumentType.Object).Object = node.DataInputs[0].DefaultObject;
-                    else new PendingConnection(node.DataInputs[0].Source, evt, fromJson, 1).Connect(dataRoot);
-                    evt.PersistentCallsList.Add(fromJson);
-                }
-                else if (field.Field.FieldType == typeof(int))
-                {
-                    var intStr = new PersistentCall(typeof(string).GetMethod(nameof(string.Format), new Type[] { typeof(string), typeof(object) }), null);
-                    intStr.PersistentArguments[0].String = "{0}";
-                    if (node.DataInputs[1].Source == null) intStr.PersistentArguments[1].FSetType(PersistentArgumentType.Int).FSetInt(node.DataInputs[1].DefaultIntValue);
-                    else new PendingConnection(node.DataInputs[1].Source, evt, intStr, 1).Connect(dataRoot);
-                    evt.PersistentCallsList.Add(intStr);
-
-                    var overwrStr = new PersistentCall(typeof(string).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) }), null);
-                    overwrStr.PersistentArguments[0].String = "{\"" + field.Field.Name + "\":";
-                    overwrStr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    overwrStr.PersistentArguments[2].String = "}";
-                    evt.PersistentCallsList.Add(overwrStr);
-
-                    // do the deserz
-                    var fromJson = new PersistentCall(typeof(JsonUtility).GetMethod("FromJsonOverwrite", new Type[] { typeof(string), typeof(object) }), null);
-                    fromJson.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    if (node.DataInputs[0].Source == null) fromJson.PersistentArguments[1].FSetType(PersistentArgumentType.Object).Object = node.DataInputs[0].DefaultObject;
-                    else new PendingConnection(node.DataInputs[0].Source, evt, fromJson, 1).Connect(dataRoot);
-                    evt.PersistentCallsList.Add(fromJson);
-                }
-                else if (field.Field.FieldType == typeof(float))
-                {
-                    var fltStr = new PersistentCall(typeof(string).GetMethod(nameof(string.Format), new Type[] { typeof(string), typeof(object) }), null);
-                    fltStr.PersistentArguments[0].String = "{0}";
-                    if (node.DataInputs[1].Source == null) fltStr.PersistentArguments[1].FSetType(PersistentArgumentType.Float).Float = node.DataInputs[1].DefaultFloatValue;
-                    else new PendingConnection(node.DataInputs[1].Source, evt, fltStr, 1).Connect(dataRoot);
-                    evt.PersistentCallsList.Add(fltStr);
-
-                    var overwrStr = new PersistentCall(typeof(string).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) }), null);
-                    overwrStr.PersistentArguments[0].String = "{\"" + field.Field.Name + "\":";
-                    overwrStr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    overwrStr.PersistentArguments[2].String = "}";
-                    evt.PersistentCallsList.Add(overwrStr);
-
-                    // do the deserz
-                    var fromJson = new PersistentCall(typeof(JsonUtility).GetMethod("FromJsonOverwrite", new Type[] { typeof(string), typeof(object) }), null);
-                    fromJson.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    if (node.DataInputs[0].Source == null) fromJson.PersistentArguments[1].FSetType(PersistentArgumentType.Object).Object = node.DataInputs[0].DefaultObject;
-                    else new PendingConnection(node.DataInputs[0].Source, evt, fromJson, 1).Connect(dataRoot);
-                    evt.PersistentCallsList.Add(fromJson);
-                }
-                else if (field.Field.FieldType == typeof(bool))
-                {
-                    var fltStr = new PersistentCall(typeof(string).GetMethod(nameof(string.Format), new Type[] { typeof(string), typeof(object) }), null);
-                    fltStr.PersistentArguments[0].String = "{0}";
-                    if (node.DataInputs[1].Source == null) fltStr.PersistentArguments[1].FSetType(PersistentArgumentType.Bool).Bool = node.DataInputs[1].DefaultBoolValue;
-                    else new PendingConnection(node.DataInputs[1].Source, evt, fltStr, 1).Connect(dataRoot);
-                    evt.PersistentCallsList.Add(fltStr);
-
-                    // ughhh we need to lowercase the True/False
-                    var Ttot = new PersistentCall();
-                    Ttot.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
-                    Ttot.FSetArguments(
-                        new PersistentArgument(typeof(string)).ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
-                        new PersistentArgument(typeof(string)).FSetString("T"),
-                        new PersistentArgument(typeof(string)).FSetString("t")
-                    );
-                    evt.PersistentCallsList.Add(Ttot);
-                    var Ftof = new PersistentCall();
-                    Ftof.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
-                    Ftof.FSetArguments(
-                        new PersistentArgument(typeof(string)).ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string)),
-                        new PersistentArgument(typeof(string)).FSetString("F"),
-                        new PersistentArgument(typeof(string)).FSetString("f")
-                    );
-                    evt.PersistentCallsList.Add(Ftof);
-
-                    var overwrStr = new PersistentCall(typeof(string).GetMethod(nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) }), null);
-                    overwrStr.PersistentArguments[0].String = "{\"" + field.Field.Name + "\":";
-                    overwrStr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    overwrStr.PersistentArguments[2].String = "}";
-                    evt.PersistentCallsList.Add(overwrStr);
-
-                    // do the deserz
-                    var fromJson = new PersistentCall(typeof(JsonUtility).GetMethod("FromJsonOverwrite", new Type[] { typeof(string), typeof(object) }), null);
-                    fromJson.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(string));
-                    if (node.DataInputs[0].Source == null) fromJson.PersistentArguments[1].FSetType(PersistentArgumentType.Object).Object = node.DataInputs[0].DefaultObject;
-                    else new PendingConnection(node.DataInputs[0].Source, evt, fromJson, 1).Connect(dataRoot);
-                    evt.PersistentCallsList.Add(fromJson);
-                }
-                // comp next node
-                if (node.FlowOutputs[0].Target != null)
-                    node.FlowOutputs[0].Target.Node.Book.CompileNode(evt, node.FlowOutputs[0].Target.Node, dataRoot);
-            }
             #endregion
         }
     }
