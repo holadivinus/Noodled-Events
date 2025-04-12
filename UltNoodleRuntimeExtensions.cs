@@ -32,6 +32,16 @@ public static class UltNoodleRuntimeExtensions
         => s_PersistentArgumentsGetSet.SetValue(call, args);
     public static PersistentArgument FSetType(this PersistentArgument arg, PersistentArgumentType t)
     { s_PersistentArgumentTypeGetSet.SetValue(arg, t); return arg; }
+    public static PersistentArgument SafeSetValue(this PersistentArgument arg, object val)
+    {
+        if (val.GetType().IsEnum)
+        {
+            arg.Value = val;
+            arg.FSetString(val.GetType().AssemblyQualifiedName);
+        }
+        else arg.Value = val;
+        return arg;
+    }
     public static PersistentArgumentType FGetType(this PersistentArgument arg)
         => (PersistentArgumentType)s_PersistentArgumentTypeGetSet.GetValue(arg);
     public static PersistentArgument FSetString(this PersistentArgument arg, string s)

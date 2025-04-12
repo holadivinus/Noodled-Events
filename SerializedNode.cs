@@ -300,6 +300,8 @@ namespace NoodledEvents
                 case "string":
                     return DefaultStringValue;
             }
+            if (Type.Type.IsEnum)
+                return Enum.ToObject(Type, DefaultIntValue);
             if (Type == typeof(object))
             {
                 switch (ConstInput)

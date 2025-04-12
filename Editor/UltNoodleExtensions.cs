@@ -52,7 +52,7 @@ namespace NoodledEvents
             {
                 if (@in.Type == typeof(bool)) return PersistentArgumentType.Bool;
                 if (@in.Type == typeof(int)) return PersistentArgumentType.Int;
-                if (typeof(Enum).IsAssignableFrom(@in.Type)) return PersistentArgumentType.Enum;
+                if (@in.Type.Type.IsEnum) return PersistentArgumentType.Enum;
                 if (@in.Type == typeof(string)) return PersistentArgumentType.String;
                 if (@in.Type == typeof(float)) return PersistentArgumentType.Float;
                 if (@in.Type == typeof(Vector2)) return PersistentArgumentType.Vector2;

@@ -418,7 +418,7 @@ public class ObjectMethodCookBook : CookBook
                 editorSetCall.PersistentArguments[1].Int = i;
                 if (node.DataInputs[i+1].Source != null)
                     new PendingConnection(node.DataInputs[i+1].Source, evt, editorSetCall, 2).Connect(dataRoot);
-                else editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[i+1].GetPCallType()).Value = node.DataInputs[i+1].GetDefault();
+                else editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[i+1].GetPCallType()).SafeSetValue(node.DataInputs[i+1].GetDefault());
                 evt.PersistentCallsList.Add(editorSetCall);
 
                 var ingameSetCall = new PersistentCall();
@@ -426,7 +426,6 @@ public class ObjectMethodCookBook : CookBook
                 ingameSetCall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
                 ingameSetCall.FSetMethod(null);
                 evt.PersistentCallsList.Add(ingameSetCall);
-
             }
             // paramArr is now full of data;
             // invoke the method upon the target.
@@ -437,7 +436,7 @@ public class ObjectMethodCookBook : CookBook
 
             if (node.DataInputs[0].Source != null)
                 new PendingConnection(node.DataInputs[0].Source, evt, invokeMethod, 1).Connect(dataRoot);
-            else invokeMethod.PersistentArguments[1].FSetType(node.DataInputs[0].ConstInput).Value = node.DataInputs[0].GetDefault();
+            else invokeMethod.PersistentArguments[1].FSetType(node.DataInputs[0].ConstInput).SafeSetValue(node.DataInputs[0].GetDefault());
 
             invokeMethod.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(paramArr), typeof(object[]));
             evt.PersistentCallsList.Add(invokeMethod);
