@@ -293,6 +293,8 @@ namespace NoodledEvents
                     return DefaultVector3Value;
                 case "Vector4":
                     return DefaultVector4Value;
+                case "Color":
+                    return DefaultColorValue;
                 case "Quaternion":
                     return DefaultQuaternionValue;
                 case "string":
@@ -328,7 +330,7 @@ namespace NoodledEvents
                         return DefaultObject;
                 }
             }
-            if (Type == typeof(UnityEngine.Object))
+            if (typeof(UnityEngine.Object).IsAssignableFrom(Type))
                 return DefaultObject;
             return null;
         }

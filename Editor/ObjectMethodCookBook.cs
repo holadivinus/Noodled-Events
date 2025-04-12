@@ -418,7 +418,7 @@ public class ObjectMethodCookBook : CookBook
                 editorSetCall.PersistentArguments[1].Int = i;
                 if (node.DataInputs[i+1].Source != null)
                     new PendingConnection(node.DataInputs[i+1].Source, evt, editorSetCall, 2).Connect(dataRoot);
-                else editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[i+1].ConstInput).Value = node.DataInputs[i+1].GetDefault();
+                else editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[i+1].GetPCallType()).Value = node.DataInputs[i+1].GetDefault();
                 evt.PersistentCallsList.Add(editorSetCall);
 
                 var ingameSetCall = new PersistentCall();

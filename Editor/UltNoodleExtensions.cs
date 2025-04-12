@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using Codice.CM.SEIDInfo;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,6 +42,29 @@ namespace NoodledEvents
                 evtType = evtType.BaseType;
             }
             return types.ToArray();
+        }
+
+        public static PersistentArgumentType GetPCallType(this NoodleDataInput @in)
+        {
+            if (@in.Type == typeof(object)) 
+                return @in.ConstInput;
+            else
+            {
+                if (@in.Type == typeof(bool)) return PersistentArgumentType.Bool;
+                if (@in.Type == typeof(int)) return PersistentArgumentType.Int;
+                if (typeof(Enum).IsAssignableFrom(@in.Type)) return PersistentArgumentType.Enum;
+                if (@in.Type == typeof(string)) return PersistentArgumentType.String;
+                if (@in.Type == typeof(float)) return PersistentArgumentType.Float;
+                if (@in.Type == typeof(Vector2)) return PersistentArgumentType.Vector2;
+                if (@in.Type == typeof(Vector3)) return PersistentArgumentType.Vector3;
+                if (@in.Type == typeof(Vector4)) return PersistentArgumentType.Vector4;
+                if (@in.Type == typeof(Quaternion)) return PersistentArgumentType.Quaternion;
+                if (@in.Type == typeof(Color)) return PersistentArgumentType.Color;
+                if (@in.Type == typeof(Color32)) return PersistentArgumentType.Color32;
+                if (@in.Type == typeof(Rect)) return PersistentArgumentType.Rect;
+                if (typeof(UnityEngine.Object).IsAssignableFrom(@in.Type)) return PersistentArgumentType.Object;
+                return PersistentArgumentType.None; // uhh
+            }
         }
 
         public static Type[] GetAllTypes()
