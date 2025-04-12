@@ -374,6 +374,8 @@ public class ObjectMethodCookBook : CookBook
         if (NeedsReflection(meth.Method)) // bonus retvals!
         {
             // UAHGAHGAUGUAAAAAAS
+            
+
 
             int typeArrType = evt.PersistentCallsList.FindOrAddGetTyper<Type[]>();
             int targType = evt.PersistentCallsList.FindOrAddGetTyper(meth.Method.DeclaringType);
@@ -416,9 +418,20 @@ public class ObjectMethodCookBook : CookBook
                 var editorSetCall = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
                 editorSetCall.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(paramArr), typeof(Array));
                 editorSetCall.PersistentArguments[1].Int = i;
-                if (node.DataInputs[i+1].Source != null)
-                    new PendingConnection(node.DataInputs[i+1].Source, evt, editorSetCall, 2).Connect(dataRoot);
-                else editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[i+1].GetPCallType()).SafeSetValue(node.DataInputs[i+1].GetDefault());
+
+                if (node.DataInputs[i + 1].Source != null)
+                    new PendingConnection(node.DataInputs[i + 1].Source, evt, editorSetCall, 2).Connect(dataRoot);
+                else
+                {
+                    editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[i + 1].GetPCallType()).SafeSetValue(node.DataInputs[i + 1].GetDefault());
+                    if (p.ParameterType == typeof(Type))
+                    {
+                        node.DataInputs[i + 1].CompEvt = evt;
+                        node.DataInputs[i + 1].CompCall = editorSetCall;
+                        node.DataInputs[i + 1].CompArg = editorSetCall.PersistentArguments[2];
+                    }
+                }
+
                 evt.PersistentCallsList.Add(editorSetCall);
 
                 var ingameSetCall = new PersistentCall();
@@ -436,7 +449,16 @@ public class ObjectMethodCookBook : CookBook
 
             if (node.DataInputs[0].Source != null)
                 new PendingConnection(node.DataInputs[0].Source, evt, invokeMethod, 1).Connect(dataRoot);
-            else invokeMethod.PersistentArguments[1].FSetType(node.DataInputs[0].ConstInput).SafeSetValue(node.DataInputs[0].GetDefault());
+            else
+            {
+                invokeMethod.PersistentArguments[1].FSetType(node.DataInputs[0].ConstInput).SafeSetValue(node.DataInputs[0].GetDefault());
+                if (node.DataInputs[0].Type == typeof(Type))
+                {
+                    node.DataInputs[0].CompEvt = evt;
+                    node.DataInputs[0].CompCall = invokeMethod;
+                    node.DataInputs[0].CompArg = invokeMethod.PersistentArguments[1];
+                }
+            }
 
             invokeMethod.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(paramArr), typeof(object[]));
             evt.PersistentCallsList.Add(invokeMethod);

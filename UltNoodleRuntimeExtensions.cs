@@ -2,6 +2,7 @@
 using NoodledEvents;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Printing;
 using System.Linq;
 using System.Reflection;
 using UltEvents;
@@ -34,7 +35,17 @@ public static class UltNoodleRuntimeExtensions
     { s_PersistentArgumentTypeGetSet.SetValue(arg, t); return arg; }
     public static PersistentArgument SafeSetValue(this PersistentArgument arg, object val)
     {
-        if (val == null) return null;
+
+        if (val == null || val.ToString() == "null")// kms
+        {
+            
+            if (Type.GetType(arg.FGetString()) != typeof(Type))
+                if (arg.Type == PersistentArgumentType.ReturnValue || arg.Type == PersistentArgumentType.None || arg.Type == PersistentArgumentType.Object)
+                    if (string.IsNullOrWhiteSpace(arg.FGetString()))
+                        arg.FSetType(PersistentArgumentType.Object).FSetString(typeof(object).AssemblyQualifiedName);
+            
+            return arg;
+        }
         if (val.GetType().IsEnum)
         {
             arg.Value = val;
@@ -47,6 +58,7 @@ public static class UltNoodleRuntimeExtensions
         => (PersistentArgumentType)s_PersistentArgumentTypeGetSet.GetValue(arg);
     public static PersistentArgument FSetString(this PersistentArgument arg, string s)
     { s_PersistentArgumentStringGetSet.SetValue(arg, s); return arg; }
+    public static string FGetString(this PersistentArgument arg) => (string)s_PersistentArgumentStringGetSet.GetValue(arg);
     public static PersistentArgument FSetInt(this PersistentArgument arg, int i)
     {
         s_PersistentArgumentIntGetSet.SetValue(arg, i);
