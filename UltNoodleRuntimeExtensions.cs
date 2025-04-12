@@ -34,6 +34,7 @@ public static class UltNoodleRuntimeExtensions
     { s_PersistentArgumentTypeGetSet.SetValue(arg, t); return arg; }
     public static PersistentArgument SafeSetValue(this PersistentArgument arg, object val)
     {
+        if (val == null) return null;
         if (val.GetType().IsEnum)
         {
             arg.Value = val;
