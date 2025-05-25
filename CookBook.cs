@@ -6,6 +6,7 @@ using System.Reflection;
 using TMPro;
 using UltEvents;
 using UnityEngine;
+using UnityEngine.Animations;
 using UnityEngine.UIElements;
 
 namespace NoodledEvents
@@ -91,10 +92,10 @@ namespace NoodledEvents
             public static Dictionary<Type, (Type, PropertyInfo)> CompStoragers = new Dictionary<Type, (Type, PropertyInfo)>()
             {
                 { typeof(UnityEngine.Object), (GetExtType("XRInteractorAffordanceStateProvider", XRAssembly), GetExtType("XRInteractorAffordanceStateProvider", XRAssembly).GetProperty("interactorSource", UltEventUtils.AnyAccessBindings)) },
-                { typeof(float), (typeof(SphereCollider), RadiusGetSet) },
+                { typeof(float), (typeof(UnityEngine.UI.AspectRatioFitter), RatioGetSet) },
                 { typeof(Material[]), (typeof(MeshRenderer), typeof(MeshRenderer).GetProperty("sharedMaterials", UltEventUtils.AnyAccessBindings)) },
                 { typeof(bool), (typeof(UnityEngine.UI.Mask), typeof(UnityEngine.UI.Mask).GetProperty("enabled")) },
-                { typeof(Vector3), (typeof(BoxCollider), typeof(BoxCollider).GetProperty(nameof(BoxCollider.center))) },
+                { typeof(Vector3), (typeof(PositionConstraint), typeof(PositionConstraint).GetProperty(nameof(PositionConstraint.translationOffset))) },
                 { typeof(string), (typeof(TextMeshPro), typeof(TMP_Text).GetProperty("text", UltEventUtils.AnyAccessBindings)) },
                 { typeof(int), (typeof(LineRenderer), typeof(LineRenderer).GetProperty("numCapVertices", UltEventUtils.AnyAccessBindings)) }
             };
@@ -193,7 +194,8 @@ namespace NoodledEvents
                     
                 }
             }
-            private static PropertyInfo RadiusGetSet => typeof(SphereCollider).GetProperty(nameof(SphereCollider.radius), UltEventUtils.AnyAccessBindings);
+            private static PropertyInfo RatioGetSet => typeof(UnityEngine.UI.AspectRatioFitter)
+                .GetProperty(nameof(UnityEngine.UI.AspectRatioFitter.aspectRatio), UltEventUtils.AnyAccessBindings);
         }
         public class NodeDef
         {

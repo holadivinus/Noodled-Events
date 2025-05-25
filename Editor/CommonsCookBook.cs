@@ -99,7 +99,8 @@ public class CommonsCookBook : CookBook
 
         // Async
         allDefs.Add(new NodeDef(this, "async.Wait",
-            inputs: () => new[] { new Pin("Start"), new Pin("seconds", typeof(float)) },
+            inputs: () => new[] { new Pin("Start"), new Pin("seconds", typeof(float)),
+            new Pin("embedded", typeof(bool), true)},
             outputs: () => new[] { new Pin("On Started"), new Pin("After \"seconds\"") },
             bookTag: "wait"));
     }
@@ -222,6 +223,7 @@ public class CommonsCookBook : CookBook
 
                 // just make the evts and proceed under the root.
 
+
                 var immediateNext = node.FlowOutputs[0].Target?.Node;
                 if (immediateNext != null)
                     immediateNext.Book.CompileNode(evt, immediateNext, dataRoot);
@@ -229,6 +231,28 @@ public class CommonsCookBook : CookBook
                 var slowNext = node.FlowOutputs[1].Target?.Node;
                 if (slowNext != null)
                 {
+                    // embedded mode:
+                    if (node.DataInputs.Length == 2 && node.DataInputs[1].DefaultBoolValue)
+                    {
+                        // is embedded
+                        var asyncEvt = dataRoot.StoreComp<DelayedUltEventHolder>("Embedded Async Event");
+                        asyncEvt.gameObject.SetActive(true);
+
+                        if (node.DataInputs[0].Source == null) asyncEvt.Delay = node.DataInputs[0].DefaultFloatValue;
+                        else
+                        {
+                            var setTimer = new PersistentCall(typeof(DelayedUltEventHolder).GetProperty("Delay").SetMethod, asyncEvt);
+                            new PendingConnection(node.DataInputs[0].Source, evt, setTimer, 0).Connect(dataRoot);
+                            evt.PersistentCallsList.Add(setTimer);
+                        }
+
+                        var startDelay2 = new PersistentCall(typeof(DelayedUltEventHolder).GetMethod("Invoke", new Type[] { }), asyncEvt);
+                        evt.PersistentCallsList.Add(startDelay2);
+
+                        slowNext.Book.CompileNode(asyncEvt.Event, slowNext, asyncEvt.transform);
+                        return;
+                    }
+
                     Transform ats = dataRoot.Find("async templates");
                     if (!ats) ats = dataRoot.StoreTransform("async templates");
 
@@ -277,6 +301,16 @@ public class CommonsCookBook : CookBook
             case "if":
                 // if statementtt :/
                 // requires two evts, one for true 1 for false
+
+                // oh if it's const just generate in the same event
+                if (node.DataInputs[0].Source == null)
+                {
+                    // when hardcoded act hardcoded
+                    var next = node.FlowOutputs[node.DataInputs[0].DefaultBoolValue ? 0 : 1];
+                    if (next.Target != null)
+                        next.Target.Node.Book.CompileNode(evt, next.Target.Node, dataRoot);
+                    return;
+                }
                 var onTrue = new GameObject("if True", typeof(LifeCycleEvents)).GetComponent<LifeCycleEvents>();
                 onTrue.transform.parent = dataRoot;
                 onTrue.gameObject.SetActive(false);
@@ -288,22 +322,8 @@ public class CommonsCookBook : CookBook
                 onFalse.EnableEvent.EnsurePCallList();
                 onFalse.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
 
-                // inject the "figuring" of the conditional:
-                if (node.DataInputs[0].Source == null)
-                {
-                    // when hardcoded act hardcoded
-                    var call = (new PersistentCall(SetActive, (node.DataInputs[0].DefaultBoolValue ? onTrue : onFalse).gameObject));
-                    call.FSetArguments(new PersistentArgument(typeof(bool)) { Bool = true });
-                    evt.PersistentCallsList.Add(call);
-                    UnityEngine.Object.DestroyImmediate((!node.DataInputs[0].DefaultBoolValue ? onTrue : onFalse).gameObject);
-
-                    var next = node.FlowOutputs[node.DataInputs[0].DefaultBoolValue ? 0 : 1];
-                    if (next.Target != null)
-                    {
-                        next.Target.Node.Book.CompileNode((node.DataInputs[0].DefaultBoolValue ? onTrue : onFalse).EnableEvent, next.Target.Node, dataRoot);
-                    }
-                }
-                else // condition varies
+                
+                if (node.DataInputs[0].Source != null) // condition varies
                 {
                     var rs1 = new PersistentCall(SetActive, onTrue.gameObject);  // reset onTrue
                     rs1.FSetArguments(new PersistentArgument(typeof(bool)));
