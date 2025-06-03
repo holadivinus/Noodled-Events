@@ -40,7 +40,7 @@ public class UltNoodleEditor : EditorWindow
     [SerializeField] public CookBook ObjectCookBook;
     [SerializeField] public CookBook ObjectFCookBook;
     [SerializeField] public CookBook LoopsCookBook;
-    public CookBook[] AllBooks;
+    public static CookBook[] AllBooks;
 
 
 
@@ -205,36 +205,38 @@ public class UltNoodleEditor : EditorWindow
 
 
 
-        AllNodeDefs.Clear();
-        var cookBooks = AssetDatabase.FindAssets("t:" + nameof(CookBook)).Select(guid => AssetDatabase.LoadAssetAtPath<CookBook>(AssetDatabase.GUIDToAssetPath(guid)));
-        if (!cookBooks.Contains(CommonsCookBook)) cookBooks = cookBooks.Append(CommonsCookBook);
-        if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
-        if (!cookBooks.Contains(ObjectCookBook)) cookBooks = cookBooks.Append(ObjectCookBook);
-        if (!cookBooks.Contains(ObjectFCookBook)) cookBooks = cookBooks.Append(ObjectFCookBook);
-        if (!cookBooks.Contains(LoopsCookBook)) cookBooks = cookBooks.Append(LoopsCookBook);
-        EditorUtility.DisplayProgressBar("Loading Noodle Editor...", "", 0);
-        int cur = 0;
-        int final = cookBooks.Count();
-        foreach (CookBook sdenhr in cookBooks)
+        if (AllNodeDefs.Count == 0 || AllBooks == null)
         {
-            CookBook book = sdenhr; //lol (this is like this for a reason trust me)
-            cur++;
-            EditorUtility.DisplayProgressBar("Loading Noodle Editor...", book.name, (float)cur/final);
-            book.CollectDefs(AllNodeDefs);
-
-            //also search toggle
-            var tog = new Toggle(book.name) { value = true };
-            tog.RegisterValueChangedCallback(e => 
+            var cookBooks = AssetDatabase.FindAssets("t:" + nameof(CookBook)).Select(guid => AssetDatabase.LoadAssetAtPath<CookBook>(AssetDatabase.GUIDToAssetPath(guid)));
+            if (!cookBooks.Contains(CommonsCookBook)) cookBooks = cookBooks.Append(CommonsCookBook);
+            if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
+            if (!cookBooks.Contains(ObjectCookBook)) cookBooks = cookBooks.Append(ObjectCookBook);
+            if (!cookBooks.Contains(ObjectFCookBook)) cookBooks = cookBooks.Append(ObjectFCookBook);
+            if (!cookBooks.Contains(LoopsCookBook)) cookBooks = cookBooks.Append(LoopsCookBook);
+            EditorUtility.DisplayProgressBar("Loading Noodle Editor...", "", 0);
+            int cur = 0;
+            int final = cookBooks.Count();
+            foreach (CookBook sdenhr in cookBooks)
             {
-                BookFilters[book] = e.newValue;
-                SearchTypes(100);
-            });
-            BookFilters[book] = true;
-            SearchSettings.Add(tog);
-        }
-        EditorUtility.ClearProgressBar();
+                CookBook book = sdenhr; //lol (this is like this for a reason trust me)
+                cur++;
+                EditorUtility.DisplayProgressBar("Loading Noodle Editor...", book.name, (float)cur / final);
+                book.CollectDefs(AllNodeDefs);
 
-        AllBooks = cookBooks.ToArray();
+                //also search toggle
+                var tog = new Toggle(book.name) { value = true };
+                tog.RegisterValueChangedCallback(e =>
+                {
+                    BookFilters[book] = e.newValue;
+                    SearchTypes(100);
+                });
+                BookFilters[book] = true;
+                SearchSettings.Add(tog);
+            }
+            EditorUtility.ClearProgressBar();
+
+            AllBooks = cookBooks.ToArray();
+        }
     }
     Dictionary<CookBook, bool> BookFilters = new Dictionary<CookBook, bool>();
     private bool _created = false;
@@ -640,7 +642,7 @@ public class UltNoodleEditor : EditorWindow
     }
 
     
-    List<CookBook.NodeDef> AllNodeDefs = new();
+    static List<CookBook.NodeDef> AllNodeDefs = new();
     List<CookBook.NodeDef> FilteredNodeDefs = new();
 
     /*

@@ -126,7 +126,7 @@ public class UltNoodleNodeUI : VisualElement
                 if (setup) return;    
                 setup = true;
 
-                foreach (CookBook opsgjd in Bowl.Editor.AllBooks)
+                foreach (CookBook opsgjd in UltNoodleEditor.AllBooks)
                 {
                     CookBook curBook = opsgjd;
                     Dictionary<string, NodeDef> entries = curBook.GetAlternatives(Node);
