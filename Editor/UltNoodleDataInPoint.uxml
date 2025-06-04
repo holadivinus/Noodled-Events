@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <UltNoodleDataInPoint style="min-width: 79px; min-height: 27px; border-left-color: rgb(67, 67, 67); border-right-color: rgb(67, 67, 67); border-top-color: rgb(67, 67, 67); border-bottom-color: rgb(67, 67, 67); border-left-width: 0; border-right-width: 0; border-top-width: 0; border-bottom-width: 1px;">
+    <UltNoodleDataInPoint style="min-width: 79px; min-height: 27px; border-left-color: rgb(161, 161, 161); border-right-color: rgb(161, 161, 161); border-top-color: rgb(161, 161, 161); border-bottom-color: rgb(161, 161, 161); border-left-width: 0; border-right-width: 0; border-top-width: 0; border-bottom-width: 1px;">
         <ui:VisualElement name="Entries" style="flex-direction: row; min-height: 22px; margin-left: 6px;">
             <ui:Label text="Label" display-tooltip-when-elided="true" name="InputName" style="height: 22px; -unity-text-align: lower-center;" />
             <ui:VisualElement name="System_Object" style="flex-shrink: 0; display: none; visibility: hidden;" />
@@ -9,7 +9,7 @@
         </ui:VisualElement>
         <ui:VisualElement name="Line" style="position: absolute; left: 0; top: 0; min-height: 3px; min-width: 40px; background-color: rgba(191, 255, 209, 0.46); transform-origin: left; visibility: hidden;" />
         <ui:VisualElement name="ConnectionPoint" style="background-color: rgba(132, 132, 132, 0.01); position: absolute; left: -10px; top: 4px; width: 20px; height: 20px;">
-            <ui:VisualElement picking-mode="Ignore" style="background-color: rgb(132, 132, 132); position: absolute; left: 5px; top: 5px; width: 10px; height: 10px; border-left-width: 3px; border-right-width: 3px; border-top-width: 3px; border-bottom-width: 3px; border-top-left-radius: 4px; border-bottom-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-left-color: rgba(0, 0, 0, 255); border-right-color: rgba(0, 0, 0, 255); border-top-color: rgba(0, 0, 0, 255); border-bottom-color: rgba(0, 0, 0, 255);" />
+            <ui:VisualElement picking-mode="Ignore" style="background-color: rgb(132, 132, 132); position: absolute; left: 5px; top: 5px; width: 10px; height: 10px; border-left-width: 3px; border-right-width: 3px; border-top-width: 3px; border-bottom-width: 3px; border-top-left-radius: 4px; border-bottom-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);" />
         </ui:VisualElement>
     </UltNoodleDataInPoint>
 </ui:UXML>
