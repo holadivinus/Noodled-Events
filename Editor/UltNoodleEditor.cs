@@ -238,7 +238,7 @@ public class UltNoodleEditor : EditorWindow
             AllBooks = cookBooks.ToArray();
         }
     }
-    Dictionary<CookBook, bool> BookFilters = new Dictionary<CookBook, bool>();
+    static Dictionary<CookBook, bool> BookFilters = new Dictionary<CookBook, bool>();
     private bool _created = false;
     private bool _currentlyZooming;
     private float _zoom = 1;
