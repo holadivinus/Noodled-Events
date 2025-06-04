@@ -1,15 +1,15 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="project://database/Assets/Noodled-Events/Editor/UltNoodleNodeUI.uss?fileID=7433441132597879392&amp;guid=e43b8a175ece8ca43a71b4c20e92c0f9&amp;type=3#UltNoodleNodeUI" />
-    <Style src="project://database/Assets/Noodled-Events/Editor/UltNoodleBowlUI.uss?fileID=7433441132597879392&amp;guid=d5510833e28d0ca4f961e7c2dcec83d0&amp;type=3#UltNoodleBowlUI" />
+    <Style src="project://database/Packages/com.holadivinus.noodledevents/Editor/UltNoodleNodeUI.uss?fileID=7433441132597879392&amp;guid=e43b8a175ece8ca43a71b4c20e92c0f9&amp;type=3#UltNoodleNodeUI" />
+    <Style src="project://database/Packages/com.holadivinus.noodledevents/Editor/UltNoodleBowlUI.uss?fileID=7433441132597879392&amp;guid=d5510833e28d0ca4f961e7c2dcec83d0&amp;type=3#UltNoodleBowlUI" />
     <UltNoodleNodeUI name="BG" style="background-color: rgb(0, 0, 0); flex-grow: 1; position: absolute; left: 0; top: 0; min-width: 250px; min-height: 20px;">
-        <ui:VisualElement style="flex-direction: row; max-height: 15px; margin-right: 33px;">
+        <ui:VisualElement style="flex-direction: row; max-height: 15px; margin-right: 33px; background-color: rgb(79, 42, 30);">
             <ui:Label text="TypeName.MethodName" display-tooltip-when-elided="true" name="TypeTitle" enable-rich-text="true" />
         </ui:VisualElement>
-        <ui:VisualElement name="IO" style="flex-grow: 1; flex-direction: row;">
+        <ui:VisualElement name="IO" style="flex-grow: 1; flex-direction: row; background-color: rgb(24, 24, 24);">
             <ui:VisualElement name="Inputs" style="flex-grow: 1;" />
             <ui:VisualElement name="Outputs" style="flex-grow: 1;" />
         </ui:VisualElement>
-        <ui:VisualElement name="UpperLeftPull" style="position: absolute; left: -20px; top: -20px; min-width: 40px; min-height: 40px; background-color: rgba(255, 222, 0, 0.22);" />
+        <ui:VisualElement name="UpperLeftPull" style="position: absolute; left: -10px; top: -10px; min-width: 20px; min-height: 20px; background-color: rgba(255, 222, 0, 0); background-image: url(&apos;project://database/Assets/UIRecolors/ResizeIcon.png?fileID=2800000&amp;guid=8b6fcb6129a534741af7cd3b8c79ce8b&amp;type=3#ResizeIcon&apos;); -unity-background-image-tint-color: rgba(226, 209, 12, 0.63);" />
         <ui:Button text="○" display-tooltip-when-elided="true" name="DuplicateBT" style="position: absolute; right: 16px; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; background-color: rgb(24, 24, 24); width: 16px; color: rgb(95, 124, 255);" />
         <ui:Button text="X" display-tooltip-when-elided="true" name="DeleteBT" style="position: absolute; right: 0; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; background-color: rgb(24, 24, 24); width: 16px; color: rgb(255, 95, 95);" />
         <ui:Button text="Run!" display-tooltip-when-elided="true" name="Invoke" style="left: auto; bottom: 0; max-width: 31px; right: 0; position: absolute; visibility: hidden;" />
