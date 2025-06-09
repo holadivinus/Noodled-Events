@@ -1,14 +1,15 @@
 ﻿#if UNITY_EDITOR
+using Newtonsoft.Json;
 using NoodledEvents;
 using System;
 using System.Collections.Generic;
-using System.Drawing.Printing;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using UltEvents;
 using UnityEngine;
 
-
+    
 public static class UltNoodleRuntimeExtensions
 {
     private static FieldInfo s_methodGetSet = typeof(PersistentCall).GetField("_Method", UltEventUtils.AnyAccessBindings);
@@ -29,7 +30,7 @@ public static class UltNoodleRuntimeExtensions
         => s_methodGetSet.SetValue(call, method);
     public static void FSetMethodName(this PersistentCall call, string name)
         => s_methodNameGetSet.SetValue(call, name);
-    public static void FSetArguments(this PersistentCall call, params PersistentArgument[] args) 
+    public static void FSetArguments(this PersistentCall call, params PersistentArgument[] args)
         => s_PersistentArgumentsGetSet.SetValue(call, args);
     public static PersistentArgument FSetType(this PersistentArgument arg, PersistentArgumentType t)
     { s_PersistentArgumentTypeGetSet.SetValue(arg, t); return arg; }
@@ -38,12 +39,12 @@ public static class UltNoodleRuntimeExtensions
 
         if (val == null || val.ToString() == "null")// kms
         {
-            
+
             if (Type.GetType(arg.FGetString()) != typeof(Type))
                 if (arg.Type == PersistentArgumentType.ReturnValue || arg.Type == PersistentArgumentType.None || arg.Type == PersistentArgumentType.Object)
                     if (string.IsNullOrWhiteSpace(arg.FGetString()))
                         arg.FSetType(PersistentArgumentType.Object).FSetString(typeof(object).AssemblyQualifiedName);
-            
+
             return arg;
         }
         if (val.GetType().IsEnum)
@@ -228,6 +229,216 @@ public static class UltNoodleRuntimeExtensions
         list.Add(newCall);
         return list.Count - 1;
     }
+    public static MethodInfo ArrayCreateMethod = typeof(Array).GetMethod("CreateInstance", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(Type), typeof(int) }, null);
+    public static MethodInfo JsonDeserializeMethod = typeof(JsonConvert).GetMethod("DeserializeObject", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(string), typeof(Type) }, null);
+    public static MethodInfo JsonSeserializeMethod = typeof(JsonConvert).GetMethod("SerializeObject", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(object) }, null);
+    public static int FindOrAddJsonDeserialize(this List<PersistentCall> list, string jsonString, Type targType)
+    {
+        int typeGet = list.FindOrAddGetTyper(targType);
+        for (int i = 0; i < list.Count; i++)
+        {
+            PersistentCall pcall = list[i];
+            if (pcall.Method == JsonDeserializeMethod
+             && pcall.PersistentArguments[0].FGetString() == jsonString
+             && pcall.PersistentArguments[1].FGetInt() == typeGet)
+            {
+                return i;
+            }
+        }
+        var newCall = new PersistentCall(JsonDeserializeMethod, null);
+        newCall.PersistentArguments[0].FSetString(jsonString);
+        newCall.PersistentArguments[1].ToRetVal(typeGet, typeof(Type));
+        list.Add(newCall);
+        return list.Count - 1;
+    }
+    public static int CreateArray(this List<PersistentCall> list, Type arrayType, int length, bool @new = false)
+    {
+        int typeGet = list.FindOrAddGetTyper(arrayType);
+        if (!@new)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                PersistentCall pcall = list[i];
+                if (pcall.Method == ArrayCreateMethod
+                 && pcall.PersistentArguments[0].FGetInt() == typeGet
+                 && pcall.PersistentArguments[1].FGetInt() == length)
+                {
+                    return i;
+                }
+            }
+        }
+
+        var arrCreateCall = new PersistentCall(ArrayCreateMethod, null);
+        arrCreateCall.PersistentArguments[0].ToRetVal(typeGet, typeof(Type));
+        arrCreateCall.PersistentArguments[1].FSetInt(length);
+        list.Add(arrCreateCall);
+        return list.Count - 1;
+    }
+    public static int FindOrAddGetTypeArr(this List<PersistentCall> list, params Type[] ts)
+    {
+        if (ts.Length == 0)
+            return list.CreateArray(typeof(Type), 0, @new: false);
+
+        string jsonStr = "[";
+        foreach (var jT in ts)
+            jsonStr += $"\"{jT.AssemblyQualifiedName}\",";
+        jsonStr = jsonStr[..^1] + "]";
+
+        return list.FindOrAddJsonDeserialize(jsonStr, typeof(Type[]));
+    }
+    public static MethodInfo FindMethod = typeof(System.ComponentModel.MemberDescriptor).GetMethod("FindMethod", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(Type), typeof(string), typeof(Type[]), typeof(Type), typeof(bool) }, null);
+    public static MethodInfo GetMethod = typeof(Type).GetMethod("GetMethod", new Type[] { typeof(string), typeof(BindingFlags), typeof(Binder), typeof(Type[]), typeof(ParameterModifier[]) });
+    public static int FindOrAddGetMethodInfo(this List<PersistentCall> list, MethodInfo m)
+    {
+        // first get the declaring type
+        int declaringType = list.FindOrAddGetTyper(m.DeclaringType);
+        int paramArr = list.FindOrAddGetTypeArr(m.GetParameters().Select(p => p.ParameterType).ToArray());
+        if (m.DeclaringType.GenericTypeArguments.Length > 0)
+        {
+            // for generics, we gotta run Type.GetMethod on declaringType
+            int typeBindingFlag = list.FindOrAddJsonDeserialize("60", typeof(BindingFlags));
+
+            return list.AddRunMethod(GetMethod, declaringType, new PersistentArgument(typeof(string)).FSetString(m.Name), typeBindingFlag, null, paramArr, null);
+        }
+
+        int retvalType = list.FindOrAddGetTyper(m.ReturnType);
+
+        for (int i = 0; i < list.Count; i++)
+        {
+            PersistentCall pcall = list[i];
+            if (pcall.Method == FindMethod
+             && pcall.PersistentArguments[0].FGetInt() == declaringType // type
+             && pcall.PersistentArguments[1].FGetString() == m.Name     // method name
+             && pcall.PersistentArguments[2].FGetInt() == paramArr      // method params
+             && pcall.PersistentArguments[3].FGetInt() == retvalType)   // return type
+            {
+                return i;
+            }
+        }
+
+        var newGetMethodInfoCall = new PersistentCall(FindMethod, null);
+        newGetMethodInfoCall.PersistentArguments[0].ToRetVal(declaringType, typeof(Type));
+        newGetMethodInfoCall.PersistentArguments[1].FSetString(m.Name);
+        newGetMethodInfoCall.PersistentArguments[2].ToRetVal(paramArr, typeof(Type[]));
+        newGetMethodInfoCall.PersistentArguments[3].ToRetVal(retvalType, typeof(Type));
+        list.Add(newGetMethodInfoCall);
+        return list.Count - 1;
+    }
+    public static MethodInfo GetField = typeof(Type).GetMethod("GetField", new Type[] { typeof(string), typeof(BindingFlags) });
+    public static int AddGetFieldInfo(this List<PersistentCall> list, FieldInfo f)
+        => list.AddGetFieldInfo(f.DeclaringType, f.Name);
+    public static int AddGetFieldInfo(this List<PersistentCall> list, Type declarer, string fieldName)
+    {
+        // Todo: make this have find functionality,
+        // so we don't re-lookup FieldInfos
+
+        // first get the declaring type
+        int declaringType = list.FindOrAddGetTyper(declarer);
+
+        int typeBindingFlag = list.FindOrAddJsonDeserialize("60", typeof(BindingFlags));
+
+        return list.AddRunMethod(GetField, declaringType, new PersistentArgument(typeof(string)).FSetString(fieldName), typeBindingFlag);
+    }
+    public static void AddArraySet(this List<PersistentCall> list, int array, int obj, int idx)
+    {
+        var editorSetCall = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
+        editorSetCall.PersistentArguments[0].ToRetVal(array, typeof(Array));
+        editorSetCall.PersistentArguments[1].Int = idx;
+        editorSetCall.PersistentArguments[2].ToRetVal(obj, typeof(object));
+        list.Add(editorSetCall);
+
+        var ingameSetCall = new PersistentCall();
+        ingameSetCall.CopyFrom(editorSetCall);
+        ingameSetCall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
+        ingameSetCall.FSetMethod(null);
+        list.Add(ingameSetCall);
+    }
+    public static void AddArraySet(this List<PersistentCall> list, int array, PersistentArgument @const, int idx)
+    {
+        var editorSetCall = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
+        editorSetCall.PersistentArguments[0].ToRetVal(array, typeof(Array));
+        editorSetCall.PersistentArguments[1].Int = idx;
+        editorSetCall.PersistentArguments[2] = @const;
+        list.Add(editorSetCall);
+
+        var ingameSetCall = new PersistentCall();
+        ingameSetCall.CopyFrom(editorSetCall);
+        ingameSetCall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
+        ingameSetCall.FSetMethod(null);
+        list.Add(ingameSetCall);
+    }
+    public static void AddDebugLog(this List<PersistentCall> list, int retVal, bool useJson = false)
+    {
+        if (useJson)
+        {
+            var jsonSerialize = new PersistentCall(JsonSeserializeMethod, null);
+            jsonSerialize.PersistentArguments[0].ToRetVal(retVal, typeof(object));
+            list.Add(jsonSerialize);
+            var dbg2 = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
+            dbg2.PersistentArguments[0].ToRetVal(list.Count - 1, typeof(object));
+            list.Add(dbg2);
+            return;
+        }
+
+        var dbg = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
+        dbg.PersistentArguments[0].ToRetVal(retVal, typeof(object));
+        list.Add(dbg);
+    }
+    public static MethodInfo MethodInfoInvoke = Type.GetType("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true, true).GetMethod("MethodInfoInvoke", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(MethodInfo), typeof(object), typeof(object[]) }, null);
+    public static int AddRunMethod(this List<PersistentCall> list, int methodIdx, int objIdx, params object[] @params)
+    {
+        @params ??= new object[0];
+        int paramArr = list.CreateArray(typeof(object), @params.Length, @new: true);
+        // setup paramz
+        for (int i = 0; i < @params.Length; i++)
+        {
+            var curParam = @params[i];
+            if (curParam == null)
+                continue; 
+            else if (curParam is int retVal)
+                list.AddArraySet(paramArr, retVal, i);
+            else if (curParam is PersistentArgument pa)
+            {
+                // const usually.
+                list.AddArraySet(paramArr, pa, i);
+            }
+        }
+
+        var invokeCall = new PersistentCall(MethodInfoInvoke, null);
+        invokeCall.PersistentArguments[0].ToRetVal(methodIdx, typeof(MethodInfo));
+        if (objIdx < 0)
+            invokeCall.PersistentArguments[1].FSetString(typeof(object).AssemblyQualifiedName)
+                .FSetType(PersistentArgumentType.Object).FSetInt(0);
+        else
+            invokeCall.PersistentArguments[1].ToRetVal(objIdx, typeof(object));
+        invokeCall.PersistentArguments[2].ToRetVal(paramArr, typeof(object[]));
+        list.Add(invokeCall);
+        return list.Count - 1;
+    }
+    public static int AddRunMethod(this List<PersistentCall> list, MethodInfo method, int objIdx, params object[] @params)
+    {
+        int m = list.FindOrAddGetMethodInfo(method);
+        return list.AddRunMethod(m, objIdx, @params);
+    }
+    public static MethodInfo GetFieldValue = typeof(FieldInfo).GetMethod("GetValue");
+    public static int AddGetFieldValue(this List<PersistentCall> list, FieldInfo field, object obj)
+    {
+        int fieldIdx = list.AddGetFieldInfo(field);
+        return list.AddRunMethod(GetFieldValue, fieldIdx, obj);
+    }
+    public static MethodInfo SetFieldValue = typeof(FieldInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object) });
+    public static int AddSetFieldValue(this List<PersistentCall> list, FieldInfo field, int objIdx, object value)
+    {
+        int fieldIdx = list.AddGetFieldInfo(field);
+        return list.AddRunMethod(SetFieldValue, fieldIdx, objIdx, value);
+    }
+
+    public static Dictionary<string, object> TestDict = new Dictionary<string, object>() { { "hi", "hello" } };
 }
 public static class TypeTranslator
 {

@@ -103,6 +103,33 @@ public class CommonsCookBook : CookBook
             new Pin("embedded", typeof(bool), true)},
             outputs: () => new[] { new Pin("On Started"), new Pin("After \"seconds\"") },
             bookTag: "wait"));
+
+        // Delegates
+        allDefs.Add(new NodeDef(this, "delegates.Create",
+            inputs: () => new[] { new Pin("Create") },
+            outputs: () => new[] { new Pin("On Created"), new Pin("DelegateID", typeof(string)),  new Pin("Delegate", typeof(Delegate)), new Pin("On Triggered") },
+            bookTag: "delegate0"));
+        for (int i = 1; i < 5; i++)
+        {
+            List<Pin> outs = new();
+            outs.AddRange(new[] { new Pin("On Created"), new Pin("DelegateID", typeof(string)), new Pin("Delegate", typeof(Delegate)), new Pin("On Triggered") });
+            for (int i2 = 1; i2 <= i; i2++)
+                outs.Add(new Pin($"Parameter {i2}", typeof(object)));
+
+            List<Pin> ins = new() { new Pin("Create") };
+            for (int i2 = 1; i2 <= i; i2++)
+                ins.Add(new Pin($"Param Type {i2}", typeof(Type), true));
+
+            allDefs.Add(new NodeDef(this, $"delegates.Create_with_{i}_parameter",
+                inputs: ins.ToArray,
+                outputs: outs.ToArray,
+                bookTag: $"delegate{i}"));
+            
+        }
+        allDefs.Add(new NodeDef(this, "delegates.Fetch",
+            inputs: () => new[] { new Pin("Fetch"), new Pin("DelegateID", typeof(string)) },
+            outputs: () => new[] { new Pin("Fetched"), new Pin("Delegate", typeof(Delegate)) },
+            bookTag: "fetch_delegate"));
     }
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
@@ -618,18 +645,360 @@ public class CommonsCookBook : CookBook
                         nextNode.Book.CompileNode(evt, nextNode, dataRoot);
                     return;
                 }
+            case "fetch_delegate":
+
+                // get dict
+                int dictField3 = evt.PersistentCallsList.AddGetFieldInfo(typeof(AppDomain), "assembly_resolve_in_progress");
+                int gotDict4 = evt.PersistentCallsList.AddRunMethod(
+                    UltNoodleRuntimeExtensions.GetFieldValue, dictField3, @params: new object[1]);
+
+                // for my sanity this is localized with a stupid format
+                var getGuidStr2 = MakeCall<string>("Format", typeof(string), typeof(object));
+                getGuidStr2.PersistentArguments[0].String = "{0}";
+                if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, getGuidStr2, 1).Connect(dataRoot);
+                else getGuidStr2.PersistentArguments[1].FSetType(PersistentArgumentType.String).FSetString(node.DataInputs[0].DefaultStringValue);
+                evt.PersistentCallsList.Add(getGuidStr2);
+
+                int gotValue = evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, object>).GetMethod("TryGetValue"),
+                        gotDict4, evt.PersistentCallsList.IndexOf(getGuidStr2), null);
+
+                int arrIdx = evt.PersistentCallsList.Count - 4; 
+
+                var arrGetIdx = typeof(Array).GetMethod("GetValue", new Type[] { typeof(int) });
+                int getOut = evt.PersistentCallsList.AddRunMethod(arrGetIdx, arrIdx, new PersistentArgument(typeof(int)).FSetInt(1));
+
+                node.DataOutputs[0].CompEvt = evt;
+                node.DataOutputs[0].CompCall = evt.PersistentCallsList[getOut];
+
+                var evtNext2 = node.FlowOutputs[0].Target?.Node;
+                if (evtNext2 != null)
+                    evtNext2.Book.CompileNode(evt, evtNext2, dataRoot);
+
+                return;
             default:
                 if (node.BookTag.Contains("_scene_") && node.BookTag.EndsWith("_var"))
                 {
                     if (node.BookTag.StartsWith("get_"))
                         GetSceneVar(null);
-                    else SetSceneVar(null); 
+                    else SetSceneVar(null);
                     return;
                 } else if (node.BookTag.Contains("_gobj_") && node.BookTag.EndsWith("_var"))
                 {
                     if (node.BookTag.StartsWith("get_"))
                         GetSceneVar((GameObject)node.DataInputs[1].DefaultObject);
                     else SetSceneVar((GameObject)node.DataInputs[2].DefaultObject);
+                    return;
+                } else if (node.BookTag.StartsWith("delegate")) 
+                {
+                    // added tons of awesome utility functions, 
+                    // which should make this so much easier
+
+                    // pt1: creating the evt
+                    int ultType = -1;
+                    Type evtType = null;
+                    Type actionType = null;
+                    // i cannot be bothered
+                    switch (node.BookTag)
+                    {
+                        case "delegate0":
+                            evtType = typeof(UltEvent);
+                            actionType = typeof(Action);
+                            break;
+                        case "delegate1":
+                            evtType = typeof(UltEvent<object>);
+                            actionType = typeof(Action<>);
+                            break;
+                        case "delegate2":
+                            evtType = typeof(UltEvent<object, object>);
+                            actionType = typeof(Action<,>);
+                            break;
+                        case "delegate3":
+                            evtType = typeof(UltEvent<object, object, object>);
+                            actionType = typeof(Action<,,>);
+                            break;
+                        case "delegate4":
+                            evtType = typeof(UltEvent<object, object, object, object>);
+                            actionType = typeof(Action<,,,>);
+                            break;
+                    }
+                    ultType = evt.PersistentCallsList.FindOrAddGetTyper(evtType);
+                    if (node.DataInputs.Length > 0)
+                        actionType = actionType.MakeGenericType(node.DataInputs.Select(di => Type.GetType(di.DefaultStringValue)).ToArray());
+
+                    // create the floating delegate target
+                    var evtInstance = MakeCall<Activator>("CreateInstance", typeof(Type));
+                    evtInstance.PersistentArguments[0].ToRetVal(ultType, typeof(Type));
+                    evt.PersistentCallsList.Add(evtInstance);
+                    int floatedIdx = evt.PersistentCallsList.Count - 1;
+
+                    // make a non-floater for compilation
+                    var evtBase = dataRoot.StoreComp<UltEventHolder>("baseDelEvent");
+                    evtBase.gameObject.SetActive(true);
+
+                    foreach (var o in node.DataOutputs)
+                    {
+                        if (o.Name.StartsWith("Parameter "))
+                        {
+                            o.CompEvt = evtBase.Event;
+                            o.CompAsParam = int.Parse(o.Name.Replace("Parameter ",""))-1;
+                            o.UseCompAsParam = true;
+                        }
+                    }
+
+                    // compile the non-floater
+                    var delNext = node.FlowOutputs[1].Target?.Node;
+                    if (delNext != null)
+                        delNext.Book.CompileNode(evtBase.Event, delNext, evtBase.transform);
+
+                    // copy PersistentCalls list from non-floater 2 floater
+                    var getBaseEvent = MakeCall<UltEventHolder>("get_Event", evtBase);
+                    evt.PersistentCallsList.Add(getBaseEvent);
+                    var getPcallMethod = typeof(UltEventBase).GetMethod("get_PersistentCallsList", (BindingFlags)60);
+                    int basePcalls = evt.PersistentCallsList.AddRunMethod(getPcallMethod, evt.PersistentCallsList.Count - 1);
+
+                    var pCallField = typeof(UltEventBase).GetField("_PersistentCalls", (BindingFlags)60);
+                    evt.PersistentCallsList.AddSetFieldValue(pCallField, floatedIdx, basePcalls);
+
+                    // alr, the floater is informed!
+                    // now, Make a Delegate from Invoke(...)
+                    int invokeMethod = evt.PersistentCallsList.FindOrAddGetMethodInfo(evtType.GetMethod("Invoke", evtType.GenericTypeArguments));
+                    int actionTypeIdx = evt.PersistentCallsList.FindOrAddGetTyper(actionType);
+
+                    var createDel = typeof(Delegate).GetMethod("CreateDelegate", new Type[] { typeof(Type), typeof(object), typeof(MethodInfo) });
+                    var makeDel = new PersistentCall(createDel, null);
+                    makeDel.PersistentArguments[0].ToRetVal(actionTypeIdx, typeof(Type)); 
+                    makeDel.PersistentArguments[1].ToRetVal(floatedIdx, typeof(object));
+                    makeDel.PersistentArguments[2].ToRetVal(invokeMethod, typeof(MethodInfo));
+                    evt.PersistentCallsList.Add(makeDel);
+                    int delMade = evt.PersistentCallsList.Count - 1;
+
+
+                    // now ensure the dict exists omfg
+                    int dictField = evt.PersistentCallsList.AddGetFieldInfo(typeof(AppDomain), "assembly_resolve_in_progress");
+                    int gotDict1 = evt.PersistentCallsList.AddRunMethod(
+                        UltNoodleRuntimeExtensions.GetFieldValue, dictField, @params:new object[1]);
+
+                    var nullCheck = MakeCall<object>("Equals", new Type[] { typeof(object), typeof(object) });
+                    nullCheck.PersistentArguments[0].ToRetVal(gotDict1, typeof(object));
+                    nullCheck.PersistentArguments[1].FSetType(PersistentArgumentType.Object).FSetString(typeof(object).AssemblyQualifiedName).FSetInt(0);
+                    evt.PersistentCallsList.Add(nullCheck);
+
+                    var ifNull = dataRoot.StoreComp<LifeCycleEvents>("dict null check");
+                    ifNull.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+
+                    var triggerNullCheck = MakeCall<GameObject>("SetActive", ifNull.gameObject);
+                    triggerNullCheck.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(bool));
+                    evt.PersistentCallsList.Add(triggerNullCheck);
+
+                    // Dict is null, create new one
+                    ifNull.EnableEvent.FSetPCalls(new());
+                    int dictType = ifNull.EnableEvent.PersistentCallsList.FindOrAddGetTyper<Dictionary<string, object>>();
+
+                    var makeDict = MakeCall<Activator>("CreateInstance", typeof(Type));
+                    makeDict.PersistentArguments[0].ToRetVal(dictType, typeof(Type));
+                    ifNull.EnableEvent.PersistentCallsList.Add(makeDict);
+
+                    int dictField2 = ifNull.EnableEvent.PersistentCallsList.AddGetFieldInfo(typeof(AppDomain), "assembly_resolve_in_progress");
+                    int gotDict2 = ifNull.EnableEvent.PersistentCallsList.AddRunMethod(
+                        UltNoodleRuntimeExtensions.SetFieldValue, dictField2, null,
+                        ifNull.EnableEvent.PersistentCallsList.IndexOf(makeDict));
+                    //
+
+                    // awesome, at this point we have a dict, delegate, floater
+                    // with custom scripting within it
+                    // now we just gotta generate & output a guid + store in dict w/ guid
+                    var getGuid = MakeCall<Guid>("NewGuid");
+                    evt.PersistentCallsList.Add(getGuid);
+
+                    var getGuidStr = MakeCall<string>("Format", typeof(string), typeof(object));
+                    getGuidStr.PersistentArguments[0].String = "{0}";
+                    getGuidStr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(object));
+                    evt.PersistentCallsList.Add(getGuidStr);
+
+                    int gotDict3 = evt.PersistentCallsList.AddRunMethod(
+                        UltNoodleRuntimeExtensions.GetFieldValue, dictField, @params: new object[1]);
+                    
+                    // put {GUID:Delegate} kvp into dict :)
+                    evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, object>).GetMethod("Add"),
+                        gotDict3, new object[] { evt.PersistentCallsList.IndexOf(getGuidStr), delMade });
+
+                    // now:
+                    // - also add a node to fetch from assembly_resolve_in_progress
+
+                    // compile the remaining evt, post-del
+                    node.DataOutputs[0].CompCall = getGuidStr; // delegate GUID
+                    node.DataOutputs[0].CompEvt = evt;
+                    node.DataOutputs[1].CompCall = evt.PersistentCallsList[delMade]; // delegate itself
+                    node.DataOutputs[1].CompEvt = evt;
+
+                    var evtNext = node.FlowOutputs[0].Target?.Node;
+                    if (evtNext != null)
+                        evtNext.Book.CompileNode(evt, evtNext, dataRoot);
+
+                    /*// create & remember a delegate via string :3
+                    // at this point in time, we create an event with the require obj signature,
+                    // copy a sacrificial evts PersistentCalls list over,
+                    // form the delegate and output it as a node item
+                    bool hasParams = !node.BookTag.EndsWith("0");
+                    int paramCount = int.Parse(node.BookTag.Replace("delegate", ""));
+                    string m = "";
+                    if (hasParams)
+                        m = "`" + node.BookTag.Replace("delegate", "");
+                    var getEvtTypeCall = new PersistentCall(typeof(Type).GetMethod("GetType", new Type[] { typeof(string) }), null);
+                    getEvtTypeCall.PersistentArguments[0].FSetString($"UltEvents.UltEvent{m}, UltEvents");
+                    evt.PersistentCallsList.Add(getEvtTypeCall);
+
+                    int evtTypeIdx = evt.PersistentCallsList.Count - 1;
+                    int objArrT = evt.PersistentCallsList.FindOrAddGetTyper<Type[]>();
+                    int targDelegateTIdx = -1;
+                    int invParamsTArrIdx = -1;
+
+                    if (hasParams)
+                    {
+                        var makeObjTArr = new PersistentCall(typeof(JsonConvert).GetMethod("DeserializeObject", new Type[] { typeof(string), typeof(Type) }), null);
+                        string objListMaker = "[";
+                        for (int i = 0; i < paramCount; i++)
+                            objListMaker += "\"System.Object, mscorlib\",";
+                        objListMaker = objListMaker[..^1] + "]";
+                        makeObjTArr.PersistentArguments[0].FSetString(objListMaker);
+                        makeObjTArr.PersistentArguments[1].ToRetVal(objArrT, typeof(Type));
+                        evt.PersistentCallsList.Add(makeObjTArr);
+                        invParamsTArrIdx = evt.PersistentCallsList.Count - 1;
+
+                        var makeGenericEvtT = new PersistentCall();
+                        makeGenericEvtT.FSetMethodName("System.RuntimeType, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.MakeGenericType");
+                        makeGenericEvtT.FSetArguments(
+                            new PersistentArgument(typeof(Type)).ToRetVal(evt.PersistentCallsList.IndexOf(getEvtTypeCall), typeof(Type)),
+                            new PersistentArgument(typeof(Type)).ToRetVal(evt.PersistentCallsList.Count - 1, typeof(Type[])));
+                        evt.PersistentCallsList.Add(makeGenericEvtT);
+                        evtTypeIdx = evt.PersistentCallsList.Count - 1;
+
+                        // also, delegate needs cooler type!
+
+                        var dType = evt.PersistentCallsList.FindOrAddGetTyper(Type.GetType($"System.Action{m}, mscorlib"));
+                        var makeGenericDelT = new PersistentCall();
+                        makeGenericDelT.FSetMethodName("System.RuntimeType, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.MakeGenericType");
+                        makeGenericDelT.FSetArguments(
+                            new PersistentArgument(typeof(Type)).ToRetVal(dType, typeof(Type)),
+                            new PersistentArgument(typeof(Type)).ToRetVal(evt.PersistentCallsList.IndexOf(makeObjTArr), typeof(Type[])));
+                        evt.PersistentCallsList.Add(makeGenericDelT);
+                        targDelegateTIdx = evt.PersistentCallsList.Count - 1;
+                    }
+                    else
+                    {
+                        targDelegateTIdx = evt.PersistentCallsList.FindOrAddGetTyper<Action>();
+                        int objT = evt.PersistentCallsList.FindOrAddGetTyper<object>();
+                        var emptyTArr = MakeCall<Array>("CreateInstance", typeof(Type), typeof(int));
+                        emptyTArr.PersistentArguments[0].ToRetVal(objT, typeof(Type));
+                        evt.PersistentCallsList.Add(emptyTArr);
+                        invParamsTArrIdx = evt.PersistentCallsList.Count - 1;
+                    }
+
+                    var createEvt = new PersistentCall(typeof(Activator).GetMethod("CreateInstance", new Type[] { typeof(Type) }), null);
+                    createEvt.PersistentArguments[0].ToRetVal(evtTypeIdx, typeof(Type));
+                    evt.PersistentCallsList.Add(createEvt);
+
+                    var onTrigEvt = dataRoot.StoreComp<UltEventHolder>("OnTrigger");
+                    onTrigEvt.Event.FSetPCalls(new()); 
+                    onTrigEvt.gameObject.SetActive(true);
+                    
+
+
+                    // uahghhg
+                    // gotta get the method
+                    int voidT = evt.PersistentCallsList.FindOrAddGetTyper(typeof(void));
+                    var getInv = new PersistentCall();
+                    getInv.FSetMethodName("System.ComponentModel.MemberDescriptor, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.FindMethod");
+                    getInv.FSetArguments(
+                        new PersistentArgument().ToRetVal(evtTypeIdx, typeof(Type)),
+                        new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("Invoke"),
+                        new PersistentArgument().ToRetVal(invParamsTArrIdx, typeof(Type[])),
+                        new PersistentArgument().ToRetVal(voidT, typeof(Type)),
+                        new PersistentArgument().FSetType(PersistentArgumentType.Bool)
+                        );
+                    evt.PersistentCallsList.Add(getInv);
+
+                    // make the delegate
+                    var delCreate = MakeCall<Delegate>("CreateDelegate", typeof(Type), typeof(object), typeof(MethodInfo));
+                    delCreate.PersistentArguments[0].ToRetVal(targDelegateTIdx, typeof(Type));
+                    delCreate.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.IndexOf(createEvt), typeof(object));
+                    delCreate.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(getInv), typeof(MethodInfo));
+                    evt.PersistentCallsList.Add(delCreate);
+
+                    //var dbg = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
+                    //dbg.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(object));
+                    //evt.PersistentCallsList.Add(dbg);
+
+                    // then we compile the remaining stuff for "On Created"
+                    node.DataOutputs[0].CompCall = delCreate;
+                    node.DataOutputs[0].CompEvt = evt;
+
+                    var nextNode1 = node.FlowOutputs[0].Target?.Node;
+                    if (nextNode1 != null)
+                        nextNode1.Book.CompileNode(evt, nextNode1, dataRoot);
+
+                    var nextNode2 = node.FlowOutputs[1].Target?.Node;
+                    if (nextNode2 != null)
+                        nextNode2.Book.CompileNode(onTrigEvt.Event, nextNode2, onTrigEvt.transform);
+
+                    // alr we gyatta copy onTrigEvt to createEvt
+
+                    // get the onTrigEvt
+                    var getJevt = MakeCall<UltEventHolder>("get_Event", onTrigEvt);
+                    evt.PersistentCallsList.Add(getJevt);
+                    // get the _PersistentCalls list
+
+                    // first get Type[0]
+                    int tT = evt.PersistentCallsList.FindOrAddGetTyper<Type>();
+                    var emptyTArr2 = MakeCall<Array>("CreateInstance", typeof(Type), typeof(int));
+                    emptyTArr2.PersistentArguments[0].ToRetVal(tT, typeof(Type));
+                    evt.PersistentCallsList.Add(emptyTArr2);
+
+                    int methUB = evt.PersistentCallsList.FindOrAddGetTyper(typeof(UltEventBase));
+                    int listT = evt.PersistentCallsList.FindOrAddGetTyper(typeof(List<PersistentCall>));
+                    var getPCallGetter = new PersistentCall();
+                    getPCallGetter.FSetMethodName("System.ComponentModel.MemberDescriptor, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.FindMethod");
+                    getPCallGetter.FSetArguments(
+                        new PersistentArgument().ToRetVal(methUB, typeof(Type)),
+                        new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("get_PersistentCallsList"),
+                        new PersistentArgument().ToRetVal(evt.PersistentCallsList.IndexOf(emptyTArr2), typeof(Type[])),
+                        new PersistentArgument().ToRetVal(listT, typeof(Type)),
+                        new PersistentArgument().FSetType(PersistentArgumentType.Bool)
+                        );
+                    evt.PersistentCallsList.Add(getPCallGetter);
+
+                    
+                    int objT2 = evt.PersistentCallsList.FindOrAddGetTyper<object>();
+                    var emptyObjArr = MakeCall<Array>("CreateInstance", typeof(Type), typeof(int));
+                    emptyObjArr.PersistentArguments[0].ToRetVal(objT2, typeof(Type));
+                    evt.PersistentCallsList.Add(emptyObjArr);
+                    invParamsTArrIdx = evt.PersistentCallsList.Count - 1;
+
+
+                    var getPCallInvoke = new PersistentCall();
+                    getPCallInvoke.FSetMethodName("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.MethodInfoInvoke");
+                    getPCallInvoke.FSetArguments(
+                        new PersistentArgument().ToRetVal(evt.PersistentCallsList.IndexOf(getPCallGetter), typeof(MethodInfo)),
+                        new PersistentArgument().ToRetVal(evt.PersistentCallsList.IndexOf(getJevt), typeof(object)),
+                        new PersistentArgument().ToRetVal(evt.PersistentCallsList.Count-1, typeof(object[]))
+                        );
+                    evt.PersistentCallsList.Add(getPCallInvoke);
+
+                    // setter for field UltEventBase._PersistentCalls
+                    ///////////////////////////////////////////////////////////////////////////////////////////
+                    {
+                        //evt.PersistentCallsList.FindOrAddGetTyper
+                    }
+                    ///////////////////////////////////////////////////////////////////////////////////////////
+
+                    var dbg = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
+                    dbg.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(createEvt), typeof(object));
+                    evt.PersistentCallsList.Add(dbg);
+
+                    //?
+                    //nvm, _PersistentCalls is field for set :(
+                    
+                    */
                     return;
                 }
                 return;

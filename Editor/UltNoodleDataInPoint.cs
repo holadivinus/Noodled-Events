@@ -210,6 +210,7 @@ public class UltNoodleDataInPoint : VisualElement
                     // string doesn't match any type name, might be raw gettype input
                     input.DefaultStringValue = tf.value;
                 }
+                input.DefaultStringValue = tf.value;
             });
         }
         else { }

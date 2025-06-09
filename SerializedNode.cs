@@ -385,6 +385,8 @@ namespace NoodledEvents
 
         [NonSerialized] public UltEventBase CompEvt; // these only exist at compile time,
         [NonSerialized] public PersistentCall CompCall; // labelling where to find this output.
+        [NonSerialized] public bool UseCompAsParam;
+        [NonSerialized] public int CompAsParam;
     }
 
     [Serializable]

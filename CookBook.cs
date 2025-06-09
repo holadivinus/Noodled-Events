@@ -69,6 +69,16 @@ namespace NoodledEvents
                 if (oldNode.FlowOutputs[0].Target != null)
                     newNode.FlowOutputs[0].Connect(oldNode.FlowOutputs[0].Target);
         }
+
+        public static PersistentCall MakeCall<T>(string method, params Type[] ts)
+            => new PersistentCall(typeof(T).GetMethod(method, UltEventUtils.AnyAccessBindings, null, ts, null), null);
+        public static PersistentCall MakeCall(Type t, string method, params Type[] ts)
+            => new PersistentCall(t.GetMethod(method, UltEventUtils.AnyAccessBindings, null, ts, null), null);
+        public static PersistentCall MakeCall<T>(string method, UnityEngine.Object obj = null, params Type[] ts)
+            => new PersistentCall(typeof(T).GetMethod(method, UltEventUtils.AnyAccessBindings, null, ts, null), obj);
+        public static PersistentCall MakeCall<T>(string method, UnityEngine.Object obj = null)
+            => new PersistentCall(typeof(T).GetMethod(method, UltEventUtils.AnyAccessBindings), obj);
+
         public class PendingConnection // utility class to link pcalls, with support for cross-event data transfer
         { 
             /// <summary>
@@ -85,6 +95,8 @@ namespace NoodledEvents
                 TargArgType = targCall.Method.GetParameters()[argIdx].ParameterType; TargInput = argIdx;
                 if (o.Node.NoadType == SerializedNode.NodeType.BowlInOut)
                     ArgIsSource = Array.IndexOf(o.Node.DataOutputs, o);
+                else if (o.UseCompAsParam)
+                    ArgIsSource = o.CompAsParam;
                 else ArgIsSource = -1;
             }
 
