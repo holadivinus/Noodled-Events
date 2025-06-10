@@ -131,6 +131,9 @@ public class CommonsCookBook : CookBook
             outputs: () => new[] { new Pin("Fetched"), new Pin("Delegate", typeof(Delegate)) },
             bookTag: "fetch_delegate"));
     }
+
+    const string dictStoreTypeStr = "System.TimeZone, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+    const string dictStoreFieldStr = "s_InternalSyncObject";
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
         void SetSceneVar(GameObject gobjRoot)
@@ -648,7 +651,7 @@ public class CommonsCookBook : CookBook
             case "fetch_delegate":
 
                 // get dict
-                int dictField3 = evt.PersistentCallsList.AddGetFieldInfo(typeof(AppDomain), "assembly_resolve_in_progress");
+                int dictField3 = evt.PersistentCallsList.AddGetFieldInfo(typeof(System.TimeZone).GetField("s_InternalSyncObject", (BindingFlags)60));
                 int gotDict4 = evt.PersistentCallsList.AddRunMethod(
                     UltNoodleRuntimeExtensions.GetFieldValue, dictField3, @params: new object[1]);
 
@@ -692,7 +695,6 @@ public class CommonsCookBook : CookBook
                 {
                     // added tons of awesome utility functions, 
                     // which should make this so much easier
-
                     // pt1: creating the evt
                     int ultType = -1;
                     Type evtType = null;
@@ -721,15 +723,22 @@ public class CommonsCookBook : CookBook
                             actionType = typeof(Action<,,,>);
                             break;
                     }
+
+                    evt.PersistentCallsList.AddDebugLog("Getting type:");
                     ultType = evt.PersistentCallsList.FindOrAddGetTyper(evtType);
+                    evt.PersistentCallsList.AddDebugLog("got!");
+                    evt.PersistentCallsList.AddDebugLog(ultType);
+
                     if (node.DataInputs.Length > 0)
                         actionType = actionType.MakeGenericType(node.DataInputs.Select(di => Type.GetType(di.DefaultStringValue)).ToArray());
 
+                    evt.PersistentCallsList.AddDebugLog("creating floater:");
                     // create the floating delegate target
                     var evtInstance = MakeCall<Activator>("CreateInstance", typeof(Type));
                     evtInstance.PersistentArguments[0].ToRetVal(ultType, typeof(Type));
                     evt.PersistentCallsList.Add(evtInstance);
                     int floatedIdx = evt.PersistentCallsList.Count - 1;
+                    evt.PersistentCallsList.AddDebugLog("created! (cant tostring tho)");
 
                     // make a non-floater for compilation
                     var evtBase = dataRoot.StoreComp<UltEventHolder>("baseDelEvent");
@@ -750,15 +759,22 @@ public class CommonsCookBook : CookBook
                     if (delNext != null)
                         delNext.Book.CompileNode(evtBase.Event, delNext, evtBase.transform);
 
+                    evt.PersistentCallsList.AddDebugLog("copying from template to floater");
                     // copy PersistentCalls list from non-floater 2 floater
                     var getBaseEvent = MakeCall<UltEventHolder>("get_Event", evtBase);
                     evt.PersistentCallsList.Add(getBaseEvent);
                     var getPcallMethod = typeof(UltEventBase).GetMethod("get_PersistentCallsList", (BindingFlags)60);
                     int basePcalls = evt.PersistentCallsList.AddRunMethod(getPcallMethod, evt.PersistentCallsList.Count - 1);
+                    evt.PersistentCallsList.AddDebugLog("got pcalls");
+
 
                     var pCallField = typeof(UltEventBase).GetField("_PersistentCalls", (BindingFlags)60);
                     evt.PersistentCallsList.AddSetFieldValue(pCallField, floatedIdx, basePcalls);
+                    evt.PersistentCallsList.AddDebugLog("set pcalls");
+                    evt.PersistentCallsList.AddDebugLog("floater is informed:");
+                    evt.PersistentCallsList.AddDebugLog(floatedIdx);
 
+                    evt.PersistentCallsList.AddDebugLog("forming delegate...");
                     // alr, the floater is informed!
                     // now, Make a Delegate from Invoke(...)
                     int invokeMethod = evt.PersistentCallsList.FindOrAddGetMethodInfo(evtType.GetMethod("Invoke", evtType.GenericTypeArguments));
@@ -771,12 +787,15 @@ public class CommonsCookBook : CookBook
                     makeDel.PersistentArguments[2].ToRetVal(invokeMethod, typeof(MethodInfo));
                     evt.PersistentCallsList.Add(makeDel);
                     int delMade = evt.PersistentCallsList.Count - 1;
+                    evt.PersistentCallsList.AddDebugLog("made delegate:");
+                    evt.PersistentCallsList.AddDebugLog(delMade);
 
-
+                    evt.PersistentCallsList.AddDebugLog("ensuring dict");
                     // now ensure the dict exists omfg
-                    int dictField = evt.PersistentCallsList.AddGetFieldInfo(typeof(AppDomain), "assembly_resolve_in_progress");
-                    int gotDict1 = evt.PersistentCallsList.AddRunMethod(
-                        UltNoodleRuntimeExtensions.GetFieldValue, dictField, @params:new object[1]);
+                    
+                    int dictStoreType = evt.PersistentCallsList.FindOrAddGetTyper(dictStoreTypeStr);
+                    int dictField = evt.PersistentCallsList.AddGetFieldInfo(dictStoreType, dictStoreFieldStr);
+                    int gotDict1 = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
 
                     var nullCheck = MakeCall<object>("Equals", new Type[] { typeof(object), typeof(object) });
                     nullCheck.PersistentArguments[0].ToRetVal(gotDict1, typeof(object));
@@ -797,13 +816,26 @@ public class CommonsCookBook : CookBook
                     var makeDict = MakeCall<Activator>("CreateInstance", typeof(Type));
                     makeDict.PersistentArguments[0].ToRetVal(dictType, typeof(Type));
                     ifNull.EnableEvent.PersistentCallsList.Add(makeDict);
+                    int madeDictIdx = ifNull.EnableEvent.PersistentCallsList.IndexOf(makeDict);
 
-                    int dictField2 = ifNull.EnableEvent.PersistentCallsList.AddGetFieldInfo(typeof(AppDomain), "assembly_resolve_in_progress");
+                    ifNull.EnableEvent.PersistentCallsList.AddDebugLog("dict was null, made new:");
+                    ifNull.EnableEvent.PersistentCallsList.AddDebugLog(ifNull.EnableEvent.PersistentCallsList.IndexOf(makeDict));
+
+                    // set dict
+                    int dictStoreType2 = ifNull.EnableEvent.PersistentCallsList.FindOrAddGetTyper(dictStoreTypeStr);
+                    int dictStoreField2 = ifNull.EnableEvent.PersistentCallsList.AddGetFieldInfo(dictStoreType2, dictStoreFieldStr);
+                    ifNull.EnableEvent.PersistentCallsList.AddSetFieldValue(dictStoreField2, -1, madeDictIdx);
+
+                    /*
+                    int dictField2 = ifNull.EnableEvent.PersistentCallsList.AddGetFieldInfo(, "");
+                    ifNull.EnableEvent.PersistentCallsList.AddDebugLog(dictField2);
+
                     int gotDict2 = ifNull.EnableEvent.PersistentCallsList.AddRunMethod(
                         UltNoodleRuntimeExtensions.SetFieldValue, dictField2, null,
-                        ifNull.EnableEvent.PersistentCallsList.IndexOf(makeDict));
+                        ifNull.EnableEvent.PersistentCallsList.IndexOf(makeDict));*/
                     //
 
+                    evt.PersistentCallsList.AddDebugLog("making guid");
                     // awesome, at this point we have a dict, delegate, floater
                     // with custom scripting within it
                     // now we just gotta generate & output a guid + store in dict w/ guid
@@ -815,12 +847,21 @@ public class CommonsCookBook : CookBook
                     getGuidStr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(object));
                     evt.PersistentCallsList.Add(getGuidStr);
 
-                    int gotDict3 = evt.PersistentCallsList.AddRunMethod(
-                        UltNoodleRuntimeExtensions.GetFieldValue, dictField, @params: new object[1]);
-                    
+                    evt.PersistentCallsList.AddDebugLog("got guid:");
+                    evt.PersistentCallsList.AddDebugLog(evt.PersistentCallsList.IndexOf(getGuidStr));
+
+
+                    int gotDict3 = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
+
+                    evt.PersistentCallsList.AddDebugLog("got dict:");
+                    evt.PersistentCallsList.AddDebugLog(gotDict3);
+
                     // put {GUID:Delegate} kvp into dict :)
                     evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, object>).GetMethod("Add"),
                         gotDict3, new object[] { evt.PersistentCallsList.IndexOf(getGuidStr), delMade });
+
+                    evt.PersistentCallsList.AddDebugLog("added kvp to dict");
+
 
                     // now:
                     // - also add a node to fetch from assembly_resolve_in_progress

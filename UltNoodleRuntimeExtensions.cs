@@ -211,19 +211,23 @@ public static class UltNoodleRuntimeExtensions
     public static int FindOrAddGetTyper<T>(this List<PersistentCall> list) => list.FindOrAddGetTyper(typeof(T));
     public static int FindOrAddGetTyper(this List<PersistentCall> list, Type t)
     {
+        return list.FindOrAddGetTyper(t.AssemblyQualifiedName);
+    }
+    public static int FindOrAddGetTyper(this List<PersistentCall> list, string t)
+    {
         for (int i = 0; i < list.Count; i++)
         {
             PersistentCall call = list[i];
             if (GetTypeMethods.Contains(call.Method)
              && call.PersistentArguments[0].Type == PersistentArgumentType.String
-             && Type.GetType(call.PersistentArguments[0].String) == t) // if is GetType call
+             && call.PersistentArguments[0].String == t) // if is GetType call
             {
                 return i;
             }
         }
         // none found, add
         var newCall = new PersistentCall(GetTypeMethods[0], null);
-        newCall.PersistentArguments[0].String = t.AssemblyQualifiedName;
+        newCall.PersistentArguments[0].String = t;
         newCall.PersistentArguments[1].Bool = true;
         newCall.PersistentArguments[2].Bool = true;
         list.Add(newCall);
@@ -333,15 +337,19 @@ public static class UltNoodleRuntimeExtensions
         => list.AddGetFieldInfo(f.DeclaringType, f.Name);
     public static int AddGetFieldInfo(this List<PersistentCall> list, Type declarer, string fieldName)
     {
+        int declaringType = list.FindOrAddGetTyper(declarer);
+        return list.AddGetFieldInfo(declaringType, fieldName);
+    }
+    public static int AddGetFieldInfo(this List<PersistentCall> list, int declarer, string fieldName)
+    {
         // Todo: make this have find functionality,
         // so we don't re-lookup FieldInfos
 
         // first get the declaring type
-        int declaringType = list.FindOrAddGetTyper(declarer);
 
         int typeBindingFlag = list.FindOrAddJsonDeserialize("60", typeof(BindingFlags));
 
-        return list.AddRunMethod(GetField, declaringType, new PersistentArgument(typeof(string)).FSetString(fieldName), typeBindingFlag);
+        return list.AddRunMethod(GetField, declarer, new PersistentArgument(typeof(string)).FSetString(fieldName), typeBindingFlag);
     }
     public static void AddArraySet(this List<PersistentCall> list, int array, int obj, int idx)
     {
@@ -371,8 +379,10 @@ public static class UltNoodleRuntimeExtensions
         ingameSetCall.FSetMethod(null);
         list.Add(ingameSetCall);
     }
+    public const bool DEBUG_IN_COMP = false;
     public static void AddDebugLog(this List<PersistentCall> list, int retVal, bool useJson = false)
     {
+        if (!DEBUG_IN_COMP) return;
         if (useJson)
         {
             var jsonSerialize = new PersistentCall(JsonSeserializeMethod, null);
@@ -388,9 +398,18 @@ public static class UltNoodleRuntimeExtensions
         dbg.PersistentArguments[0].ToRetVal(retVal, typeof(object));
         list.Add(dbg);
     }
+    public static void AddDebugLog(this List<PersistentCall> list, string str)
+    {
+        if (!DEBUG_IN_COMP) return;
+        var dbg = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
+        dbg.PersistentArguments[0].FSetType(PersistentArgumentType.String).FSetString(str);
+        list.Add(dbg);
+    }
     public static MethodInfo MethodInfoInvoke = Type.GetType("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true, true).GetMethod("MethodInfoInvoke", UltEventUtils.AnyAccessBindings, null,
                 new Type[] { typeof(MethodInfo), typeof(object), typeof(object[]) }, null);
     public static int AddRunMethod(this List<PersistentCall> list, int methodIdx, int objIdx, params object[] @params)
+        => list.AddRunDbgMethod(methodIdx, objIdx, false, @params);
+    public static int AddRunDbgMethod(this List<PersistentCall> list, int methodIdx, int objIdx, bool debug, object[] @params)
     {
         @params ??= new object[0];
         int paramArr = list.CreateArray(typeof(object), @params.Length, @new: true);
@@ -408,6 +427,30 @@ public static class UltNoodleRuntimeExtensions
                 list.AddArraySet(paramArr, pa, i);
             }
         }
+
+        if (debug)
+        {
+            list.AddDebugLog("Targ MethodInfo:");
+            list.AddDebugLog(methodIdx);
+            list.AddDebugLog("Filled a Param Array for Run:");
+            for (int i = 0; i < @params.Length; i++)
+            {
+                if (@params[i] == null)
+                {
+                    list.AddDebugLog("null for " + i);
+                }
+                else if (@params[i] is int iii)
+                {
+                    list.AddDebugLog(i + " is retval:");
+                    list.AddDebugLog((int)@params[i]);
+                }
+                else
+                {
+                    list.AddDebugLog("advanced for " + i);
+                }
+            }
+        }
+            
 
         var invokeCall = new PersistentCall(MethodInfoInvoke, null);
         invokeCall.PersistentArguments[0].ToRetVal(methodIdx, typeof(MethodInfo));
@@ -431,11 +474,19 @@ public static class UltNoodleRuntimeExtensions
         int fieldIdx = list.AddGetFieldInfo(field);
         return list.AddRunMethod(GetFieldValue, fieldIdx, obj);
     }
+    public static int AddGetFieldValue(this List<PersistentCall> list, int fieldIdx, object obj)
+    {
+        return list.AddRunMethod(GetFieldValue, fieldIdx, obj);
+    }
     public static MethodInfo SetFieldValue = typeof(FieldInfo).GetMethod("SetValue", new Type[] { typeof(object), typeof(object) });
     public static int AddSetFieldValue(this List<PersistentCall> list, FieldInfo field, int objIdx, object value)
     {
         int fieldIdx = list.AddGetFieldInfo(field);
-        return list.AddRunMethod(SetFieldValue, fieldIdx, objIdx, value);
+        return list.AddSetFieldValue(fieldIdx, objIdx, value);
+    }
+    public static int AddSetFieldValue(this List<PersistentCall> list, int field, int objIdx, object value)
+    {
+        return list.AddRunMethod(SetFieldValue, field, objIdx, value);
     }
 
     public static Dictionary<string, object> TestDict = new Dictionary<string, object>() { { "hi", "hello" } };
