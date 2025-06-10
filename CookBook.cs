@@ -234,7 +234,17 @@ namespace NoodledEvents
             public string BookTag;
             public Func<SerializedNode> CreateNode;
             private Func<NodeDef, Button> createSearchItem;
-            public Button SearchItem => _searchItem ??= createSearchItem.Invoke(this);
+            public Button SearchItem
+            {
+                get
+                {
+                    if (_searchItem == null) 
+                    {
+                        _searchItem = createSearchItem.Invoke(this);
+                        _searchItem.style.unityTextAlign = TextAnchor.MiddleLeft;
+                    } return _searchItem;
+                }
+            }
             private Button _searchItem;
 
             public class Pin

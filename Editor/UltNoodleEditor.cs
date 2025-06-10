@@ -13,6 +13,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using static UnityEditor.EditorApplication;
 
 
 public class UltNoodleEditor : EditorWindow
@@ -61,6 +62,7 @@ public class UltNoodleEditor : EditorWindow
     public VisualElement D;
     public VisualElement SearchMenu;
     public TextField SearchBar;
+    public Label SearchProgress;
     public ScrollView SearchedTypes;
     public Toggle StaticsToggle;
     private VisualElement cog;
@@ -154,6 +156,7 @@ public class UltNoodleEditor : EditorWindow
         NodesFrame.RegisterCallback<KeyDownEvent>(NodeFrameKeyDown);
         root.panel.visualTree.RegisterCallback<KeyDownEvent>(NodeFrameKeyDown);
 
+        SearchProgress = SearchMenu.Q<Label>("SearchText");
         SearchBar.RegisterValueChangedCallback((txt) =>
         {
             if (EditorPrefs.GetBool("SearchPerChar", true))
@@ -209,10 +212,10 @@ public class UltNoodleEditor : EditorWindow
         {
             var cookBooks = AssetDatabase.FindAssets("t:" + nameof(CookBook)).Select(guid => AssetDatabase.LoadAssetAtPath<CookBook>(AssetDatabase.GUIDToAssetPath(guid)));
             if (!cookBooks.Contains(CommonsCookBook)) cookBooks = cookBooks.Append(CommonsCookBook);
-            if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
+            if (!cookBooks.Contains(LoopsCookBook)) cookBooks = cookBooks.Append(LoopsCookBook);
             if (!cookBooks.Contains(ObjectCookBook)) cookBooks = cookBooks.Append(ObjectCookBook);
             if (!cookBooks.Contains(ObjectFCookBook)) cookBooks = cookBooks.Append(ObjectFCookBook);
-            if (!cookBooks.Contains(LoopsCookBook)) cookBooks = cookBooks.Append(LoopsCookBook);
+            if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
             EditorUtility.DisplayProgressBar("Loading Noodle Editor...", "", 0);
             int cur = 0;
             int final = cookBooks.Count();
@@ -585,48 +588,79 @@ public class UltNoodleEditor : EditorWindow
             });
         }
     }
-    private void SearchTypes(int dispNum)
+    private int CurSearchProcess = 0;
+    private void SearchTypes(int findNum)
     {
+        CallbackFunction newSearch = null;
+        CurSearchProcess++;
+        int thisSearchNum = CurSearchProcess;
+        int dispNum = findNum;
         this.SearchedTypes.Clear();
-       
+        string targetSearch = SearchBar.value;
+        string[] splitResults = null;
+        int j = 0;
+        bool firstRun = true;
+        if (!targetSearch.StartsWith(".") && targetSearch.Contains("."))
+        {
+            splitResults = targetSearch.Split('.');
+            targetSearch = splitResults[0] + ".";
+        }
         // To be replaced with some better comparison algorithm.
-        bool CompareString(string stringOne, string stringTwo) {
+        bool CompareString(string stringOne, string stringTwo)
+        {
             return stringOne.Contains(stringTwo, StringComparison.CurrentCultureIgnoreCase);
         }
-
-        // Collect first x that match
-        int i = dispNum;
-        foreach(var nd in FilteredNodeDefs)
+        void EndSearch()
         {
-            if (i <= 0)
+            SearchProgress.style.display = DisplayStyle.None;
+            EditorApplication.update -= newSearch;
+        }
+        newSearch = () =>
+        {
+            if (CurSearchProcess != thisSearchNum)
             {
-                SearchedTypes.Add(GetIncompleteListDisplay());
-                break;
+                EndSearch();
+                return;
             }
-            if (!BookFilters[nd.CookBook]) continue;
-
-            string targetSearch = SearchBar.value;
-            string[] splitResults = null;
-
-            // Ex. "rigidbody.kinematic" will search for things start start with "rigidbody." and contain "kinematic".
-            // But things like ".kinematic" need to be accounted for as obviously nothing can start with "".
-            if (!targetSearch.StartsWith(".") && targetSearch.Contains(".")) {
-                splitResults = targetSearch.Split('.');
-                targetSearch = splitResults[0] + ".";
-            }
-
-            // Primary filter, either strict startswith or loose compare
-            if (((splitResults != null) && nd.Name.StartsWith(targetSearch, StringComparison.CurrentCultureIgnoreCase)) || ((splitResults == null) && CompareString(nd.Name, targetSearch)))
+            if (firstRun)
             {
-                // Secondary filter, second part compare check
-                if ((splitResults != null) && !CompareString(nd.Name, splitResults[1]))
+                firstRun = false;
+                SearchProgress.style.display = DisplayStyle.Flex;
+            }
+            // Collect first x that match
+            int i = 0;
+            for (; j < FilteredNodeDefs.Count; j++)
+            {
+                CookBook.NodeDef nd = FilteredNodeDefs[j];
+                i++;
+                SearchProgress.text = "("+Mathf.RoundToInt(Mathf.Clamp(j * 100 / (float)FilteredNodeDefs.Count, 0, 100)) + "%)";
+                if (i > 1000) break; // next loop pls
+                if (dispNum <= 0)
+                {
+                    SearchedTypes.Add(GetIncompleteListDisplay());
+                    EndSearch();
+                    return;
+                }
+                if (!BookFilters[nd.CookBook]) continue;
+
+                // Primary filter, either strict startswith or loose compare
+                if (nd.Name.StartsWith(targetSearch, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    // Secondary filter, second part compare check
+                    if ((splitResults != null) && !CompareString(nd.Name, splitResults[1]))
                         continue;
 
-                i--;
-                nd.SearchItem.style.unityTextAlign = TextAnchor.MiddleLeft;
-                SearchedTypes.Add(nd.SearchItem);
+                    dispNum--;
+                    SearchedTypes.Add(nd.SearchItem);
+                }
             }
-        } 
+            if (j >= FilteredNodeDefs.Count-1)
+            {
+                EndSearch();
+            }
+        };
+        EditorApplication.update += newSearch;
+        newSearch.Invoke();
     }
 
     private VisualElement GetIncompleteListDisplay() {

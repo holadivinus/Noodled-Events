@@ -96,6 +96,12 @@ namespace NoodledEvents
             
             //EditorUtility.DisplayProgressBar("Finding Types...", "", 0);
             var assembs = AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.FullName.StartsWith("UnityEditor"));
+            //string tlist = "";
+            //foreach (var a in assembs)
+            {
+                //tlist += "\n" + a.FullName;
+            }
+            //Debug.Log(tlist); 
             float n = (float)assembs.Count();
             int i = 0;
             var types = assembs
