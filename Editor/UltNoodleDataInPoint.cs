@@ -187,6 +187,27 @@ public class UltNoodleDataInPoint : VisualElement
             var tf = new TextField("");
             tf.value = input.DefaultStringValue;
             newField = tf;
+
+            // Manual "change output type for delegates.Create" node
+            // This is a bodge, The correct course of action here was to make
+            // & use a "dynamic NodeDef" api
+            // TODO i supposed
+            void UpdateDelegateOutput()
+            {
+                if (node.Node.Name.StartsWith("delegates.Create_with")
+                 && SData.Name.StartsWith("Param Type"))
+                {
+                    int paramNum = int.Parse(SData.Name.Replace("Param Type ", ""));
+                    Type t = null;
+                    try
+                    {
+                        t = Type.GetType(input.DefaultStringValue, true, true);
+                    }
+                    catch (Exception) { t = typeof(object); }
+                    node.Node.DataOutputs[paramNum + 1].Type = t;
+                }
+            }
+
             tf.RegisterCallback<KeyDownEvent>(e => 
             {
                 if (e.keyCode == KeyCode.Return) 
@@ -196,6 +217,7 @@ public class UltNoodleDataInPoint : VisualElement
                     {
                         tf.value = string.Join(',', v.AssemblyQualifiedName.Split(',').Take(2));
                         input.DefaultStringValue = tf.value;
+                        UpdateDelegateOutput();
                         return;
                     }
                     foreach (Type t in UltNoodleEditor.SearchableTypes)
@@ -204,6 +226,7 @@ public class UltNoodleDataInPoint : VisualElement
                         {
                             tf.value = string.Join(',', t.AssemblyQualifiedName.Split(',').Take(2));
                             input.DefaultStringValue = tf.value;
+                            UpdateDelegateOutput();
                             return;
                         }
                     }
@@ -211,7 +234,10 @@ public class UltNoodleDataInPoint : VisualElement
                     input.DefaultStringValue = tf.value;
                 }
                 input.DefaultStringValue = tf.value;
+                UpdateDelegateOutput();
+
             });
+            UpdateDelegateOutput();
         }
         else { }
 

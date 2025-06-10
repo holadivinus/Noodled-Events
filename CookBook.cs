@@ -92,7 +92,8 @@ namespace NoodledEvents
             { 
                 SourceEvent = o.CompEvt; SourceCall = o.CompCall;
                 TargEvent = targEvt; TargCall = targCall;
-                TargArgType = targCall.Method.GetParameters()[argIdx].ParameterType; TargInput = argIdx;
+                TargInwardType = targCall.Method.GetParameters()[argIdx].ParameterType; TargInput = argIdx;
+                SourceOutwardType = o.Type.Type;
                 if (o.Node.NoadType == SerializedNode.NodeType.BowlInOut)
                     ArgIsSource = Array.IndexOf(o.Node.DataOutputs, o);
                 else if (o.UseCompAsParam)
@@ -131,16 +132,17 @@ namespace NoodledEvents
 
             public UltEventBase TargEvent;
             public PersistentCall TargCall;
-            public Type TargArgType;
+            public Type TargInwardType;
+            public Type SourceOutwardType;
             public int TargInput; // the idx of the arg on the TargCall to set as Arg
             public void Connect(Transform dataRoot) // fyi this is called while the targcall is being constructed
             {
                 if (SourceEvent == TargEvent) // same evt connection
                 {
                     if (ArgIsSource > -1)
-                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToParamVal(ArgIsSource, TargArgType);
+                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToParamVal(ArgIsSource, TargInwardType);
                     else
-                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(SourceEvent.PersistentCallsList.IndexOf(SourceCall), TargArgType);
+                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(SourceEvent.PersistentCallsList.IndexOf(SourceCall), TargInwardType);
                 }
                 else
                 {
@@ -151,17 +153,9 @@ namespace NoodledEvents
                     // all the other types (int, float, color, bool) are todo.
 
                         
-                    Type transferredType = TargArgType;
-                    if (ArgIsSource == -1)
-                    {
-                        if (SourceCall.Method.GetReturnType().IsSubclassOf(TargArgType))
-                            transferredType = SourceCall.Method.GetReturnType();
-                    } else
-                    {
-                        Type evtT = SourceEvent.GetType().GetEvtGenerics()[ArgIsSource]; 
-                        if (evtT.IsSubclassOf(TargArgType))
-                            transferredType = evtT;
-                    }
+                    Type transferredType = TargInwardType;
+                    if (transferredType.IsAssignableFrom(SourceOutwardType))
+                        transferredType = SourceOutwardType;
 
                     foreach (var kvp in CompStoragers)
                     {
@@ -196,13 +190,13 @@ namespace NoodledEvents
                         TargEvent.PersistentCallsList.Add(getPCall);
 
                         // make targcall ref the gotten value (remember, targcall is under construction rn so its gonna be added last)
-                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(TargEvent.PersistentCallsList.Count - 1, TargArgType);
+                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(TargEvent.PersistentCallsList.Count - 1, TargInwardType);
 
                         return;
                     }
 
                     // fail
-                    Debug.Log("failed data transfer for " + TargArgType);
+                    Debug.Log("failed data transfer for " + TargInwardType);
                     
                 }
             }

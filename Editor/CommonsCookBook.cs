@@ -742,6 +742,7 @@ public class CommonsCookBook : CookBook
 
                     // make a non-floater for compilation
                     var evtBase = dataRoot.StoreComp<UltEventHolder>("baseDelEvent");
+                    evtBase.Event.FSetPCalls(new());
                     evtBase.gameObject.SetActive(true);
 
                     foreach (var o in node.DataOutputs)
