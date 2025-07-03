@@ -46,6 +46,7 @@ public class ObjectFieldCookBook : CookBook
     
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
+        base.CompileNode(evt, node, dataRoot);
         SerializedField field = JsonUtility.FromJson<SerializedField>(node.BookTag);
         evt.EnsurePCallList();
 

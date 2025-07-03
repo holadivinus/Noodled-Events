@@ -73,6 +73,7 @@ public class StaticMethodCookBook : CookBook
     
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
+        base.CompileNode(evt, node, dataRoot);
         // figure node method
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 

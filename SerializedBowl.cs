@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using Grpc.Core.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -105,6 +106,7 @@ namespace NoodledEvents
         [SerializeField] public List<SerializedNode> NodeDatas = new(); // this list is "compiled" into the targ event.
         [SerializeField] public GameObject LastGenerated;
 
+        [NonSerialized] public SerializedNode ErroredNode;
         /// <summary>
         /// Compiles this bowl into their target event.
         /// </summary>
@@ -139,9 +141,12 @@ namespace NoodledEvents
 
             EntryNode.Compile(LastGenerated.transform);
 
+            ErroredNode = null;
+
             // postcompile hook
             foreach (var book in NodeDatas.Select(n => n.Book).Distinct())
                 book?.PostCompile(this);
+
 
             EditorSceneManager.MarkSceneDirty(this.gameObject.scene);
 

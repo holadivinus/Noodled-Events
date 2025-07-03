@@ -30,7 +30,7 @@ public class UltNoodleNodeUI : VisualElement
         // create normal visual for normal nodes
         Visual = this;
         Bowl.Visual.Q("Nodes").Add(Visual);
-        
+
 
         // hide Delete BT only if it's the "InOut node
         this.Q<Button>("DeleteBT").visible = serializedNode.NoadType != SerializedNode.NodeType.BowlInOut;
@@ -64,6 +64,8 @@ public class UltNoodleNodeUI : VisualElement
             (Title = Visual.Q<Label>("TypeTitle")).text = serializedNode.Name;
         InputsElement = Visual.Q<VisualElement>("Inputs");
         OutputsElement = Visual.Q<VisualElement>("Outputs");
+
+        IOElement = Visual.Q("IO");
 
         GenerateInputs();
 
@@ -180,6 +182,8 @@ public class UltNoodleNodeUI : VisualElement
     private VisualElement NodeBG;
     public VisualElement InputsElement;
     public VisualElement OutputsElement;
+
+    public VisualElement IOElement;
 
     public List<UltNoodleFlowOutPoint> OutPoints = new();
     public List<UltNoodleDataInPoint> InPoints = new();
@@ -326,6 +330,8 @@ public class UltNoodleNodeUI : VisualElement
         foreach (var ip in InPoints)
             ip.Validate();
         UpdateLineUIs();
+
+        IOElement.style.backgroundColor = this.Node.Bowl.ErroredNode == this.Node ? new Color(0.2358491f, 0, 0) : new Color(0.09411765f, 0.09411765f, 0.09411765f);
     }
 
     public void UpdateLineUIs()

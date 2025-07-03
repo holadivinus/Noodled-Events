@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Drawing.Printing;
 using System.Linq;
 using System.Reflection;
 using TMPro;
@@ -42,9 +43,15 @@ namespace NoodledEvents
         {
             
         }
+
+        private static SerializedNode lastCompiledNode;
         public virtual void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
         {
             // when a bowl is compiled, it puts forward an evt that is filled by compiled nodes.
+            // this func handles it
+            // method overrides of this func should also call base.CompileNode(evt, node, dataRoot);
+            // so that errors can be displayed on the node
+            node.Bowl.ErroredNode = node;
         }
         public virtual void PostCompile(SerializedBowl bowl)
         {

@@ -36,6 +36,7 @@ public class LoopsCookBook : CookBook
     private static MethodInfo Translate = typeof(Transform).GetMethod("Translate", new Type[] { typeof(float), typeof(float), typeof(float) });
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
+        base.CompileNode(evt, node, dataRoot);
         if (evt.PersistentCallsList == null) evt.FSetPCalls(new());
 
         // Loops take this structure:

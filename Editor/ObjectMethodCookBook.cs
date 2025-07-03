@@ -99,6 +99,7 @@ public class ObjectMethodCookBook : CookBook
 
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
+        base.CompileNode(evt, node, dataRoot);
         // sanity check (AddComponent() leaves this field empty)
         if (evt.PersistentCallsList == null) evt.FSetPCalls(new());
 

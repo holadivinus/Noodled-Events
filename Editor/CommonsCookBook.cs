@@ -136,6 +136,8 @@ public class CommonsCookBook : CookBook
     const string dictStoreFieldStr = "s_InternalSyncObject";
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
+        base.CompileNode(evt, node, dataRoot);
+
         void SetSceneVar(GameObject gobjRoot)
         {
             // Type Agnostic set var code
