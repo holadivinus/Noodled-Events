@@ -171,11 +171,11 @@ public class ObjectFieldCookBook : CookBook
             else editorSetCall.PersistentArguments[2].FSetType(PersistentArgumentType.Object);
             evt.PersistentCallsList.Add(editorSetCall);
 
-            var ingameSetCall = new PersistentCall();
+            /*var ingameSetCall = new PersistentCall();
             ingameSetCall.CopyFrom(editorSetCall);
             ingameSetCall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
             ingameSetCall.FSetMethod(null);
-            evt.PersistentCallsList.Add(ingameSetCall);
+            evt.PersistentCallsList.Add(ingameSetCall);*/
 
             PersistentCall getValue = new PersistentCall(Type.GetType("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true, true).GetMethod("MethodInfoInvoke", UltEventUtils.AnyAccessBindings, null,
             new Type[] { typeof(MethodInfo), typeof(object), typeof(object[]) }, null), null);
@@ -225,11 +225,11 @@ public class ObjectFieldCookBook : CookBook
             else editorSetCall.PersistentArguments[2].FSetType(PersistentArgumentType.Object);
             evt.PersistentCallsList.Add(editorSetCall);
 
-            var ingameSetCall = new PersistentCall();
+            /*var ingameSetCall = new PersistentCall();
             ingameSetCall.CopyFrom(editorSetCall);
             ingameSetCall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
             ingameSetCall.FSetMethod(null);
-            evt.PersistentCallsList.Add(ingameSetCall);
+            evt.PersistentCallsList.Add(ingameSetCall);*/
 
             var editorSetCall2 = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
             editorSetCall2.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(twoTargArr), typeof(Array));
@@ -240,11 +240,11 @@ public class ObjectFieldCookBook : CookBook
             else editorSetCall2.PersistentArguments[2].FSetType(node.DataInputs[srcIdx].GetPCallType()).Value = node.DataInputs[srcIdx].GetDefault();
             evt.PersistentCallsList.Add(editorSetCall2);
 
-            var ingameSetCall2 = new PersistentCall();
+            /*var ingameSetCall2 = new PersistentCall();
             ingameSetCall2.CopyFrom(editorSetCall2);
             ingameSetCall2.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
             ingameSetCall2.FSetMethod(null);
-            evt.PersistentCallsList.Add(ingameSetCall2);
+            evt.PersistentCallsList.Add(ingameSetCall2);*/
 
             PersistentCall setValue = new PersistentCall(Type.GetType("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true, true).GetMethod("MethodInfoInvoke", UltEventUtils.AnyAccessBindings, null,
             new Type[] { typeof(MethodInfo), typeof(object), typeof(object[]) }, null), null);

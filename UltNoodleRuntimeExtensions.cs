@@ -359,11 +359,11 @@ public static class UltNoodleRuntimeExtensions
         editorSetCall.PersistentArguments[2].ToRetVal(obj, typeof(object));
         list.Add(editorSetCall);
 
-        var ingameSetCall = new PersistentCall();
+        /*var ingameSetCall = new PersistentCall();
         ingameSetCall.CopyFrom(editorSetCall);
         ingameSetCall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
         ingameSetCall.FSetMethod(null);
-        list.Add(ingameSetCall);
+        list.Add(ingameSetCall);*/
     }
     public static void AddArraySet(this List<PersistentCall> list, int array, PersistentArgument @const, int idx)
     {
@@ -373,11 +373,11 @@ public static class UltNoodleRuntimeExtensions
         editorSetCall.PersistentArguments[2] = @const;
         list.Add(editorSetCall);
 
-        var ingameSetCall = new PersistentCall();
+        /*var ingameSetCall = new PersistentCall();
         ingameSetCall.CopyFrom(editorSetCall);
         ingameSetCall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
         ingameSetCall.FSetMethod(null);
-        list.Add(ingameSetCall);
+        list.Add(ingameSetCall);*/
     }
     public const bool DEBUG_IN_COMP = false;
     public static void AddDebugLog(this List<PersistentCall> list, int retVal, bool useJson = false)

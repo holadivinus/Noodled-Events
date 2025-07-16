@@ -206,10 +206,6 @@ public class UltNoodleEditor : EditorWindow
         });
         root.Q("GroupPath").Insert(1, selectedOnlyTog);
 
-        // Setup BuildHooks
-        Debug.Log(Type.GetType("MarrowBuildHook.MarrowBuildHook, MarrowBuildHook"));
-        return;
-
 
         if (AllNodeDefs.Count == 0 || AllBooks == null)
         {
