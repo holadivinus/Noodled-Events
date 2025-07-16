@@ -95,6 +95,19 @@ public class CommonsCookBook : CookBook
                 outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
                 bookTag: $"get_or_init_gobj_{storager.Key.GetFriendlyName()}_var"));
         }
+
+        // vars.set_global_SystemObject_var
+        allDefs.Add(new NodeDef(this, "vars.set_global_SystemObject_var",
+            inputs: () => new[] { new Pin("Exec"), new Pin("Var Name", typeof(string), @const: true), new Pin("System.Object", typeof(object)) },
+            outputs: () => new[] { new Pin("done") },
+            bookTag: "set_global_SystemObject_var"
+            ));
+
+        // vars.get_global_SystemObject_var
+        allDefs.Add(new NodeDef(this, "vars.get_global_SystemObject_var", 
+                inputs: () => new[] { new Pin("Exec"), new Pin("Var Name", typeof(string), @const: true) },
+                outputs: () => new[] { new Pin("done"), new Pin("System.Object", typeof(object)) },
+                bookTag: "get_global_SystemObject_var"));
         #endregion
 
         // Async
@@ -651,35 +664,137 @@ public class CommonsCookBook : CookBook
                     return;
                 }
             case "fetch_delegate":
+                {
+                    // get dict
+                    int dictField3 = evt.PersistentCallsList.AddGetFieldInfo(typeof(System.TimeZone).GetField("s_InternalSyncObject", (BindingFlags)60));
+                    int gotDict4 = evt.PersistentCallsList.AddRunMethod(
+                        UltNoodleRuntimeExtensions.GetFieldValue, dictField3, @params: new object[1]);
 
-                // get dict
-                int dictField3 = evt.PersistentCallsList.AddGetFieldInfo(typeof(System.TimeZone).GetField("s_InternalSyncObject", (BindingFlags)60));
-                int gotDict4 = evt.PersistentCallsList.AddRunMethod(
-                    UltNoodleRuntimeExtensions.GetFieldValue, dictField3, @params: new object[1]);
+                    // for my sanity this is localized with a stupid format
+                    var getGuidStr2 = MakeCall<string>("Format", typeof(string), typeof(object));
+                    getGuidStr2.PersistentArguments[0].String = "{0}";
+                    if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, getGuidStr2, 1).Connect(dataRoot);
+                    else getGuidStr2.PersistentArguments[1].FSetType(PersistentArgumentType.String).FSetString(node.DataInputs[0].DefaultStringValue);
+                    evt.PersistentCallsList.Add(getGuidStr2);
 
-                // for my sanity this is localized with a stupid format
-                var getGuidStr2 = MakeCall<string>("Format", typeof(string), typeof(object));
-                getGuidStr2.PersistentArguments[0].String = "{0}";
-                if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, getGuidStr2, 1).Connect(dataRoot);
-                else getGuidStr2.PersistentArguments[1].FSetType(PersistentArgumentType.String).FSetString(node.DataInputs[0].DefaultStringValue);
-                evt.PersistentCallsList.Add(getGuidStr2);
+                    int gotValue = evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, object>).GetMethod("TryGetValue"),
+                            gotDict4, evt.PersistentCallsList.IndexOf(getGuidStr2), null);
 
-                int gotValue = evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, object>).GetMethod("TryGetValue"),
-                        gotDict4, evt.PersistentCallsList.IndexOf(getGuidStr2), null);
+                    int arrIdx = evt.PersistentCallsList.Count - 4;
 
-                int arrIdx = evt.PersistentCallsList.Count - 4; 
+                    var arrGetIdx = typeof(Array).GetMethod("GetValue", new Type[] { typeof(int) });
+                    int getOut = evt.PersistentCallsList.AddRunMethod(arrGetIdx, arrIdx, new PersistentArgument(typeof(int)).FSetInt(1));
 
-                var arrGetIdx = typeof(Array).GetMethod("GetValue", new Type[] { typeof(int) });
-                int getOut = evt.PersistentCallsList.AddRunMethod(arrGetIdx, arrIdx, new PersistentArgument(typeof(int)).FSetInt(1));
+                    node.DataOutputs[0].CompEvt = evt;
+                    node.DataOutputs[0].CompCall = evt.PersistentCallsList[getOut];
 
-                node.DataOutputs[0].CompEvt = evt;
-                node.DataOutputs[0].CompCall = evt.PersistentCallsList[getOut];
-
-                var evtNext2 = node.FlowOutputs[0].Target?.Node;
-                if (evtNext2 != null)
-                    evtNext2.Book.CompileNode(evt, evtNext2, dataRoot);
-
+                    var evtNext2 = node.FlowOutputs[0].Target?.Node;
+                    if (evtNext2 != null)
+                        evtNext2.Book.CompileNode(evt, evtNext2, dataRoot);
+                }
                 return;
+            case "set_global_SystemObject_var":
+                {
+                    // get dict
+                    FieldInfo dictField = typeof(System.TimeZone).GetField("s_InternalSyncObject", (BindingFlags)60);
+                    int gotDictA = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
+
+                    // if null, create dict...
+                    var dictCreateEvt = dataRoot.StoreComp<LifeCycleEvents>("dict null check");
+                    {
+                        dictCreateEvt.EnableEvent = new UltEvent();
+                        dictCreateEvt.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+                        dictCreateEvt.EnableEvent.EnsurePCallList();
+
+                        // Create Dict
+                        int madeDictIdx = dictCreateEvt.EnableEvent.PersistentCallsList.AddCreateInstance<Dictionary<string, object>>();
+                        int dictField4 = dictCreateEvt.EnableEvent.PersistentCallsList.AddSetFieldValue(dictField, -1, madeDictIdx);
+                    }
+                    var compareCall = MakeCall<object>("Equals", new Type[] { typeof(object), typeof(object) });
+                    compareCall.PersistentArguments[0].ToRetVal(gotDictA, typeof(object));
+                    compareCall.PersistentArguments[1].FSetType(PersistentArgumentType.Object);
+                    evt.PersistentCallsList.Add(compareCall);
+
+                    var decideCallA = MakeCall<GameObject>("SetActive", dictCreateEvt.gameObject, typeof(bool));
+                    decideCallA.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(compareCall), typeof(bool));
+                    evt.PersistentCallsList.Add(decideCallA);
+
+                    var decideCallB = MakeCall<GameObject>("SetActive", dictCreateEvt.gameObject, typeof(bool));
+                    decideCallB.PersistentArguments[0].Bool = false;
+                    evt.PersistentCallsList.Add(decideCallB);
+
+                    // get dict again, since now it's garuanteed to exist
+                    int gotDictB = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
+                    
+                    MethodInfo setMethod = typeof(Dictionary<string, object>).GetMethod("set_Item", (BindingFlags)60);
+                    var nameArg = new PersistentArgument(typeof(string)); nameArg.String = node.DataInputs[0].DefaultStringValue;
+                    if (node.DataInputs[1].Source == null) 
+                    {
+                        var constVal = node.DataInputs[1].GetDefault();
+                        var arg = new PersistentArgument(constVal.GetType());
+                        arg.Value = constVal;
+                        evt.PersistentCallsList.AddRunMethod(setMethod, gotDictB, nameArg, arg);
+                    } else
+                    {
+                        if (node.DataInputs[1].Source.CompEvt != evt) throw new Exception("Can't transfer data for global vars! (todo)");
+                        if (node.DataInputs[1].Source.UseCompAsParam) throw new Exception("Can't use event params for global vars! (todo)");
+                        evt.PersistentCallsList.AddRunMethod(setMethod, gotDictB, nameArg, evt.PersistentCallsList.IndexOf(node.DataInputs[1].Source.CompCall));
+                    }
+
+                    evt.PersistentCallsList.AddDebugLog(gotDictB, true);
+
+                    // compile next node.
+                    var evtNext3 = node.FlowOutputs[0].Target?.Node;
+                    if (evtNext3 != null)
+                        evtNext3.Book.CompileNode(evt, evtNext3, dataRoot);
+                }
+                break;
+            case "get_global_SystemObject_var":
+                {
+                    // get dict
+                    FieldInfo dictField = typeof(System.TimeZone).GetField("s_InternalSyncObject", (BindingFlags)60);
+                    int gotDictA = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
+
+                    // if null, create dict...
+                    var dictCreateEvt = dataRoot.StoreComp<LifeCycleEvents>("dict null check");
+                    {
+                        dictCreateEvt.EnableEvent = new UltEvent();
+                        dictCreateEvt.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+                        dictCreateEvt.EnableEvent.EnsurePCallList();
+
+                        // Create Dict
+                        int madeDictIdx = dictCreateEvt.EnableEvent.PersistentCallsList.AddCreateInstance<Dictionary<string, object>>();
+                        int dictField4 = dictCreateEvt.EnableEvent.PersistentCallsList.AddSetFieldValue(dictField, -1, madeDictIdx);
+                    }
+                    var compareCall = MakeCall<object>("Equals", new Type[] { typeof(object), typeof(object) });
+                    compareCall.PersistentArguments[0].ToRetVal(gotDictA, typeof(object));
+                    compareCall.PersistentArguments[1].FSetType(PersistentArgumentType.Object);
+                    evt.PersistentCallsList.Add(compareCall);
+
+                    var decideCallA = MakeCall<GameObject>("SetActive", dictCreateEvt.gameObject, typeof(bool));
+                    decideCallA.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(compareCall), typeof(bool));
+                    evt.PersistentCallsList.Add(decideCallA);
+
+                    var decideCallB = MakeCall<GameObject>("SetActive", dictCreateEvt.gameObject, typeof(bool));
+                    decideCallB.PersistentArguments[0].Bool = false;
+                    evt.PersistentCallsList.Add(decideCallB);
+
+                    // get dict again, since now it's garuanteed to exist
+                    int gotDictB = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
+
+                    MethodInfo getMethod = typeof(Dictionary<string, object>).GetMethod("get_Item", (BindingFlags)60);
+                    var nameArg = new PersistentArgument(typeof(string)); nameArg.String = node.DataInputs[0].DefaultStringValue;
+                    int gotValue = evt.PersistentCallsList.AddRunMethod(getMethod, gotDictB, nameArg);
+
+                    node.DataOutputs[0].CompCall = evt.PersistentCallsList[gotValue];
+                    node.DataOutputs[0].CompEvt = evt;
+
+                    // compile next node.
+                    var evtNext3 = node.FlowOutputs[0].Target?.Node;
+                    if (evtNext3 != null)
+                        evtNext3.Book.CompileNode(evt, evtNext3, dataRoot);
+                }
+                break;
             default:
                 if (node.BookTag.Contains("_scene_") && node.BookTag.EndsWith("_var"))
                 {

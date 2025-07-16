@@ -488,6 +488,15 @@ public static class UltNoodleRuntimeExtensions
     {
         return list.AddRunMethod(SetFieldValue, field, objIdx, value);
     }
+    public static int AddCreateInstance<T>(this List<PersistentCall> list)
+    {
+        int t = list.FindOrAddGetTyper<T>();
+
+        var makeDict = new PersistentCall(typeof(Activator).GetMethod("CreateInstance", new Type[] { typeof(Type) }), null);
+        makeDict.PersistentArguments[0].ToRetVal(t, typeof(Type));
+        list.Add(makeDict);
+        return list.Count - 1;
+    }
 
     public static Dictionary<string, object> TestDict = new Dictionary<string, object>() { { "hi", "hello" } };
 }

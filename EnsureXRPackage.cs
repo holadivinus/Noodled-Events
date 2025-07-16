@@ -12,11 +12,12 @@ namespace NoodledEvents
     {
         static EnsureXRPackage() 
         {
-            Client.Add("https://github.com/holadivinus/BLXRComp.git");
+            EditorApplication.delayCall += () => Client.Add("https://github.com/holadivinus/BLXRComp.git");
+            EditorApplication.delayCall += () => Client.Add("https://github.com/holadivinus/MarrowBuildHook.git");
 
 
             // also fix up MathUtilities.cs
-           
+
             string[] existingMaths = AssetDatabase.FindAssets("MathUtilities t:MonoScript").Select(g => AssetDatabase.GUIDToAssetPath(g)).Where(p => !p.Contains("com.stresslevelzero.marrow.sdk.extended")).ToArray();
             if (existingMaths.Length > 0)
             { 
