@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using UltEvents;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEngine;
@@ -13,7 +15,8 @@ namespace NoodledEvents
     [InitializeOnLoad]
     static class EnsureXRPackage
     {
-        static EnsureXRPackage() 
+        private static Dictionary<Type, List<FieldInfo>> TypeToUltFields = new();
+        static EnsureXRPackage()
         {
             // Soft Dependancies
             Client.AddAndRemove(new string[] { "https://github.com/holadivinus/BLXRComp.git", "https://github.com/holadivinus/MarrowBuildHook.git" }, null);
@@ -22,15 +25,16 @@ namespace NoodledEvents
             // also fix up MathUtilities.cs
 
             string[] existingMaths = AssetDatabase.FindAssets("MathUtilities t:MonoScript").Select(g => AssetDatabase.GUIDToAssetPath(g)).Where(p => !p.Contains("com.stresslevelzero.marrow.sdk.extended")).ToArray();
-            if (existingMaths.Length > 0) 
-            { 
+            if (existingMaths.Length > 0)
+            {
                 string existingMathPath = Application.dataPath + existingMaths[0].Substring(6);
                 if (File.ReadAllText(existingMathPath) != fixedMathCS)
                     File.WriteAllText(existingMathPath, fixedMathCS);
-            } else
+            }
+            else
             {
                 string scripPath = Application.dataPath + "\\Marrow-ExtendedSDK-MAINTAINED-main\\Scripts\\Assembly-CSharp\\SLZ\\Bonelab\\VoidLogic\\";
-                if (!Directory.Exists(scripPath)) 
+                if (!Directory.Exists(scripPath))
                     Directory.CreateDirectory(scripPath);
                 scripPath += "MathUtilities.cs";
                 File.WriteAllText(scripPath, fixedMathCS);
@@ -41,32 +45,48 @@ namespace NoodledEvents
             if (buildHookType != null)
             {
                 List<Action<IEnumerable<GameObject>>> softCallbacks = (List<Action<IEnumerable<GameObject>>>)buildHookType.GetField("ExternalGameObjectProcesses").GetValue(null);
-                softCallbacks.Add((Action<IEnumerable<GameObject>>)((numer) => 
+                softCallbacks.Add((Action<IEnumerable<GameObject>>)((numer) =>
                 {
                     foreach (var gameObject in numer)
                     {
-                        //typeof(SerializedBowl), typeof(LifeCycleEvtEditorRunner), typeof(VarMan)
-                        foreach (var bowl in gameObject.GetComponentsInChildren<SerializedBowl>(true))
+
+                        foreach (var c in gameObject.GetComponentsInChildren<SerializedBowl>(true))
+                            UnityEngine.Object.DestroyImmediate(c);
+                        foreach (var c in gameObject.GetComponentsInChildren<LifeCycleEvtEditorRunner>(true))
+                            UnityEngine.Object.DestroyImmediate(c);
+                        foreach (var c in gameObject.GetComponentsInChildren<VarMan>(true))
+                            UnityEngine.Object.DestroyImmediate(c);
+
+
+                        foreach (var script in gameObject.GetComponentsInChildren<MonoBehaviour>(true))
                         {
-                            try
+                            if (script == null) continue;
+
+                            List<FieldInfo> fields = null;
+                            if (!TypeToUltFields.TryGetValue(script.GetType(), out fields))
                             {
-                                if (bowl.Event.PersistentCallsList != null)
-                                    foreach (var pcall in bowl.Event.PersistentCallsList)
+                                fields = new List<FieldInfo>();
+                                foreach (var f in script.GetType().GetFields((BindingFlags)60))
+                                {
+                                    if (typeof(IUltEventBase).IsAssignableFrom(f.FieldType))
+                                        fields.Add(f);
+                                }
+                                TypeToUltFields[script.GetType()] = fields;
+                            }
+
+                            foreach (var ultField in fields)
+                            {
+                                var evt = (UltEventBase)ultField.GetValue(script);
+                                if (evt?.PersistentCallsList != null)
+                                    foreach (var pcall in evt.PersistentCallsList)
                                     {
                                         if (pcall.MethodName == "UltNoodleRuntimeExtensions, Noodled-Events, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.ArrayItemSetter1")
                                             pcall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
                                     }
                             }
-                            catch (Exception ex)
-                            {
-                                Debug.LogWarning("Error processing bowl during build: " + ex);
-                            }
-                            UnityEngine.Object.DestroyImmediate(bowl);
+
                         }
-                        foreach (var c in gameObject.GetComponentsInChildren<LifeCycleEvtEditorRunner>(true))
-                            UnityEngine.Object.DestroyImmediate(c);
-                        foreach (var c in gameObject.GetComponentsInChildren<VarMan>(true))
-                            UnityEngine.Object.DestroyImmediate(c);
+
                     }
                 }));
             }
