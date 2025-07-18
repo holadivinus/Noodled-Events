@@ -96,18 +96,27 @@ public class CommonsCookBook : CookBook
                 bookTag: $"get_or_init_gobj_{storager.Key.GetFriendlyName()}_var"));
         }
 
-        // vars.set_global_SystemObject_var
+        // Global Sys.Object vars
         allDefs.Add(new NodeDef(this, "vars.set_global_SystemObject_var",
             inputs: () => new[] { new Pin("Exec"), new Pin("Var Name", typeof(string), @const: true), new Pin("System.Object", typeof(object)) },
             outputs: () => new[] { new Pin("done") },
             bookTag: "set_global_SystemObject_var"
             ));
-
-        // vars.get_global_SystemObject_var
-        allDefs.Add(new NodeDef(this, "vars.get_global_SystemObject_var", 
+        allDefs.Add(new NodeDef(this, "vars.get_global_SystemObject_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("Var Name", typeof(string), @const: true) },
                 outputs: () => new[] { new Pin("done"), new Pin("System.Object", typeof(object)) },
                 bookTag: "get_global_SystemObject_var"));
+
+        // Saved Sys.String vars
+        allDefs.Add(new NodeDef(this, "vars.set_saved_string_var",
+            inputs: () => new[] { new Pin("Exec"), new Pin("Var Name", typeof(string), @const: true), new Pin("save data", typeof(string)) },
+            outputs: () => new[] { new Pin("done") },
+            bookTag: "set_saved_string_var"
+            ));
+        allDefs.Add(new NodeDef(this, "vars.get_saved_string_var",
+                inputs: () => new[] { new Pin("Exec"), new Pin("Var Name", typeof(string), @const: true) },
+                outputs: () => new[] { new Pin("done"), new Pin("save data", typeof(string)) },
+                bookTag: "get_saved_string_var"));
         #endregion
 
         // Async
@@ -788,6 +797,76 @@ public class CommonsCookBook : CookBook
 
                     node.DataOutputs[0].CompCall = evt.PersistentCallsList[gotValue];
                     node.DataOutputs[0].CompEvt = evt;
+
+                    // compile next node.
+                    var evtNext3 = node.FlowOutputs[0].Target?.Node;
+                    if (evtNext3 != null)
+                        evtNext3.Book.CompileNode(evt, evtNext3, dataRoot);
+                }
+                break;
+            case "set_saved_string_var":
+                {
+                    // kys
+                    evt.PersistentCallsList.Add(MakeCall("SLZ.Bonelab.SaveData.DataManager, Assembly-CSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.get_ActiveSave"));
+                    int activeSave = evt.PersistentCallsList.Count - 1;
+                    int saveT = evt.PersistentCallsList.FindOrAddGetTyper("SLZ.Bonelab.SaveData.Save, Assembly-CSharp");
+                    int progT = evt.PersistentCallsList.FindOrAddGetTyper("SLZ.Bonelab.SaveData.PlayerProgression, Assembly-CSharp");
+                    int getProgMeth = evt.PersistentCallsList.FindOrAddGetMethodInfo(saveT, "get_Progression", new Type[] { }, new Type[] { }, progT);
+                    int progression = evt.PersistentCallsList.AddRunMethod(getProgMeth, activeSave);
+                    int dictT = evt.PersistentCallsList.FindOrAddGetTyper<Dictionary<string, Dictionary<string, System.Object>>>();
+                    int getLevelState = evt.PersistentCallsList.FindOrAddGetMethodInfo(progT, "get_LevelState", new Type[] { }, new Type[] { }, dictT);
+                    int levelState = evt.PersistentCallsList.AddRunMethod(getLevelState, progression);
+                    int savedDict = evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, Dictionary<string, System.Object>>).GetMethod("get_Item", (BindingFlags)60), levelState, new PersistentArgument(typeof(string)) { String = "G114" });
+                    // we now have the data dict
+
+                    if (node.DataInputs[1].Source == null)
+                        evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, System.Object>).GetMethod("set_Item"), savedDict, new PersistentArgument(typeof(string)) { String = node.DataInputs[0].DefaultStringValue }, new PersistentArgument(typeof(string)) { String = node.DataInputs[1].DefaultStringValue });
+                    else
+                    {
+                        if (node.DataInputs[1].Source.CompEvt != evt) throw new Exception("Can't transfer data for saved vars! (todo)");
+                        if (node.DataInputs[1].Source.UseCompAsParam) throw new Exception("Can't use event params for saved vars! (todo)");
+                        evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, System.Object>).GetMethod("set_Item"), savedDict, new PersistentArgument(typeof(string)) { String = node.DataInputs[0].DefaultStringValue }, evt.PersistentCallsList.IndexOf(node.DataInputs[1].Source.CompCall));
+                    }
+
+
+                    int saveFlag = evt.PersistentCallsList.FindOrAddGetTyper("SLZ.Marrow.SaveData.SaveFlags, SLZ.Marrow");
+
+                    var getEnum = MakeCall<Enum>("Parse", new Type[] { typeof(Type), typeof(string) });
+                    getEnum.PersistentArguments[0].ToRetVal(saveFlag, typeof(Type));
+                    getEnum.PersistentArguments[1].FSetType(PersistentArgumentType.String).FSetString("Complete");
+                    evt.PersistentCallsList.Add(getEnum);
+
+                    var saveIt = MakeCall("SLZ.Bonelab.SaveData.DataManager, Assembly-CSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.TrySaveActiveSave");
+                    saveIt.FSetArguments(new PersistentArgument().FSetType(PersistentArgumentType.ReturnValue).FSetInt(evt.PersistentCallsList.IndexOf(getEnum)).FSetString("SLZ.Marrow.SaveData.SaveFlags, SLZ.Marrow"));
+                    evt.PersistentCallsList.Add(saveIt);
+
+                    // compile next node.
+                    var evtNext3 = node.FlowOutputs[0].Target?.Node;
+                    if (evtNext3 != null)
+                        evtNext3.Book.CompileNode(evt, evtNext3, dataRoot);
+                }
+                break;
+            case "get_saved_string_var":
+                {
+                    // kys
+                    evt.PersistentCallsList.Add(MakeCall("SLZ.Bonelab.SaveData.DataManager, Assembly-CSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.get_ActiveSave"));
+                    int activeSave = evt.PersistentCallsList.Count - 1;
+                    int saveT = evt.PersistentCallsList.FindOrAddGetTyper("SLZ.Bonelab.SaveData.Save, Assembly-CSharp");
+                    int progT = evt.PersistentCallsList.FindOrAddGetTyper("SLZ.Bonelab.SaveData.PlayerProgression, Assembly-CSharp");
+                    int getProgMeth = evt.PersistentCallsList.FindOrAddGetMethodInfo(saveT, "get_Progression", new Type[] { }, new Type[] { }, progT);
+                    int progression = evt.PersistentCallsList.AddRunMethod(getProgMeth, activeSave);
+                    int dictT = evt.PersistentCallsList.FindOrAddGetTyper<Dictionary<string, Dictionary<string, System.Object>>>();
+                    int getLevelState = evt.PersistentCallsList.FindOrAddGetMethodInfo(progT, "get_LevelState", new Type[] { }, new Type[] { }, dictT);
+                    int levelState = evt.PersistentCallsList.AddRunMethod(getLevelState, progression);
+                    int savedDict = evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, Dictionary<string, System.Object>>).GetMethod("get_Item", (BindingFlags)60), levelState, new PersistentArgument(typeof(string)) { String = "G114" });
+                    // we now have the data dict
+
+                    int getter = evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, System.Object>).GetMethod("get_Item"), savedDict, new PersistentArgument(typeof(string)) { String = node.DataInputs[0].DefaultStringValue });
+
+                    evt.PersistentCallsList.AddDebugLog(getter);
+
+                    node.DataOutputs[0].CompEvt = evt;
+                    node.DataOutputs[0].CompCall = evt.PersistentCallsList[getter]; //todo
 
                     // compile next node.
                     var evtNext3 = node.FlowOutputs[0].Target?.Node;

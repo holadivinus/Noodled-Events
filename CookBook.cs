@@ -77,6 +77,12 @@ namespace NoodledEvents
                     newNode.FlowOutputs[0].Connect(oldNode.FlowOutputs[0].Target);
         }
 
+        public static PersistentCall MakeCall(string method)
+        {
+            var c = new PersistentCall();
+            c.FSetMethodName(method);
+            return c;
+        }
         public static PersistentCall MakeCall<T>(string method, params Type[] ts)
             => new PersistentCall(typeof(T).GetMethod(method, UltEventUtils.AnyAccessBindings, null, ts, null), null);
         public static PersistentCall MakeCall(Type t, string method, params Type[] ts)

@@ -298,27 +298,29 @@ public static class UltNoodleRuntimeExtensions
     public static MethodInfo GetMethod = typeof(Type).GetMethod("GetMethod", new Type[] { typeof(string), typeof(BindingFlags), typeof(Binder), typeof(Type[]), typeof(ParameterModifier[]) });
     public static int FindOrAddGetMethodInfo(this List<PersistentCall> list, MethodInfo m)
     {
-        // first get the declaring type
         int declaringType = list.FindOrAddGetTyper(m.DeclaringType);
-        int paramArr = list.FindOrAddGetTypeArr(m.GetParameters().Select(p => p.ParameterType).ToArray());
-        if (m.DeclaringType.GenericTypeArguments.Length > 0)
+        return FindOrAddGetMethodInfo(list, declaringType, m.Name, m.GetParameters().Select(p => p.ParameterType).ToArray(), m.DeclaringType.GenericTypeArguments, list.FindOrAddGetTyper(m.ReturnType));
+    }
+    public static int FindOrAddGetMethodInfo(this List<PersistentCall> list, int declaringType, string methodName, Type[] @params, Type[] typeGenerics, int retVal)
+    {
+        // first get the declaring type
+        int paramArr = list.FindOrAddGetTypeArr(@params);
+        if (typeGenerics.Length > 0)
         {
             // for generics, we gotta run Type.GetMethod on declaringType
             int typeBindingFlag = list.FindOrAddJsonDeserialize("60", typeof(BindingFlags));
 
-            return list.AddRunMethod(GetMethod, declaringType, new PersistentArgument(typeof(string)).FSetString(m.Name), typeBindingFlag, null, paramArr, null);
+            return list.AddRunMethod(GetMethod, declaringType, new PersistentArgument(typeof(string)).FSetString(methodName), typeBindingFlag, null, paramArr, null);
         }
-
-        int retvalType = list.FindOrAddGetTyper(m.ReturnType);
 
         for (int i = 0; i < list.Count; i++)
         {
             PersistentCall pcall = list[i];
             if (pcall.Method == FindMethod
              && pcall.PersistentArguments[0].FGetInt() == declaringType // type
-             && pcall.PersistentArguments[1].FGetString() == m.Name     // method name
+             && pcall.PersistentArguments[1].FGetString() == methodName     // method name
              && pcall.PersistentArguments[2].FGetInt() == paramArr      // method params
-             && pcall.PersistentArguments[3].FGetInt() == retvalType)   // return type
+             && pcall.PersistentArguments[3].FGetInt() == retVal)   // return type
             {
                 return i;
             }
@@ -326,9 +328,9 @@ public static class UltNoodleRuntimeExtensions
 
         var newGetMethodInfoCall = new PersistentCall(FindMethod, null);
         newGetMethodInfoCall.PersistentArguments[0].ToRetVal(declaringType, typeof(Type));
-        newGetMethodInfoCall.PersistentArguments[1].FSetString(m.Name);
+        newGetMethodInfoCall.PersistentArguments[1].FSetString(methodName);
         newGetMethodInfoCall.PersistentArguments[2].ToRetVal(paramArr, typeof(Type[]));
-        newGetMethodInfoCall.PersistentArguments[3].ToRetVal(retvalType, typeof(Type));
+        newGetMethodInfoCall.PersistentArguments[3].ToRetVal(retVal, typeof(Type));
         list.Add(newGetMethodInfoCall);
         return list.Count - 1;
     }
