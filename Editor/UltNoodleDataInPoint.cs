@@ -367,8 +367,16 @@ public class UltNoodleDataInPoint : VisualElement
             // figure angle, make start 0 0 0
             Vector2 a = end - start;
             Line.transform.rotation = Quaternion.Euler(0, 0, Mathf.Rad2Deg * Mathf.Atan2(a.y, a.x));
-            bool yeller = (SData.Type.Type != SData.Source.Type.Type) && !(SData.Type.Type.IsAssignableFrom(SData.Source.Type.Type));
-            Line.style.backgroundColor = normalCol = (yeller ? new Color(1, 0.92f, 0.016f, .5f) : green);
+            bool isYellow = false;
+            bool isRed = false;
+            try
+            {
+                bool yeller = (SData.Type.Type != SData.Source.Type.Type) && !(SData.Type.Type.IsAssignableFrom(SData.Source.Type.Type));
+            } catch(Exception ex)
+            {
+                isRed = true;
+            }
+            Line.style.backgroundColor = normalCol = isRed ? Color.red : (isYellow ? new Color(1, 0.92f, 0.016f, .5f) : green);
         }
     }
 }

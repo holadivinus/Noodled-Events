@@ -1,5 +1,6 @@
 ﻿#if UNITY_EDITOR
 using NoodledEvents;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -289,7 +290,21 @@ public class UltNoodleNodeUI : VisualElement
             output.UI = col;
 
             // Inform the bowl about drags
-            output.UI.RegisterCallback<MouseEnterEvent>(e => { output.HasMouse = true; UltNoodleEditor.TypeHinter.visible = true; UltNoodleEditor.TypeHinter.text = output.Type.Type.GetFriendlyName(); });
+            output.UI.RegisterCallback<MouseEnterEvent>(e => 
+            { 
+                output.HasMouse = true; UltNoodleEditor.TypeHinter.visible = true;
+
+                string typeText;
+                try
+                {
+                    typeText = output.Type.Type.GetFriendlyName();
+                }
+                catch (System.Exception)
+                {
+                    typeText = "Error, Unsupported Type:" + Environment.NewLine + output.Type._assemblyTypeName;
+                }
+                UltNoodleEditor.TypeHinter.text = typeText; 
+            });
             output.UI.RegisterCallback<MouseLeaveEvent>(e => { output.HasMouse = false; UltNoodleEditor.TypeHinter.visible = false; });
             output.UI.RegisterCallback<MouseDownEvent>(e => { if (e.button == 0) (Bowl.CurHoveredDataOutput = output).UI.CaptureMouse(); });
             output.UI.RegisterCallback<MouseMoveEvent>(e => Bowl.MousePos = Bowl.NodeBG.WorldToLocal(e.mousePosition));

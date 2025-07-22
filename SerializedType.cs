@@ -18,7 +18,18 @@ namespace NoodledEvents
             }
         }
         private Type t;
-        [SerializeField] string _assemblyTypeName;
+        [SerializeField] public string _assemblyTypeName;
+
+        public bool IsValid()
+        {
+            try
+            {
+                return this.Type != null;
+            } catch(Exception)
+            {
+                return false;
+            }
+        }
 
         public static implicit operator Type(SerializedType st) => st.Type;
         public static implicit operator SerializedType(Type t) => new SerializedType(t);
