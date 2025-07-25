@@ -71,9 +71,21 @@ namespace NoodledEvents
                                     if (typeof(IUltEventBase).IsAssignableFrom(f.FieldType))
                                         fields.Add(f);
                                 }
+
+                                Type @base = script.GetType();
+                                while (@base != typeof(MonoBehaviour))
+                                {
+                                    @base = @base.BaseType;
+                                    foreach (var f in @base.GetFields((BindingFlags)60))
+                                    {
+                                        if (typeof(IUltEventBase).IsAssignableFrom(f.FieldType))
+                                            fields.Add(f);
+                                    }
+                                }
+
                                 TypeToUltFields[script.GetType()] = fields;
                             }
-
+                            
                             foreach (var ultField in fields)
                             {
                                 var evt = (UltEventBase)ultField.GetValue(script);

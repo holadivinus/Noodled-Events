@@ -288,8 +288,9 @@ public class CommonsCookBook : CookBook
                     // embedded mode:
                     if (node.DataInputs.Length == 2 && node.DataInputs[1].DefaultBoolValue)
                     {
-                        // is embedded
-                        var asyncEvt = dataRoot.StoreComp<DelayedUltEventHolder>("Embedded Async Event");
+                        // is embedded - place at root
+                        
+                        var asyncEvt = node.Bowl.LastGenerated.transform.StoreComp<DelayedUltEventHolder>("Embedded Async Event");
                         asyncEvt.gameObject.SetActive(true);
 
                         if (node.DataInputs[0].Source == null) asyncEvt.Delay = node.DataInputs[0].DefaultFloatValue;
