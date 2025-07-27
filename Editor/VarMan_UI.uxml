@@ -1,13 +1,56 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <ui:Label text="epic sigma Var Man" display-tooltip-when-elided="true" style="-unity-text-align: upper-center; font-size: 20px; -unity-font-style: bold-and-italic; -unity-text-outline-width: 0.5px; -unity-text-outline-color: rgb(0, 0, 0);" />
-    <ui:ScrollView name="VarList" style="background-color: rgba(255, 203, 0, 0.06); min-height: 22px;" />
-    <ui:VisualElement name="Adders" style="background-color: rgba(25, 255, 0, 0.04); bottom: 0; top: 8px; left: 0; right: 0; min-height: 23px; margin-bottom: 8px; flex-direction: row;">
-        <ui:Label text="New Var:" display-tooltip-when-elided="true" style="-unity-text-align: middle-left;" />
-        <ui:TextField picking-mode="Ignore" tooltip="Variable Name Here!" name="NewVarName" style="min-width: 72px; margin-right: 2px;" />
-        <ui:Button text="float" display-tooltip-when-elided="true" name="float" />
-        <ui:Button text="int" display-tooltip-when-elided="true" name="int" />
-        <ui:Button text="bool" display-tooltip-when-elided="true" name="bool" />
-        <ui:Button text="string" display-tooltip-when-elided="true" name="string" />
-        <ui:Button text="obj" display-tooltip-when-elided="true" name="obj" />
+    <ui:VisualElement name="NormalStuff" style="display: flex;">
+        <ui:Label text="epic sigma Var Man" display-tooltip-when-elided="true" binding-path="CustomTitle" name="Title" style="-unity-text-align: upper-center; font-size: 20px; -unity-font-style: bold-and-italic; -unity-text-outline-width: 0.5px; -unity-text-outline-color: rgb(0, 0, 0);" />
+        <ui:VisualElement name="TitleSettings" style="flex-direction: row; display: none;">
+            <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
+            <ui:TextField picking-mode="Ignore" text="epic sigma Var Man" binding-path="CustomTitle" />
+            <uie:ColorField value="#FFFFFFFF" binding-path="TextFillColor" name="FillSetting" style="flex-shrink: 1; max-width: 43px;" />
+            <uie:ColorField value="RGBA(0.000, 1.000, 1.000, 1.000)" binding-path="TextOutlineColor" name="OutlineSetting" style="flex-shrink: 1; max-width: 43px;" />
+            <uie:IntegerField value="20" name="SizeSetting" />
+            <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
+        </ui:VisualElement>
+        <ui:ScrollView name="VarList" style="background-color: rgba(255, 203, 0, 0.06); min-height: 22px; margin-top: 5px;" />
+        <ui:VisualElement name="VarListSettings" style="flex-direction: column; display: none;">
+            <ui:VisualElement style="flex-direction: row;">
+                <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
+                <ui:Toggle text=" Auto-Enforce? " binding-path="AutoEnforce" style="flex-direction: row;" />
+                <uie:ColorField value="RGBA(0.000, 1.000, 1.000, 1.000)" name="VarsBGColor" binding-path="VarsBGColor" style="max-width: 43px;" />
+                <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
+            </ui:VisualElement>
+            <ui:VisualElement style="flex-direction: row;">
+                <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
+                <ui:Toggle text="Hide Bowls?" binding-path="HideBowls" name="HideBowls" />
+                <ui:Toggle text="Hide bowls on unpack?" binding-path="TurnOnHideBowls" />
+                <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="Adders" style="background-color: rgba(25, 255, 0, 0.04); bottom: 0; top: 8px; left: 0; right: 0; min-height: 23px; margin-bottom: 8px; flex-direction: row; display: flex; margin-left: 0; padding-left: 2px;">
+                <ui:Label text="New Var:" display-tooltip-when-elided="true" style="-unity-text-align: middle-left;" />
+                <ui:TextField picking-mode="Ignore" tooltip="Variable Name Here!" name="NewVarName" style="min-width: 72px; margin-right: 2px;" />
+                <ui:Button text="float" display-tooltip-when-elided="true" name="float" />
+                <ui:Button text="int" display-tooltip-when-elided="true" name="int" />
+                <ui:Button text="bool" display-tooltip-when-elided="true" name="bool" />
+                <ui:Button text="string" display-tooltip-when-elided="true" name="string" />
+                <ui:Button text="obj" display-tooltip-when-elided="true" name="obj" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:Button display-tooltip-when-elided="true" name="ConfigBT" style="position: absolute; right: 3px; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; top: 3px;">
+            <ui:VisualElement style="background-image: url(&apos;project://database/Assets/Noodled-Events/Editor/UI%20Assets/cog.png?fileID=2800000&amp;guid=8cbd3d352e7b23d4388bd19f3e201d71&amp;type=3#cog&apos;); width: 15px; height: 15px; scale: 0.7 0.7;" />
+        </ui:Button>
+    </ui:VisualElement>
+    <ui:VisualElement name="ErrorPage" style="position: relative; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(75, 36, 36, 0.48); display: none;">
+        <ui:Label text="Error: No Nodes Detected!&#10;Load Nodes by Opening the NoodledEvents Editor at least once, And waiting for all nodes to Load. &#10;(Progress Indicator in the bottom left.)" display-tooltip-when-elided="true" style="position: relative; left: 0; top: 0; right: 0; bottom: 6px; background-color: rgb(0, 0, 0); -unity-font-style: normal; -unity-text-align: upper-center; white-space: normal; padding-left: 6px; padding-right: 6px; margin-left: 6px; margin-right: 6px; margin-top: 6px;" />
+        <ui:VisualElement style="flex-direction: row; margin-top: 6px;">
+            <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
+            <ui:Button text="Open Editor" display-tooltip-when-elided="true" name="OpenEditorBT" style="flex-shrink: 1;" />
+            <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:VisualElement name="ErrorPage2" style="position: relative; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(75, 36, 36, 0.48); display: none;">
+        <ui:Label text="Error: Within Prefab Instance!&#10;Prefab Instances can&apos;t Recompile, which is the whole point of a &quot;Var Man&quot;.&#10;Please Unpack the prefab to use this Var Man." display-tooltip-when-elided="true" style="position: relative; left: 0; top: 0; right: 0; bottom: 6px; background-color: rgb(0, 0, 0); -unity-font-style: normal; -unity-text-align: upper-center; white-space: normal; padding-left: 6px; padding-right: 6px; margin-left: 6px; margin-right: 6px; margin-top: 6px;" />
+        <ui:VisualElement style="flex-direction: row; margin-top: 6px;">
+            <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
+            <ui:Button text="Unpack for me!" display-tooltip-when-elided="true" name="UnpackBT" style="flex-shrink: 1;" />
+            <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

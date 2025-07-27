@@ -4,7 +4,9 @@ using NoodledEvents;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using UltEvents;
+using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using static NoodledEvents.CookBook.NodeDef;
@@ -13,13 +15,15 @@ using static NoodledEvents.CookBook.NodeDef;
 public class ObjectFieldCookBook : CookBook
 {
     private Dictionary<FieldInfo, (NodeDef, NodeDef)> MyDefs = new();
-    public override void CollectDefs(List<NodeDef> allDefs) // why aren't these threaded
+    public override void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback)
     {
         MyDefs.Clear();
-        foreach (var t in UltNoodleEditor.SearchableTypes)
+        int i = 0;
+        var p = Task.Run(() => Parallel.ForEach<Type>(UltNoodleEditor.SearchableTypes, (t) =>
         {
             try
             {
+                List<NodeDef> newDefs = new();
                 foreach (var field in t.GetFields(UltEventUtils.AnyAccessBindings))
                 {
                     var getter =
@@ -29,7 +33,7 @@ public class ObjectFieldCookBook : CookBook
                             bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }),
                             tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.getf_{field.Name} (Reflection)")
                         );
-                    allDefs.Add(getter);
+                    newDefs.Add(getter);
                     var setter =
                     (new NodeDef(this, $"{t.GetFriendlyName()}.setf_{field.Name}",
                         inputs: () => field.IsStatic ? new Pin[] { new Pin("Reflection Set"), new NodeDef.Pin(field.Name, field.FieldType) } : new Pin[] { new Pin("Reflection Set"), new Pin(t.GetFriendlyName(), t), new NodeDef.Pin(field.Name, field.FieldType) },
@@ -37,11 +41,16 @@ public class ObjectFieldCookBook : CookBook
                         bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }),
                         tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.setf_{field.Name} (Reflection)")
                     );
-                    allDefs.Add(setter);
-                    MyDefs.Add(field, (getter, setter));
+                    newDefs.Add(setter);
+                    UltNoodleEditor.MainThread.Enqueue(() => MyDefs.Add(field, (getter, setter)));
                 }
-            } catch(TypeLoadException) { };
-        }
+                progressCallback.Invoke(newDefs, (++i / (float)UltNoodleEditor.SearchableTypes.Length));
+            }
+            catch (TypeLoadException) { };
+            
+        }));
+        
+        p.ContinueWith(t => completedCallback.Invoke());
     }
     
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)

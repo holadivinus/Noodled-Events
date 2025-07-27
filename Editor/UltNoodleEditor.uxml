@@ -1,7 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
     <Style src="project://database/Assets/Noodled-Events/Editor/UltNoodleEditor.uss?fileID=7433441132597879392&amp;guid=df23540ea7211904ca9706a3ec19616a&amp;type=3#UltNoodleEditor" />
     <ui:VisualElement name="GroupPath" style="height: auto; flex-direction: row;">
-        <ui:Button text="Button" display-tooltip-when-elided="true" name="fordbt" style="visibility: visible; display: none; overflow: visible;" />
+        <ui:Button text="Button" display-tooltip-when-elided="true" name="fordbt" style="visibility: visible; display: flex; overflow: visible;" />
         <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
         <ui:Label text="Current Version: 1.0.0" display-tooltip-when-elided="true" name="CurVersionNum" style="-unity-text-align: middle-left;" />
         <ui:Button text="Button" display-tooltip-when-elided="true" name="NextVersionBT" />
@@ -30,4 +30,5 @@
         <ui:VisualElement name="SearchSettings" style="position: absolute; left: 101%; width: 173px; height: 125px; top: 30px; background-color: rgba(115, 115, 115, 0.45); display: none; visibility: hidden;" />
     </ui:VisualElement>
     <ui:Label text="Type Name Hyere" display-tooltip-when-elided="true" name="TypeHinter" picking-mode="Ignore" style="position: absolute; background-color: rgb(0, 0, 63); left: 0; top: 0; display: flex; visibility: hidden;" />
+    <ui:Label display-tooltip-when-elided="true" picking-mode="Ignore" focusable="false" name="LoadingText" style="position: absolute; bottom: 5px; font-size: 12px; opacity: 0.5; left: 5px;" />
 </ui:UXML>

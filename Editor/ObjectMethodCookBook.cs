@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using UltEvents;
+using UnityEditor;
 using UnityEngine;
 using static NoodledEvents.CookBook.NodeDef;
 
@@ -13,15 +15,17 @@ using static NoodledEvents.CookBook.NodeDef;
 public class ObjectMethodCookBook : CookBook
 {
     private Dictionary<MethodInfo, NodeDef> MyDefs = new();
-    public override void CollectDefs(List<NodeDef> allDefs)
+    public override void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback)
     {
         MyDefs.Clear();
-        foreach (var t in UltNoodleEditor.SearchableTypes)
-        {
 
-            
+        int i = 0;
+        var p = Task.Run(() => Parallel.ForEach<Type>(UltNoodleEditor.SearchableTypes, (t) =>
+        {
             try
             {
+                List<NodeDef> newNodes = new();
+
                 foreach (var meth in t.GetMethods(UltEventUtils.AnyAccessBindings))
                 {
                     if (meth.DeclaringType != t || meth.IsStatic) continue;
@@ -65,30 +69,38 @@ public class ObjectMethodCookBook : CookBook
                         bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
                         searchTextOverride: searchText,
                         tooltipOverride: descriptiveText);
-                    allDefs.Add(newDef);
-                    MyDefs.Add(meth, newDef);
+                    newNodes.Add(newDef);
+
+                    UltNoodleEditor.MainThread.Enqueue(() => MyDefs.Add(meth, newDef));
+                    
                 }
+                progressCallback.Invoke(newNodes, (++i / (float)UltNoodleEditor.SearchableTypes.Length));
             }
             catch (TypeLoadException) { } // bro
-        }
+        }));
 
-        allDefs.Add(new NodeDef(this, "flow.ult_swap",
+        List<NodeDef> lastDefs = new();
+        lastDefs.Add(new NodeDef(this, "flow.ult_swap",
             inputs: () => new Pin[] { new("") },
             outputs: () => new Pin[] { new("On Cache"), new("Post Cache"), new("Cached", typeof(UnityEngine.Object)) },
             bookTag: "UltSwap-Head",
             tooltipOverride: "Cache and Use a found UnityObject."));
 
-        allDefs.Add(new NodeDef(this, "flow.ult_swap_end",
+        lastDefs.Add(new NodeDef(this, "flow.ult_swap_end",
             inputs: () => new Pin[] { new("Finish Cache"), new("Cached", typeof(UnityEngine.Object)) },
             outputs: () => new Pin[] { },
             bookTag: "UltSwap-Foot",
             tooltipOverride: "Caches an UnityObject for an Ultswap"));
 
-        allDefs.Add(new NodeDef(this, "flow.ult_swap_reset",
+        lastDefs.Add(new NodeDef(this, "flow.ult_swap_reset",
             inputs: () => new Pin[] { new("Reset Cache"), new("Re-cache Immediately?", typeof(bool), @const:true) },
             outputs: () => new Pin[] { },
             bookTag: "UltSwap-Reset",
             tooltipOverride: "Resets an Ultswap, use in the Post Cache exec."));
+
+        progressCallback.Invoke(lastDefs, 0);
+
+        p.ContinueWith(t => completedCallback.Invoke());
     }
 
     private bool NeedsReflection(MethodBase meth) =>

@@ -3,6 +3,6 @@
         <ui:Label text="variable:" display-tooltip-when-elided="true" name="varname" style="-unity-text-align: middle-left;" />
         <ui:VisualElement name="varfieldroot" style="min-height: 0; min-width: 0; flex-grow: 1; align-items: flex-start; justify-content: center;" />
         <ui:Button text="ENFORCE!" display-tooltip-when-elided="true" name="EnforceBT" style="color: rgb(23, 255, 0);" />
-        <ui:Button text="X" display-tooltip-when-elided="true" name="DelBT" style="color: rgb(255, 0, 0); background-color: rgb(0, 0, 0); margin-right: 0; margin-left: 30px;" />
+        <ui:Button text="X" display-tooltip-when-elided="true" name="DelBT" style="color: rgb(255, 0, 0); background-color: rgb(0, 0, 0); margin-right: 0; margin-left: 0; display: none;" />
     </ui:VisualElement>
 </ui:UXML>

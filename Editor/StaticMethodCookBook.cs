@@ -4,7 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using UltEvents;
+using UnityEditor;
 using UnityEngine;
 using static NoodledEvents.CookBook.NodeDef;
 
@@ -12,63 +14,65 @@ using static NoodledEvents.CookBook.NodeDef;
 public class StaticMethodCookBook : CookBook
 {
     private Dictionary<MethodInfo, NodeDef> MyDefs = new();
-    public override void CollectDefs(List<NodeDef> allDefs)
+    public override void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback)
     {
         MyDefs.Clear();
-        foreach (var t in UltNoodleEditor.SearchableTypes)
+        int i = 0;
+        var p = Task.Run(() => Parallel.ForEach<Type>(UltNoodleEditor.SearchableTypes, (t) =>
         {
-            MethodInfo[] methods = null;
             try
             {
-                methods = t.GetMethods(UltEventUtils.AnyAccessBindings);
-            } catch(TypeLoadException) { continue; }
-            
-            foreach (var meth in methods)
-            {
-                if (meth.DeclaringType != t) continue;
-                if (!meth.IsStatic) continue;
-                
-                string searchText = $"static {t.GetFriendlyName()}.{meth.Name}";
-                string descriptiveText = $"static {meth.ReturnType.GetFriendlyName()} {t.Namespace}.{t.GetFriendlyName()}.{meth.Name}";
-
-                var parames = meth.GetParameters();
-                if (parames.Length == 0) descriptiveText += "()";
-                else
+                List<NodeDef> newDefs = new();
+                foreach (var meth in t.GetMethods(UltEventUtils.AnyAccessBindings))
                 {
-                    descriptiveText += "(";
-                    searchText += "(";
-                    foreach (var param in parames)
-                    {
-                        searchText += $"{param.ParameterType.GetFriendlyName()}, ";
-                        descriptiveText += $"{param.ParameterType.GetFriendlyName()} {param.Name}, ";
-                    }
-                    descriptiveText = descriptiveText.Substring(0, descriptiveText.Length - 2);
-                    searchText = searchText.Substring(0, searchText.Length - 2);
-                    descriptiveText += ")";
-                    searchText += ")";
-                }
+                    if (meth.DeclaringType != t) continue;
+                    if (!meth.IsStatic) continue;
 
-                
-                var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name, 
-                    inputs:() => 
+                    string searchText = $"static {t.GetFriendlyName()}.{meth.Name}";
+                    string descriptiveText = $"static {meth.ReturnType.GetFriendlyName()} {t.Namespace}.{t.GetFriendlyName()}.{meth.Name}";
+
+                    var parames = meth.GetParameters();
+                    if (parames.Length == 0) descriptiveText += "()";
+                    else
                     {
-                        var @params = meth.GetParameters();
-                        if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin("Exec") };
-                        return @params.Select(p => new Pin(p.Name, p.ParameterType)).Prepend(new NodeDef.Pin("Exec")).ToArray(); 
-                    },
-                    outputs:() => 
-                    {
-                        if (meth.GetRetType() != typeof(void))
-                            return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.GetFriendlyName(), meth.ReturnType) };
-                        else return new[] { new NodeDef.Pin("Done") };
-                    },
-                    bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
-                    searchTextOverride: searchText,
-                    tooltipOverride: descriptiveText);
-                allDefs.Add(newDef);
-                MyDefs.Add(meth, newDef);
+                        descriptiveText += "(";
+                        searchText += "(";
+                        foreach (var param in parames)
+                        {
+                            searchText += $"{param.ParameterType.GetFriendlyName()}, ";
+                            descriptiveText += $"{param.ParameterType.GetFriendlyName()} {param.Name}, ";
+                        }
+                        descriptiveText = descriptiveText.Substring(0, descriptiveText.Length - 2);
+                        searchText = searchText.Substring(0, searchText.Length - 2);
+                        descriptiveText += ")";
+                        searchText += ")";
+                    }
+
+
+                    var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name,
+                        inputs: () =>
+                        {
+                            var @params = meth.GetParameters();
+                            if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin("Exec") };
+                            return @params.Select(p => new Pin(p.Name, p.ParameterType)).Prepend(new NodeDef.Pin("Exec")).ToArray();
+                        },
+                        outputs: () =>
+                        {
+                            if (meth.GetRetType() != typeof(void))
+                                return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.GetFriendlyName(), meth.ReturnType) };
+                            else return new[] { new NodeDef.Pin("Done") };
+                        },
+                        bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
+                        searchTextOverride: searchText,
+                        tooltipOverride: descriptiveText);
+                    newDefs.Add(newDef);
+                    UltNoodleEditor.MainThread.Enqueue(() => MyDefs.Add(meth, newDef));
+                }
+                progressCallback.Invoke(newDefs, (++i / (float)UltNoodleEditor.SearchableTypes.Length));
             }
-        }
+            catch (TypeLoadException) { }
+        }));
+        p.ContinueWith(t => completedCallback.Invoke());
     }
     
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)

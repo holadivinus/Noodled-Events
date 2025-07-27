@@ -325,6 +325,11 @@ public class UltNoodleBowlUI : VisualElement
         } else
         {
             VarMans = SerializedData.GetComponentsInParent<VarMan>(true);
+            if (VarMans.Any(v => v.HideBowls))
+            {
+                Visual?.parent?.Remove(Visual);
+                Editor.BowlUIs.Remove(this);
+            }
             VarManVars = VarMans.SelectMany(vm => vm.Vars).ToArray();
         }
         foreach (var nodeUI in NodeUIs.ToArray()) // validate my nodeUIs

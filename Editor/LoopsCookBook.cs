@@ -10,8 +10,10 @@ using static NoodledEvents.CookBook.NodeDef;
 
 public class LoopsCookBook : CookBook
 {
-    public override void CollectDefs(List<NodeDef> allDefs)
+    public override void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback)
     {
+        List<NodeDef> allDefs = new();
+
         // flow.if
         allDefs.Add(new NodeDef(this, "loops.while",
             inputs: () => new[] { new Pin("Exec") },
@@ -30,6 +32,8 @@ public class LoopsCookBook : CookBook
             outputs: () => new Pin[0],
             bookTag: "break"));
 
+        progressCallback.Invoke(allDefs, 1);
+        completedCallback.Invoke();
     }
     private static MethodInfo SetActive = typeof(GameObject).GetMethod("SetActive");
     private static PropertyInfo GetSetLocPos = typeof(Transform).GetProperty("localPosition");

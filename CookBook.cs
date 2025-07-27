@@ -39,9 +39,9 @@ namespace NoodledEvents
         protected static MethodInfo SetActive = typeof(GameObject).GetMethod("SetActive");
         protected static PropertyInfo GetSetLocPos = typeof(Transform).GetProperty("localPosition");
         protected static MethodInfo Translate = typeof(Transform).GetMethod("Translate", new Type[] { typeof(float), typeof(float), typeof(float) });
-        public virtual void CollectDefs(List<NodeDef> allDefs) 
+        public virtual void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback) 
         {
-            
+            completedCallback.Invoke();
         }
 
         private static SerializedNode lastCompiledNode;

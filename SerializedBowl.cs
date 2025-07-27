@@ -109,7 +109,7 @@ namespace NoodledEvents
         [NonSerialized] public SerializedNode ErroredNode;
         /// <summary>
         /// Compiles this bowl into their target event.
-        /// </summary>
+        /// </summary> 
         public void Compile()
         {
             if (Event == null) Event = new UltEvent();
