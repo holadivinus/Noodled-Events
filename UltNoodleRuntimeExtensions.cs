@@ -104,14 +104,14 @@ public static class UltNoodleRuntimeExtensions
     {
         var gobj = new GameObject(name ?? (typeof(T).Name + " store"), typeof(T));
         gobj.SetActive(false);
-        gobj.transform.parent = dataStore.transform;
+        gobj.transform.SetParent(dataStore.transform, false);
         return gobj.GetComponent<T>();
     }
     public static Component StoreComp(this Transform dataStore, Type compType, string name = null)
     {
         var gobj = new GameObject(name ?? (compType.Name + " store"), compType);
         gobj.SetActive(false);
-        gobj.transform.parent = dataStore.transform;
+        gobj.transform.SetParent(dataStore.transform, false);
         return gobj.GetComponent(compType);
     }
     public static Transform StoreTransform(this Transform dataStore, string name = null)

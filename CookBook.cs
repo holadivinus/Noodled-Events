@@ -123,21 +123,23 @@ namespace NoodledEvents
                 { typeof(bool), (typeof(UnityEngine.UI.Mask), typeof(UnityEngine.UI.Mask).GetProperty("enabled")) },
                 { typeof(Vector3), (typeof(PositionConstraint), typeof(PositionConstraint).GetProperty(nameof(PositionConstraint.translationOffset))) },
                 { typeof(string), (typeof(TextMeshPro), typeof(TMP_Text).GetProperty("text", UltEventUtils.AnyAccessBindings)) },
-                { typeof(int), (typeof(LineRenderer), typeof(LineRenderer).GetProperty("numCapVertices", UltEventUtils.AnyAccessBindings)) }
+                { typeof(int), (typeof(LineRenderer), typeof(LineRenderer).GetProperty("numCapVertices", UltEventUtils.AnyAccessBindings)) },
+                { typeof(Vector2), (typeof(RectTransform), typeof(RectTransform).GetProperty("sizeDelta", UltEventUtils.AnyAccessBindings)) }
             };
-        /* Todo types for CompStoragers
-        {typeof(uint), "uint"},
-        {typeof(long), "long"},
-        { typeof(ulong), "ulong"},
-        { typeof(short), "short"},
-        { typeof(ushort), "ushort"},
-        { typeof(byte), "byte"},
-        { typeof(sbyte), "sbyte"},
-        { typeof(double), "double"},
-        { typeof(decimal), "decimal"},
-        { typeof(char), "char"},
-        // these remains are pretty uncommon, i'll implement them later
-        */
+            /* Todo types for CompStoragers
+            {typeof(Vector3), "Vector3"},
+            {typeof(uint), "uint"},
+            {typeof(long), "long"},
+            { typeof(ulong), "ulong"},
+            { typeof(short), "short"},
+            { typeof(ushort), "ushort"},
+            { typeof(byte), "byte"},
+            { typeof(sbyte), "sbyte"},
+            { typeof(double), "double"},
+            { typeof(decimal), "decimal"},
+            { typeof(char), "char"},
+            // these remains are pretty uncommon, i'll implement them later
+            */
 
             public int ArgIsSource; // if this is from an arg (-1 means no >= 0 gives arg idx)
             public UltEventBase SourceEvent;
