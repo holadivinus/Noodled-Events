@@ -120,7 +120,8 @@ public class UltNoodleEditor : EditorWindow
         TextAsset packageData = AssetDatabase.LoadAssetAtPath<TextAsset>(InPackage() ? "Packages/com.holadivinus.noodledevents/package.json" : "Assets/Noodled-Events/package.json");
         string version = packageData.text.Split("\"version\": \"")[1].Split('"')[0];
         root.Q<Label>("CurVersionNum").text = "Current Version: " + version;
-
+    if (!InPackage())
+    goto SkipUpdates;
         Button updateBT = root.Q<Button>("NextVersionBT");
         updateBT.text = "Checking for Updates...";
         GetRequest("https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json", (resp) =>
@@ -154,7 +155,7 @@ public class UltNoodleEditor : EditorWindow
                 updateBT.text = "Up to Date.";
             }
         });
-
+    SkipUpdates:
         NodesFrame.RegisterCallback<WheelEvent>(OnScroll);
         NodesFrame.RegisterCallback<MouseEnterEvent>(a => shouldShake = true);
         NodesFrame.RegisterCallback<MouseLeaveEvent>(b => shouldShake = false);

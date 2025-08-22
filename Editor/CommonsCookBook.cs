@@ -435,29 +435,25 @@ public class CommonsCookBook : CookBook
                     makeA.PersistentArguments[0].Vector3 = new Vector3(0, 1, 0);
                     if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, makeA, 1).Connect(dataRoot);
                     else makeA.PersistentArguments[1].Float = node.DataInputs[0].DefaultFloatValue;
+                    var makeAidx = evt.PersistentCallsList.Count;
                     evt.PersistentCallsList.Add(makeA);
 
                     var makeB = new PersistentCall(v3Mult, null);
                     makeB.PersistentArguments[0].Vector3 = new Vector3(0, 1, 0);
                     if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, makeB, 1).Connect(dataRoot);
                     else makeB.PersistentArguments[1].Float = node.DataInputs[1].DefaultFloatValue;
+                    var makeBidx = evt.PersistentCallsList.Count;
                     evt.PersistentCallsList.Add(makeB);
 
                     MethodInfo v3Add = typeof(Vector3).GetMethod("op_Addition", UltEventUtils.AnyAccessBindings, null, new Type[] { typeof(Vector3), typeof(Vector3) }, null);
                     var subAB = new PersistentCall(v3Add, null);
-                    subAB.PersistentArguments[0].FSetType(PersistentArgumentType.ReturnValue);
-                    subAB.PersistentArguments[0].FSetString(typeof(Vector3).AssemblyQualifiedName);
-                    subAB.PersistentArguments[0].FSetInt(evt.PersistentCallsList.Count - 2);
-                    subAB.PersistentArguments[1].FSetString(typeof(Vector3).AssemblyQualifiedName);
-                    subAB.PersistentArguments[1].FSetType(PersistentArgumentType.ReturnValue);
-                    subAB.PersistentArguments[1].FSetInt(evt.PersistentCallsList.Count - 1);
+                    subAB.PersistentArguments[0].ToRetVal(makeAidx, typeof(Vector3));
+                    subAB.PersistentArguments[1].ToRetVal(makeBidx, typeof(Vector3));
                     evt.PersistentCallsList.Add(subAB);
 
                     // dot extract float
                     var dotter = new PersistentCall(typeof(Vector3).GetMethod("Dot"), null);
-                    dotter.PersistentArguments[0].FSetType(PersistentArgumentType.ReturnValue);
-                    dotter.PersistentArguments[0].FSetInt(evt.PersistentCallsList.Count - 1);
-                    dotter.PersistentArguments[0].FSetString(typeof(Vector3).AssemblyQualifiedName);
+                    dotter.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count -1, typeof(Vector3));
                     dotter.PersistentArguments[1].FSetType(PersistentArgumentType.Vector3);
                     dotter.PersistentArguments[1].Vector3 = Vector3.up;
                     evt.PersistentCallsList.Add(dotter);
@@ -541,18 +537,20 @@ public class CommonsCookBook : CookBook
                     makeA.PersistentArguments[0].Vector3 = new Vector3(0, 1, 0);
                     if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, makeA, 1).Connect(dataRoot);
                     else makeA.PersistentArguments[1].Float = node.DataInputs[0].DefaultFloatValue;
+                    var makeAidx = evt.PersistentCallsList.Count;
                     evt.PersistentCallsList.Add(makeA);
 
                     var makeB = new PersistentCall(v3Mult, null);
                     makeB.PersistentArguments[0].Vector3 = new Vector3(0, 1, 0);
                     if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, makeB, 1).Connect(dataRoot);
                     else makeB.PersistentArguments[1].Float = node.DataInputs[1].DefaultFloatValue;
+                    var makeBidx = evt.PersistentCallsList.Count;
                     evt.PersistentCallsList.Add(makeB);
 
                     MethodInfo v3Sub = typeof(Vector3).GetMethod("op_Subtraction", UltEventUtils.AnyAccessBindings, null, new Type[] { typeof(Vector3), typeof(Vector3) }, null);
                     var subAB = new PersistentCall(v3Sub, null);
-                    subAB.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count-2, typeof(Vector3));
-                    subAB.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(Vector3));
+                    subAB.PersistentArguments[0].ToRetVal(makeAidx, typeof(Vector3));
+                    subAB.PersistentArguments[1].ToRetVal(makeBidx, typeof(Vector3));
                     evt.PersistentCallsList.Add(subAB);
 
                     // dot extract float

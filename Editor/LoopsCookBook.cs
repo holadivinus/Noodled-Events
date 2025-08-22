@@ -96,7 +96,7 @@ public class LoopsCookBook : CookBook
                     //  - translate up by input 1
                     var startCall = new PersistentCall(Translate, iTransf);
                     if (node.DataInputs[0].Source != null)
-                        new PendingConnection(node.DataInputs[0].Source, evt, startCall, 1);
+                        new PendingConnection(node.DataInputs[0].Source, evt, startCall, 1).Connect(dataRoot);
                     else startCall.PersistentArguments[1].Float = node.DataInputs[0].DefaultFloatValue;
                     evt.PersistentCallsList.Add(startCall);
                     //  - start loop
@@ -125,7 +125,7 @@ public class LoopsCookBook : CookBook
                         greater.FSetArguments(new PersistentArgument(typeof(float)), new PersistentArgument(typeof(float)));
                         greater.PersistentArguments[0].ToRetVal(loopEvt.Event.PersistentCallsList.Count - 1, typeof(float));
                         if (node.DataInputs[1].Source != null)
-                            new PendingConnection(node.DataInputs[1].Source, loopEvt.Event, greater, 1);
+                            new PendingConnection(node.DataInputs[1].Source, loopEvt.Event, greater, 1).Connect(dataRoot);
                         else greater.PersistentArguments[1].Float = node.DataInputs[1].DefaultFloatValue;
                         loopEvt.Event.PersistentCallsList.Add(greater);
 
