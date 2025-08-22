@@ -20,6 +20,7 @@ public static class UltNoodleRuntimeExtensions
     private static FieldInfo s_PersistentArgumentTypeGetSet = typeof(PersistentArgument).GetField("_Type", UltEventUtils.AnyAccessBindings);
     private static FieldInfo s_PersistentArgumentStringGetSet = typeof(PersistentArgument).GetField("_String", UltEventUtils.AnyAccessBindings);
     private static FieldInfo s_PersistentArgumentIntGetSet = typeof(PersistentArgument).GetField("_Int", UltEventUtils.AnyAccessBindings);
+    private static FieldInfo s_PersistentArgumentObjectGetSet = typeof(PersistentArgument).GetField("_Object", UltEventUtils.AnyAccessBindings);
     public static UnityEngine.Object FGetTarget(this PersistentCall call)
         => (UnityEngine.Object)s_targetGetSet.GetValue(call);
     public static void FSetTarget(this PersistentCall call, UnityEngine.Object target)
@@ -60,6 +61,9 @@ public static class UltNoodleRuntimeExtensions
     public static PersistentArgument FSetString(this PersistentArgument arg, string s)
     { s_PersistentArgumentStringGetSet.SetValue(arg, s); return arg; }
     public static string FGetString(this PersistentArgument arg) => (string)s_PersistentArgumentStringGetSet.GetValue(arg);
+    public static PersistentArgument FSetObject(this PersistentArgument arg, object obj)
+    { s_PersistentArgumentObjectGetSet.SetValue(arg, obj); return arg; }
+    public static object FGetObject(this PersistentArgument arg) => s_PersistentArgumentObjectGetSet.GetValue(arg);
     public static PersistentArgument FSetInt(this PersistentArgument arg, int i)
     {
         s_PersistentArgumentIntGetSet.SetValue(arg, i);
@@ -97,6 +101,13 @@ public static class UltNoodleRuntimeExtensions
     {
         arg.FSetType(PersistentArgumentType.Parameter);
         arg.FSetInt(argIdx);
+        arg.FSetString(t.AssemblyQualifiedName);
+        return arg;
+    }
+    public static PersistentArgument ToObjVal(this PersistentArgument arg, object argObj, Type t)
+    {
+        arg.FSetType(PersistentArgumentType.Object);
+        arg.FSetObject(argObj);
         arg.FSetString(t.AssemblyQualifiedName);
         return arg;
     }
@@ -353,13 +364,14 @@ public static class UltNoodleRuntimeExtensions
 
         return list.AddRunMethod(GetField, declarer, new PersistentArgument(typeof(string)).FSetString(fieldName), typeBindingFlag);
     }
-    public static void AddArraySet(this List<PersistentCall> list, int array, int obj, int idx)
+    public static int AddArraySet(this List<PersistentCall> list, int array, int obj, int idx)
     {
         var editorSetCall = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
         editorSetCall.PersistentArguments[0].ToRetVal(array, typeof(Array));
         editorSetCall.PersistentArguments[1].Int = idx;
         editorSetCall.PersistentArguments[2].ToRetVal(obj, typeof(object));
         list.Add(editorSetCall);
+        return list.Count - 1;
 
         /*var ingameSetCall = new PersistentCall();
         ingameSetCall.CopyFrom(editorSetCall);
