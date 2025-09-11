@@ -18,6 +18,8 @@ namespace NoodledEvents
     /// </summary>
     public class CookBook : ScriptableObject
     {
+        public virtual string Name { get; } = "Generic";
+        
         private static Assembly _blAssmb;
         private static Assembly _xrAssmb;
         public static Assembly BLAssembly => _blAssmb ??= AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(ass => ass.FullName.StartsWith("Assembly-CSharp"));
@@ -229,13 +231,16 @@ namespace NoodledEvents
                 {
                     var o = new UnityEngine.UIElements.Button(() =>
                     {
-                        if (UltNoodleEditor.NewNodeBowl == null) return;
-                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, book).MatchDef(def);
+                        if (UltNoodleEditor.Editor == null) return;
+                        UltNoodleBowl bowl = UltNoodleEditor.Editor.CurrentBowl;
+                        if (bowl == null) return;
+                        var nod = bowl.AddNode(def.Name, book).MatchDef(def);
 
                         nod.BookTag = def.BookTag != string.Empty ? def.BookTag : def.Name;
 
-                        nod.Position = UltNoodleEditor.NewNodePos;
-                        UltNoodleEditor.NewNodeBowl.Validate();
+                        // TODO: position node at mouse pos
+                        //nod.Position = UltNoodleEditor.NewNodePos;
+                        bowl.Validate();
                     });
                     o.text = searchTextOverride == string.Empty ? def.Name : searchTextOverride;
                     o.tooltip = tooltipOverride == string.Empty ? o.text : tooltipOverride;

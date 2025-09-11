@@ -69,7 +69,7 @@ namespace NoodledEvents
         {
             Bowl = bowl;
             NoadType = SerializedNode.NodeType.BowlInOut;
-            Position = new Vector2(-210, 0);
+            Position = Vector2.zero;
 
             FieldInfo evtField = bowl.BowlEvtHolderType.Type.GetField(bowl.EventFieldPath, UltEventUtils.AnyAccessBindings);
             
@@ -84,6 +84,7 @@ namespace NoodledEvents
         }
         [NonSerialized] public SerializedBowl Bowl;
         [SerializeField] public string Name;
+        [SerializeField] public string ID = Guid.NewGuid().ToString();
 
         public void Update() // idk lol
         {
@@ -111,8 +112,6 @@ namespace NoodledEvents
             {
                 if (_position != value)
                 {
-                    if (NoadType != NodeType.BowlInOut)
-                        value = new Vector2(Mathf.Clamp(value.x, 0, Bowl.Size.x-10), Mathf.Clamp(value.y, 0, Bowl.Size.y-30));
                     PositionChanged.Invoke(_position = value);
                 }
             }
@@ -272,8 +271,6 @@ namespace NoodledEvents
         [NonSerialized] public SerializedNode Node;
         [SerializeField] public SerializedType Type;
         [NonSerialized] public NoodleDataOutput Source;
-        [NonSerialized] public VisualElement UI;
-        [NonSerialized] public bool HasMouse;
         [SerializeField] public string ID = Guid.NewGuid().ToString();
         [SerializeField] public bool UIConst;
 
@@ -378,8 +375,6 @@ namespace NoodledEvents
         [NonSerialized] public List<NoodleDataInput> Targets = new();
         [SerializeField] public string[] TargetIds;
         [SerializeField] public SerializedType Type;
-        [NonSerialized] public bool HasMouse;
-        [NonSerialized] public VisualElement UI;
         [SerializeField] public string ID = Guid.NewGuid().ToString();
         public void Connect(NoodleDataInput input) => input.Connect(this); //lol
 

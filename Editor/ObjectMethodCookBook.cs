@@ -14,6 +14,8 @@ using static NoodledEvents.CookBook.NodeDef;
 
 public class ObjectMethodCookBook : CookBook
 {
+    public override string Name { get; } = "Object Methods";
+
     private Dictionary<MethodInfo, NodeDef> MyDefs = new();
     public override void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback)
     {

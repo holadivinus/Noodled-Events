@@ -13,6 +13,8 @@ using static NoodledEvents.CookBook.NodeDef;
 
 public class StaticMethodCookBook : CookBook
 {
+    public override string Name { get; } = "Static Methods";
+    
     private Dictionary<MethodInfo, NodeDef> MyDefs = new();
     public override void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback)
     {
