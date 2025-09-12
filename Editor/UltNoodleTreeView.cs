@@ -45,7 +45,7 @@ public class UltNoodleTreeView : GraphView
         nodeCreationRequest = (ctx) =>
         {
             Vector2 localPos = baseWindow.rootVisualElement.ChangeCoordinatesTo(
-                baseWindow.rootVisualElement.parent, 
+                baseWindow.rootVisualElement.parent,
                 ctx.screenMousePosition - baseWindow.position.position
             );
             _newNodeSpawnPos = contentViewContainer.WorldToLocal(localPos);
@@ -63,7 +63,7 @@ public class UltNoodleTreeView : GraphView
         _searchWindow = null;
     }
 
-    public void UpdateNodes()
+    public void RenderNewNodes()
     {
         foreach (var node in _bowl.SerializedData.NodeDatas)
         {
@@ -118,12 +118,14 @@ public class UltNoodleTreeView : GraphView
                     var parentPort = parentView.GetPortForDataOutput(dout);
                     var childPort = childView.GetPortForDataInput(target);
                     if (parentPort != null && childPort != null)
+                    {
                         AddElement(parentPort.ConnectTo(childPort));
+                        ToggleNodeConstantField(childPort, false);
+                    }
                 }
             }
         }
     }
-
 
     private void DisplayAllNodes()
     {
@@ -186,6 +188,7 @@ public class UltNoodleTreeView : GraphView
                             edge.input.userData is NoodleDataInput din)
                         {
                             din.Connect(null);
+                            ToggleNodeConstantField(edge.input, true);
                         }
                     }
                 }
@@ -211,6 +214,7 @@ public class UltNoodleTreeView : GraphView
                         edge.input.userData is NoodleDataInput din)
                     {
                         din.Connect(dout);
+                        ToggleNodeConstantField(edge.input, false);
                     }
                 }
             }
@@ -228,5 +232,15 @@ public class UltNoodleTreeView : GraphView
         }
 
         return graphViewChange;
+    }
+    
+    private void ToggleNodeConstantField(Port port, bool show)
+    {
+        if (port.direction == Direction.Output) return;
+
+        var container = port.GetFirstAncestorOfType<VisualElement>();
+        var field = container?.Q<VisualElement>("ConstantField");
+        if (field != null)
+            field.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
     }
 }

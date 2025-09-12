@@ -1,28 +1,20 @@
 #if UNITY_EDITOR
-using ImageMagick;
-using Newtonsoft.Json;
 using NoodledEvents;
 using SLZ.Marrow.Warehouse;
 using SLZ.Marrow.Zones;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using UltEvents;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.SceneManagement;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
-using static UnityEditor.EditorApplication;
-
 
 public class UltNoodleEditor : EditorWindow
 {
@@ -129,6 +121,8 @@ public class UltNoodleEditor : EditorWindow
         LoadingText = root.Q<Label>(nameof(LoadingText));
 
         treeView.InitializeSearch(this);
+        treeView.OnNodeSelected += (nodeView) => inspectorView.UpdateSelection(nodeView);
+
         bowlSelector.AttachToEditor(this);
 
         // search autorefresh tog

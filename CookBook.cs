@@ -238,7 +238,7 @@ namespace NoodledEvents
 
                         nod.Position = UltNoodleEditor.Editor.TreeView.NewNodeSpawnPos;
                         bowl.Validate();
-                        UltNoodleEditor.Editor.TreeView.UpdateNodes();
+                        UltNoodleEditor.Editor.TreeView.RenderNewNodes();
 
                         UltNoodleEditor.Editor.TreeView.ForceCloseSearch();
                     });
