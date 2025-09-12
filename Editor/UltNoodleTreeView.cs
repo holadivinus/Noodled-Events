@@ -12,15 +12,13 @@ public class UltNoodleTreeView : GraphView
     public Action<UltNoodleNodeView> OnNodeSelected;
     public new class UxmlFactory : UxmlFactory<UltNoodleTreeView, GraphView.UxmlTraits> { }
 
-    // this is a bit awkward due to the focus function call chain
-    public bool IsSearchOpen => _openingSearch || _searchWindow != null;
-
     public UltNoodleBowl Bowl => _bowl;
-    public Vector2 NewNodeSpawnPos => _newNodeSpawnPos;
+    public Port PendingEdgeOriginPort { get => _pendingEdgeOriginPort; internal set => _pendingEdgeOriginPort = value; }
+    public Vector2 NewNodeSpawnPos { get => _newNodeSpawnPos; internal set => _newNodeSpawnPos = value; }
 
     private UltNoodleBowl _bowl;
-    private UltNoodleSearchWindow _searchWindow;
-    private bool _openingSearch;
+    
+    private Port _pendingEdgeOriginPort;
     private Vector2 _newNodeSpawnPos;
 
     // TODO: copy/pasting and duplication doesn't work for some reason
@@ -50,17 +48,8 @@ public class UltNoodleTreeView : GraphView
             );
             _newNodeSpawnPos = contentViewContainer.WorldToLocal(localPos);
 
-            _openingSearch = true;
-            _searchWindow = UltNoodleSearchWindow.Open(this, ctx.screenMousePosition);
-            _openingSearch = false;
+            UltNoodleSearchWindow.Open(this, ctx.screenMousePosition);
         };
-    }
-
-    public void ForceCloseSearch()
-    {
-        if (_searchWindow == null) return;
-        _searchWindow.Close();
-        _searchWindow = null;
     }
 
     public void RenderNewNodes()
@@ -72,6 +61,25 @@ public class UltNoodleTreeView : GraphView
             var nodeView = new UltNoodleNodeView(node);
             nodeView.OnNodeSelected = OnNodeSelected;
             AddElement(nodeView);
+
+            if (PendingEdgeOriginPort != null)
+            {
+                List<Port> targetPorts = InternalGetCompatiblePorts(PendingEdgeOriginPort, nodeView.GetAllPorts());
+                if (targetPorts.Count == 0)
+                {
+                    Debug.LogWarning("No compatible ports found when creating new node, not connecting");
+                    continue;
+                }
+                if (targetPorts.Count > 1)
+                {
+                    // TODO: better handling of this case, maybe a popup to select which port to connect to?
+                    Debug.LogWarning("Multiple compatible ports found when creating new node, connecting to first one");
+                }
+
+                Port targetPort = targetPorts.First();
+                AddElement(PendingEdgeOriginPort.ConnectTo(targetPort));
+                HandleEdgeCreation(PendingEdgeOriginPort.connections.First());
+            }
         }
     }
 
@@ -139,7 +147,12 @@ public class UltNoodleTreeView : GraphView
 
     public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
     {
-        return ports.ToList().Where(endPort =>
+        return InternalGetCompatiblePorts(startPort, ports);
+    }
+
+    private List<Port> InternalGetCompatiblePorts(Port startPort, IEnumerable<Port> ports)
+    {
+        return ports.Where(endPort =>
         {
             if (endPort.direction == startPort.direction) return false;
             if (endPort.node == startPort.node) return false;
@@ -187,24 +200,7 @@ public class UltNoodleTreeView : GraphView
         {
             foreach (var edge in graphViewChange.edgesToCreate)
             {
-                var parentView = edge.output.node as UltNoodleNodeView;
-                var childView = edge.input.node as UltNoodleNodeView;
-
-                if (parentView != null && childView != null)
-                {
-                    if (edge.output.userData is NoodleFlowOutput fo &&
-                        edge.input.userData is NoodleFlowInput fi)
-                    {
-                        fi.Connect(fo);
-                    }
-
-                    if (edge.output.userData is NoodleDataOutput dout &&
-                        edge.input.userData is NoodleDataInput din)
-                    {
-                        din.Connect(dout);
-                        ToggleNodeConstantField(edge.input, false);
-                    }
-                }
+                HandleEdgeCreation(edge);
             }
         }
 
@@ -220,6 +216,28 @@ public class UltNoodleTreeView : GraphView
         }
 
         return graphViewChange;
+    }
+
+    private void HandleEdgeCreation(Edge edge)
+    {
+        var parentView = edge.output.node as UltNoodleNodeView;
+        var childView = edge.input.node as UltNoodleNodeView;
+
+        if (parentView != null && childView != null)
+        {
+            if (edge.output.userData is NoodleFlowOutput fo &&
+                edge.input.userData is NoodleFlowInput fi)
+            {
+                fi.Connect(fo);
+            }
+
+            if (edge.output.userData is NoodleDataOutput dout &&
+                edge.input.userData is NoodleDataInput din)
+            {
+                din.Connect(dout);
+                ToggleNodeConstantField(edge.input, false);
+            }
+        }
     }
 
     private void HandleEdgeRemoval(Edge edge)

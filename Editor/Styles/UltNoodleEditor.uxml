@@ -6,9 +6,9 @@
         <ui:Label text="Current Version: 1.0.0" display-tooltip-when-elided="true" name="CurVersionNum" style="-unity-text-align: middle-left;" />
         <ui:Button text="Up to Date." display-tooltip-when-elided="true" name="NextVersionBT" />
     </ui:VisualElement>
-    <ui:TwoPaneSplitView fixed-pane-initial-dimension="260">
+    <ui:TwoPaneSplitView fixed-pane-initial-dimension="300">
         <ui:VisualElement name="left-panel" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); width: 300px;">
-            <ui:TwoPaneSplitView orientation="Vertical" fixed-pane-index="1" fixed-pane-initial-dimension="100">
+            <ui:TwoPaneSplitView orientation="Vertical" fixed-pane-index="1" fixed-pane-initial-dimension="200">
                 <ui:VisualElement name="top-panel" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
                     <ui:Label tabindex="-1" text="Inspector" display-tooltip-when-elided="true" />
                     <UltNoodleInspectorView />
@@ -20,10 +20,8 @@
             </ui:TwoPaneSplitView>
         </ui:VisualElement>
         <ui:VisualElement name="right-panel" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
-            <UltNoodleTreeView focusable="true" style="flex-grow: 1;">
-                <ui:Label tabindex="-1" text="TreeView" display-tooltip-when-elided="true" />
-            </UltNoodleTreeView>
+            <UltNoodleTreeView focusable="true" style="flex-grow: 1;" />
         </ui:VisualElement>
     </ui:TwoPaneSplitView>
-    <ui:Label display-tooltip-when-elided="true" picking-mode="Ignore" focusable="false" name="LoadingText" style="position: absolute; bottom: 5px; font-size: 12px; opacity: 0.5; left: 5px;" />
+    <ui:Label display-tooltip-when-elided="true" picking-mode="Ignore" focusable="false" name="LoadingText" style="position: absolute; bottom: 5px; font-size: 12px; opacity: 0.5; right: 5px;" />
 </ui:UXML>

@@ -51,6 +51,11 @@ public class UltNoodleNodeView : Node
             var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
             port.portName = string.IsNullOrEmpty(fo.Name) ? "Flow Out" : fo.Name;
             port.userData = fo;
+
+            var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
+            var connector = new EdgeConnector<Edge>(listener);
+            port.AddManipulator(connector);
+            
             _flowOutputs[fo.ID] = port;
             outputContainer.Add(port);
         }
@@ -95,6 +100,11 @@ public class UltNoodleNodeView : Node
             );
             port.portName = string.IsNullOrEmpty(dout.Name) ? dout.Type?.Type.Name ?? "Out" : dout.Name;
             port.userData = dout;
+
+            var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
+            var connector = new EdgeConnector<Edge>(listener);
+            port.AddManipulator(connector);
+
             _dataOutputs[dout.ID] = port;
             outputContainer.Add(port);
         }

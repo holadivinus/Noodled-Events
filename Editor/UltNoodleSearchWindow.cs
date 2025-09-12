@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NoodledEvents;
 using UnityEditor;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -18,9 +19,10 @@ public class UltNoodleSearchWindow : EditorWindow
         typeof(StaticMethodCookBook)
     };
 
-    public bool IsFocused => focusedWindow == this;
+    public static bool IsSearchOpen => _activeWindow != null;
+    private static UltNoodleSearchWindow _activeWindow;
 
-    private UltNoodleTreeView _graphView;
+    public bool IsFocused => focusedWindow == this;
 
     private VisualElement _searchMenu;
     private TextField _searchBar;
@@ -36,12 +38,39 @@ public class UltNoodleSearchWindow : EditorWindow
     private List<CookBook.NodeDef> FilteredNodeDefs = new();
     private Dictionary<Type, bool> BookFilters = new();
 
+    public static void ForceClose()
+    {
+        _activeWindow?.Close();
+        _activeWindow = null;
+
+        if (UltNoodleEditor.Editor == null || UltNoodleEditor.Editor.TreeView == null) return;
+        UltNoodleEditor.Editor.TreeView.PendingEdgeOriginPort = null; // either we made a connection or cancelled, clear this
+    }
+
     public static UltNoodleSearchWindow Open(UltNoodleTreeView graphView, Vector2 screenPos)
     {
+        return InternalOpen(graphView, screenPos, null);
+    }
+
+    public static UltNoodleSearchWindow Open(UltNoodleTreeView graphView, Vector2 screenPos, Edge edge)
+    {
+        if (edge.output.userData is not NoodleDataOutput dataOut) return Open(graphView, screenPos); // fallback to generic search
+        return InternalOpen(graphView, screenPos, dataOut.Type);
+    }
+
+    private static UltNoodleSearchWindow InternalOpen(UltNoodleTreeView graphView, Vector2 screenPos, Type filterType)
+    {
+        _activeWindow?.Close();
+        _activeWindow = null;
+
         var window = CreateInstance<UltNoodleSearchWindow>();
-        window._graphView = graphView;
+        _activeWindow = window;
         window._pendingScreenPos = screenPos;
         window.position = new Rect(-10000, -10000, 10, 10); // hide until uxml loads and we can size properly
+        if (filterType != null)
+            window.SetSearchFilter(true, filterType);
+        else
+            window.FilteredNodeDefs = UltNoodleEditor.AllNodeDefs;
         window.ShowPopup();
         return window;
     }
@@ -120,18 +149,16 @@ public class UltNoodleSearchWindow : EditorWindow
             _settingsMenu.Add(cbToggle);
         }
 
-        FilteredNodeDefs = UltNoodleEditor.AllNodeDefs;
         _searchBar.Focus();
         SearchTypes(25);
     }
 
     public void OnLostFocus()
     {
-        Close();
+        ForceClose();
     }
 
-    // TODO: search filtering
-    public void SetSearchFilter(bool pinIn, Type t)
+    private void SetSearchFilter(bool pinIn, Type t)
     {
         // lets cache the searchables
 

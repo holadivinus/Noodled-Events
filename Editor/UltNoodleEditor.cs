@@ -268,9 +268,17 @@ public class UltNoodleEditor : EditorWindow
     {
         if (bowl == null || !Bowls.Contains(bowl)) return;
         _currentBowl = bowl;
+
+        void onReady()
+        {
+            treeView.PopulateView(bowl);
+            OnBowlsChanged?.Invoke();
+        }
+
         if (!_created || treeView == null)
-            EditorApplication.delayCall += () => treeView.PopulateView(bowl);
-        else treeView.PopulateView(bowl);
+            EditorApplication.delayCall += onReady;
+        else
+            onReady();
     }
 
     private void OnFocus()
@@ -317,10 +325,11 @@ public class UltNoodleEditor : EditorWindow
 
         var newBowl = new UltNoodleBowl(this, eventComponent, fieldType, eventField);
         Bowls.Add(newBowl);
-        OnBowlsChanged?.Invoke();
 
         if (select)
             SelectBowl(newBowl);
+        else // SelectBowl already invokes OnBowlsChanged
+            OnBowlsChanged?.Invoke();
 
         return newBowl;
     }
@@ -485,7 +494,7 @@ public class UltNoodleEditor : EditorWindow
     public void OnLostFocus()
     {
         // TODO: this doesn't handle focus going from search -> editor/outside noodle editor, not sure how important that would be
-        if (treeView.IsSearchOpen)
+        if (UltNoodleSearchWindow.IsSearchOpen)
             return; // we don't need to compile if we're just switching to search
 
         foreach (var bowl in Bowls.ToArray())

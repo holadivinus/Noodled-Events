@@ -240,7 +240,7 @@ namespace NoodledEvents
                         bowl.Validate();
                         UltNoodleEditor.Editor.TreeView.RenderNewNodes();
 
-                        UltNoodleEditor.Editor.TreeView.ForceCloseSearch();
+                        UltNoodleSearchWindow.ForceClose();
                     });
                     o.text = searchTextOverride == string.Empty ? def.Name : searchTextOverride;
                     o.tooltip = tooltipOverride == string.Empty ? o.text : tooltipOverride;
