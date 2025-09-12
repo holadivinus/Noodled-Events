@@ -98,6 +98,16 @@ public class UltNoodleTreeView : GraphView
 
     internal void PopulateView(UltNoodleBowl bowl)
     {
+        if (bowl == null) // clear the view
+        {
+            _bowl = null;
+
+            graphViewChanged -= OnGraphViewChanged;
+            DeleteElements(graphElements);
+            graphViewChanged += OnGraphViewChanged;
+            return;
+        }
+
         _bowl = bowl;
 
         graphViewChanged -= OnGraphViewChanged;

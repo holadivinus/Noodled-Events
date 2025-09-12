@@ -272,6 +272,7 @@ public class UltNoodleEditor : EditorWindow
         void onReady()
         {
             treeView.PopulateView(bowl);
+            inspectorView.UpdateSelection(null);
             OnBowlsChanged?.Invoke();
         }
 
@@ -286,6 +287,18 @@ public class UltNoodleEditor : EditorWindow
         // on focus we refresh the nodes
         // lets get all ult event sources in the scene;
         // then, graph them out
+
+        if ((Selection.activeGameObject == null || !Selection.activeGameObject.TryGetComponent(out SerializedBowl _)) && EditorPrefs.GetBool("SelectedBowlsOnly", true))
+        {
+            // nothing selected, and we're only showing selected bowls
+            _currentBowl = null;
+            Bowls.Clear();
+
+            OnBowlsChanged?.Invoke();
+            treeView?.PopulateView(null);
+            inspectorView?.UpdateSelection(null);
+            return;
+        }
 
         var curScene = SceneManager.GetActiveScene();
 
