@@ -18,8 +18,6 @@ namespace NoodledEvents
     /// </summary>
     public class CookBook : ScriptableObject
     {
-        public virtual string Name { get; } = "Generic";
-        
         private static Assembly _blAssmb;
         private static Assembly _xrAssmb;
         public static Assembly BLAssembly => _blAssmb ??= AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(ass => ass.FullName.StartsWith("Assembly-CSharp"));

@@ -394,9 +394,6 @@ namespace NoodledEvents
         [NonSerialized] public List<NoodleFlowOutput> Sources = new();
         [SerializeField] public string[] SourcesIds;
 
-        [NonSerialized] public bool HasMouse;
-        [NonSerialized] public VisualElement UI;
-
         [SerializeField] public string ID = Guid.NewGuid().ToString();
 
         public void Connect(NoodleFlowOutput output) => output.Connect(this);
@@ -409,8 +406,6 @@ namespace NoodledEvents
         public NoodleFlowOutput(SerializedNode node) => Node = node;
         [NonSerialized] public SerializedNode Node;
         [NonSerialized] public NoodleFlowInput Target;
-        [NonSerialized] public bool HasMouse;
-        [NonSerialized] public VisualElement UI;
         [SerializeField] public string ID = Guid.NewGuid().ToString();
 
         public void Connect(NoodleFlowInput input)

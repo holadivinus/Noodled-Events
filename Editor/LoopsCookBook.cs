@@ -10,8 +10,6 @@ using static NoodledEvents.CookBook.NodeDef;
 
 public class LoopsCookBook : CookBook
 {
-    public override string Name { get; } = "Loops";
-    
     public override void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback)
     {
         List<NodeDef> allDefs = new();
