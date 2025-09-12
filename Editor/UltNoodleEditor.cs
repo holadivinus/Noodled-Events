@@ -296,7 +296,7 @@ public class UltNoodleEditor : EditorWindow
                     continue;
                 if (!Bowls.Any(b => b.SerializedData == bowl) && (Selection.activeGameObject == bowl.gameObject || !EditorPrefs.GetBool("SelectedBowlsOnly", true)) && !PrefabUtility.IsPartOfAnyPrefab(bowl))
                 {
-                    NewBowl(bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath, _currentBowl == null);
+                    NewBowl(bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath, _currentBowl == null || !Bowls.Contains(_currentBowl));
                 }
             }
         };
