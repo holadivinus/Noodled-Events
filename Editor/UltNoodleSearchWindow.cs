@@ -10,15 +10,6 @@ using UnityEngine.UIElements;
 
 public class UltNoodleSearchWindow : EditorWindow
 {
-    private readonly Type[] _cookbookTypes = new Type[]
-    {
-        typeof(CommonsCookBook),
-        typeof(LoopsCookBook),
-        typeof(ObjectFieldCookBook),
-        typeof(ObjectMethodCookBook),
-        typeof(StaticMethodCookBook)
-    };
-
     public static bool IsSearchOpen => _activeWindow != null;
     private static UltNoodleSearchWindow _activeWindow;
 
@@ -135,7 +126,7 @@ public class UltNoodleSearchWindow : EditorWindow
         });
         _settingsMenu.Add(spcToggle);
 
-        foreach (var cbType in _cookbookTypes)
+        foreach (var cbType in UltNoodleEditor.AllBooks.Select(b => b.GetType()).Distinct())
         {
             var cbToggle = new Toggle(cbType.Name.Replace("CookBook", ""));
             cbToggle.value = EditorPrefs.GetBool($"Search{cbType.Name}", true);
@@ -155,6 +146,12 @@ public class UltNoodleSearchWindow : EditorWindow
 
     public void OnLostFocus()
     {
+        // attempt to force clear any hints that may be visible
+        GUIUtility.hotControl = 0;
+        GUIUtility.keyboardControl = 0;
+
+        focusedWindow?.rootVisualElement.Blur();
+
         ForceClose();
     }
 
@@ -258,7 +255,8 @@ public class UltNoodleSearchWindow : EditorWindow
                     EndSearch();
                     return;
                 }
-                if (!BookFilters[nd.CookBook.GetType()]) continue;
+
+                if (BookFilters.ContainsKey(nd.CookBook.GetType()) && !BookFilters[nd.CookBook.GetType()]) continue;
 
                 // Primary filter, either strict startswith or loose compare
                 if (nd.Name.StartsWith(targetSearch, StringComparison.CurrentCultureIgnoreCase))
