@@ -195,6 +195,14 @@ public class UltNoodleNodeView : Node
         return field;
     }
 
+    public IEnumerable<Port> GetAllPorts()
+    {
+        foreach (var port in _flowInputs.Values) yield return port;
+        foreach (var port in _flowOutputs.Values) yield return port;
+        foreach (var port in _dataInputs.Values) yield return port;
+        foreach (var port in _dataOutputs.Values) yield return port;
+    }
+
     public void RebuildConstantField(NoodleDataInput input)
     {
         if (!_dataInputs.TryGetValue(input.ID, out var port))
@@ -209,7 +217,7 @@ public class UltNoodleNodeView : Node
         {
             container.Remove(oldField);
         }
-        
+
         var newField = CreateFieldForType(input);
         if (newField != null)
         {

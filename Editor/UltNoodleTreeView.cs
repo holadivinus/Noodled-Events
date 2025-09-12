@@ -168,30 +168,18 @@ public class UltNoodleTreeView : GraphView
             {
                 if (element is UltNoodleNodeView nodeView)
                 {
+                    // manually removing edges due to how data input constants are implemented
+                    foreach (var port in nodeView.GetAllPorts())
+                    {
+                        foreach (var portEdge in port.connections.ToList())
+                            HandleEdgeRemoval(portEdge);
+                    }
                     _bowl.SerializedData.NodeDatas.Remove(nodeView.Node);
                 }
 
+
                 if (element is Edge edge)
-                {
-                    var parentView = edge.output.node as UltNoodleNodeView;
-                    var childView = edge.input.node as UltNoodleNodeView;
-
-                    if (parentView != null && childView != null)
-                    {
-                        if (edge.output.userData is NoodleFlowOutput fo &&
-                            edge.input.userData is NoodleFlowInput fi)
-                        {
-                            fo.Connect(null);
-                        }
-
-                        if (edge.output.userData is NoodleDataOutput dout &&
-                            edge.input.userData is NoodleDataInput din)
-                        {
-                            din.Connect(null);
-                            ToggleNodeConstantField(edge.input, true);
-                        }
-                    }
-                }
+                    HandleEdgeRemoval(edge);
             }
         }
 
@@ -233,7 +221,33 @@ public class UltNoodleTreeView : GraphView
 
         return graphViewChange;
     }
-    
+
+    private void HandleEdgeRemoval(Edge edge)
+    {
+        var parentView = edge.output.node as UltNoodleNodeView;
+        var childView = edge.input.node as UltNoodleNodeView;
+
+        if (parentView != null && childView != null)
+        {
+            if (edge.output.userData is NoodleFlowOutput fo &&
+                edge.input.userData is NoodleFlowInput fi)
+            {
+                fo.Connect(null);
+            }
+
+            if (edge.output.userData is NoodleDataOutput dout &&
+                edge.input.userData is NoodleDataInput din)
+            {
+                din.Connect(null);
+                ToggleNodeConstantField(edge.input, true);
+            }
+        }
+
+        edge.input?.Disconnect(edge);
+        edge.output?.Disconnect(edge);
+        edge.parent?.Remove(edge);
+    }
+
     private void ToggleNodeConstantField(Port port, bool show)
     {
         if (port.direction == Direction.Output) return;

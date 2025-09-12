@@ -29,7 +29,7 @@ public class UltNoodleBowlSelector : VisualElement
     private void UpdateBowls()
     {
         Clear();
-        IMGUIContainer container = new IMGUIContainer(() =>
+        IMGUIContainer container = new(() =>
         {
             if (_editor.Bowls.Count == 0)
             {

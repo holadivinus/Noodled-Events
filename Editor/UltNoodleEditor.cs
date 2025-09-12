@@ -268,7 +268,9 @@ public class UltNoodleEditor : EditorWindow
     {
         if (bowl == null || !Bowls.Contains(bowl)) return;
         _currentBowl = bowl;
-        treeView.PopulateView(bowl);
+        if (!_created || treeView == null)
+            EditorApplication.delayCall += () => treeView.PopulateView(bowl);
+        else treeView.PopulateView(bowl);
     }
 
     private void OnFocus()
@@ -305,7 +307,7 @@ public class UltNoodleEditor : EditorWindow
 
     public UltNoodleBowl NewBowl(Component eventComponent, SerializedType fieldType, string eventField, bool select = true)
     {
-        var existingBowl = Bowls.FirstOrDefault(b => b.SerializedData != null && b.Component == eventComponent && b._eventFieldPath == eventField);
+        var existingBowl = Bowls.FirstOrDefault(b => b.SerializedData != null && b.Component == eventComponent && b.EventFieldPath == eventField);
         if (existingBowl != null)
         {
             if (select)
@@ -315,7 +317,7 @@ public class UltNoodleEditor : EditorWindow
 
         var newBowl = new UltNoodleBowl(this, eventComponent, fieldType, eventField);
         Bowls.Add(newBowl);
-        OnBowlsChanged.Invoke();
+        OnBowlsChanged?.Invoke();
 
         if (select)
             SelectBowl(newBowl);
@@ -505,8 +507,6 @@ public class UltNoodleEditor : EditorWindow
     private void OnDestroy()
     {
         EditorApplication.update -= OnUpdate;
-        foreach (var bowl in Bowls)
-            bowl.Destroy();
     }
 }
 #endif
