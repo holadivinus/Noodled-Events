@@ -17,7 +17,7 @@ public class UltNoodleTreeView : GraphView
     public Vector2 NewNodeSpawnPos { get => _newNodeSpawnPos; internal set => _newNodeSpawnPos = value; }
 
     private UltNoodleBowl _bowl;
-    
+
     private Port _pendingEdgeOriginPort;
     private Vector2 _newNodeSpawnPos;
 
@@ -64,21 +64,34 @@ public class UltNoodleTreeView : GraphView
 
             if (PendingEdgeOriginPort != null)
             {
-                List<Port> targetPorts = InternalGetCompatiblePorts(PendingEdgeOriginPort, nodeView.GetAllPorts());
+                var originPort = PendingEdgeOriginPort; // cache it, it might get cleared while we're in this function
+                List<Port> targetPorts = InternalGetCompatiblePorts(originPort, nodeView.GetAllPorts());
                 if (targetPorts.Count == 0)
                 {
                     Debug.LogWarning("No compatible ports found when creating new node, not connecting");
                     continue;
                 }
+
                 if (targetPorts.Count > 1)
                 {
-                    // TODO: better handling of this case, maybe a popup to select which port to connect to?
-                    Debug.LogWarning("Multiple compatible ports found when creating new node, connecting to first one");
+                    GenericMenu menu = new();
+                    foreach (var port in targetPorts)
+                    {
+                        Port localPort = port;
+                        menu.AddItem(new GUIContent(localPort.portName), false, () =>
+                        {
+                            var edge = originPort.ConnectTo(localPort);
+                            AddElement(edge);
+                            HandleEdgeCreation(edge);
+                        });
+                    }
+                    menu.ShowAsContext();
+                    return; // wait for user to pick from menu
                 }
 
                 Port targetPort = targetPorts.First();
-                AddElement(PendingEdgeOriginPort.ConnectTo(targetPort));
-                HandleEdgeCreation(PendingEdgeOriginPort.connections.First());
+                AddElement(originPort.ConnectTo(targetPort));
+                HandleEdgeCreation(originPort.connections.First());
             }
         }
     }
