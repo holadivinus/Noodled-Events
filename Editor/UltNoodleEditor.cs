@@ -62,6 +62,8 @@ public class UltNoodleEditor : EditorWindow
             response.Invoke(stringGet);
         }
     }
+
+    public UltNoodleTreeView TreeView => treeView;
     
     private UltNoodleTreeView treeView;
     private UltNoodleInspectorView inspectorView;
@@ -141,7 +143,7 @@ public class UltNoodleEditor : EditorWindow
 
         root.Q("GroupPath").Insert(0, new Button(CollectNodes) { text = "Regen Nodes" });
 
-        if (AllNodeDefs.Count == 0 || AllBooks == null)
+        if ((AllNodeDefs.Count == 0 || AllBooks == null) && !Application.isPlaying)
         {
             CollectNodes();
         }
@@ -246,7 +248,7 @@ public class UltNoodleEditor : EditorWindow
     }
     private void CollectBooks()
     {
-        AllBooks = null; BookFilters.Clear();
+        AllBooks = null;
 
         var cookBooks = AssetDatabase.FindAssets("t:" + nameof(CookBook)).Select(guid => AssetDatabase.LoadAssetAtPath<CookBook>(AssetDatabase.GUIDToAssetPath(guid)));
         if (!cookBooks.Contains(CommonsCookBook)) cookBooks = cookBooks.Append(CommonsCookBook);
@@ -255,45 +257,8 @@ public class UltNoodleEditor : EditorWindow
         if (!cookBooks.Contains(ObjectFCookBook)) cookBooks = cookBooks.Append(ObjectFCookBook);
         if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
         AllBooks = cookBooks.ToArray();
-
-        // TODO: search stuff
-        /* SearchSettings.Clear();
-        // search autorefresh tog
-        var spcTog = new Toggle("Search Per Char") { value = EditorPrefs.GetBool("SearchPerChar", true) };
-        spcTog.RegisterValueChangedCallback(e =>
-        {
-            EditorPrefs.SetBool("SearchPerChar", e.newValue);
-        });
-        SearchSettings.Add(spcTog);
-
-        
-
-        foreach (CookBook book in AllBooks)
-        {
-            //also search toggle
-            var tog = new Toggle(book.name) { value = true };
-            tog.RegisterValueChangedCallback(e =>
-            {
-                BookFilters[book] = e.newValue;
-                SearchTypes(100);
-            });
-            BookFilters[book] = true;
-            SearchSettings.Add(tog);
-        } */
-
-        /*
-        // load speed config
-        var spdInt = new IntegerField(EditorPrefs.GetInt("NodeLoadSpeed", 5000));
-        spdInt.label = "LoadSpeed: ";
-        SearchSettings.Add(spdInt);
-        spdInt.RegisterValueChangedCallback(evt =>
-        {
-            int val = Math.Clamp(evt.newValue, 500, 999999);
-            EditorPrefs.SetInt("NodeLoadSpeed", val);
-            spdInt.SetValueWithoutNotify(val);
-        });*/
     }
-    static Dictionary<CookBook, bool> BookFilters = new Dictionary<CookBook, bool>();
+
     private bool _created = false;
 
     public List<UltNoodleBowl> Bowls = new();
@@ -329,6 +294,8 @@ public class UltNoodleEditor : EditorWindow
             PrefabStage prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
             foreach (var bowl in prefabStage?.prefabContentsRoot.GetComponentsInChildren<SerializedBowl>(true) ?? Resources.FindObjectsOfTypeAll<SerializedBowl>())
             {
+                if (bowl == null)
+                    continue;
                 if (prefabStage == null && bowl.gameObject.scene != curScene)
                     continue;
                 if (!Bowls.Any(b => b.SerializedData == bowl) && (Selection.activeGameObject == bowl.gameObject || !EditorPrefs.GetBool("SelectedBowlsOnly", true)) && !PrefabUtility.IsPartOfAnyPrefab(bowl))
@@ -513,6 +480,10 @@ public class UltNoodleEditor : EditorWindow
 
     public void OnLostFocus()
     {
+        // TODO: this doesn't handle focus going from search -> editor/outside noodle editor, not sure how important that would be
+        if (treeView.IsSearchOpen)
+            return; // we don't need to compile if we're just switching to search
+
         foreach (var bowl in Bowls.ToArray())
         {
             if (bowl.SerializedData != null)
@@ -520,7 +491,6 @@ public class UltNoodleEditor : EditorWindow
         }
         Debug.Log("Compiled!");
     }
-    
 
     private void OnUpdate()
     {
@@ -533,6 +503,8 @@ public class UltNoodleEditor : EditorWindow
     private void OnDestroy()
     {
         EditorApplication.update -= OnUpdate;
+        foreach (var bowl in Bowls)
+            bowl.Destroy();
     }
 }
 #endif

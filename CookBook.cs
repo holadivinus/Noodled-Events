@@ -236,9 +236,11 @@ namespace NoodledEvents
 
                         nod.BookTag = def.BookTag != string.Empty ? def.BookTag : def.Name;
 
-                        // TODO: position node at mouse pos
-                        //nod.Position = UltNoodleEditor.NewNodePos;
+                        nod.Position = UltNoodleEditor.Editor.TreeView.NewNodeSpawnPos;
                         bowl.Validate();
+                        UltNoodleEditor.Editor.TreeView.UpdateNodes();
+
+                        UltNoodleEditor.Editor.TreeView.ForceCloseSearch();
                     });
                     o.text = searchTextOverride == string.Empty ? def.Name : searchTextOverride;
                     o.tooltip = tooltipOverride == string.Empty ? o.text : tooltipOverride;

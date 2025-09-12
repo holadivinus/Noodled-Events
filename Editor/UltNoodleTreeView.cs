@@ -12,11 +12,20 @@ public class UltNoodleTreeView : GraphView
     public Action<UltNoodleNodeView> OnNodeSelected;
     public new class UxmlFactory : UxmlFactory<UltNoodleTreeView, GraphView.UxmlTraits> { }
 
+    // this is a bit awkward due to the focus function call chain
+    public bool IsSearchOpen => _openingSearch || _searchWindow != null;
+
     public UltNoodleBowl Bowl => _bowl;
-    public UltNoodleSearchProvider Search => _searchWindow;
+    public Vector2 NewNodeSpawnPos => _newNodeSpawnPos;
 
     private UltNoodleBowl _bowl;
-    private UltNoodleSearchProvider _searchWindow;
+    private UltNoodleSearchWindow _searchWindow;
+    private bool _openingSearch;
+    private Vector2 _newNodeSpawnPos;
+
+    // TODO: copy/pasting and duplication doesn't work for some reason
+    // TODO: zoom to fit all nodes on open
+    // TODO: is undo/redo possible?
 
     public UltNoodleTreeView()
     {
@@ -31,15 +40,27 @@ public class UltNoodleTreeView : GraphView
         styleSheets.Add(styleSheet);
     }
 
-    public void InitializeSearch(EditorWindow editorWindow)
+    public void InitializeSearch(EditorWindow baseWindow)
     {
-        _searchWindow = ScriptableObject.CreateInstance<UltNoodleSearchProvider>();
-        _searchWindow.Initialize(editorWindow, this);
-
         nodeCreationRequest = (ctx) =>
         {
-            SearchWindow.Open(new SearchWindowContext(ctx.screenMousePosition), _searchWindow);
+            Vector2 localPos = baseWindow.rootVisualElement.ChangeCoordinatesTo(
+                baseWindow.rootVisualElement.parent, 
+                ctx.screenMousePosition - baseWindow.position.position
+            );
+            _newNodeSpawnPos = contentViewContainer.WorldToLocal(localPos);
+
+            _openingSearch = true;
+            _searchWindow = UltNoodleSearchWindow.Open(this, ctx.screenMousePosition);
+            _openingSearch = false;
         };
+    }
+
+    public void ForceCloseSearch()
+    {
+        if (_searchWindow == null) return;
+        _searchWindow.Close();
+        _searchWindow = null;
     }
 
     public void UpdateNodes()
@@ -116,8 +137,25 @@ public class UltNoodleTreeView : GraphView
 
     public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
     {
-        // TODO: compatibility logic
-        return ports.ToList().Where(endPort => endPort.direction != startPort.direction && endPort.node != startPort.node).ToList();
+        return ports.ToList().Where(endPort =>
+        {
+            if (endPort.direction == startPort.direction) return false;
+            if (endPort.node == startPort.node) return false;
+
+            // flow ports
+            if (startPort.userData is NoodleFlowOutput fo && endPort.userData is NoodleFlowInput fi)
+                return true;
+            if (startPort.userData is NoodleFlowInput fi2 && endPort.userData is NoodleFlowOutput fo2)
+                return true;
+
+            // data ports
+            if (startPort.userData is NoodleDataOutput dout && endPort.userData is NoodleDataInput din)
+                return din.Type.Type.IsAssignableFrom(dout.Type.Type);
+            if (startPort.userData is NoodleDataInput din2 && endPort.userData is NoodleDataOutput dout2)
+                return din2.Type.Type.IsAssignableFrom(dout2.Type.Type);
+
+            return false;
+        }).ToList();
     }
 
     private GraphViewChange OnGraphViewChanged(GraphViewChange graphViewChange)
