@@ -14,10 +14,11 @@ public class UltNoodleBowl
     public NoodleDataInput[] VarManVars = new NoodleDataInput[0];
 
 
+    // TODO: cleanup variables
     public UltNoodleEditor Editor;
     public UnityEngine.Component Component;
     private SerializedType _fieldType;
-    private string _eventFieldPath;
+    public string _eventFieldPath;
 
     private SerializedBowl _sb;
     public SerializedBowl SerializedData

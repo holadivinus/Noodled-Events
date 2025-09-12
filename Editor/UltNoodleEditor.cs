@@ -311,6 +311,14 @@ public class UltNoodleEditor : EditorWindow
 
     public UltNoodleBowl NewBowl(Component eventComponent, SerializedType fieldType, string eventField, bool select = true)
     {
+        var existingBowl = Bowls.FirstOrDefault(b => b.SerializedData != null && b.Component == eventComponent && b._eventFieldPath == eventField);
+        if (existingBowl != null)
+        {
+            if (select)
+                SelectBowl(existingBowl);
+            return existingBowl;
+        }
+
         var newBowl = new UltNoodleBowl(this, eventComponent, fieldType, eventField);
         Bowls.Add(newBowl);
         OnBowlsChanged.Invoke();
