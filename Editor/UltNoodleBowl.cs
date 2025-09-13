@@ -57,6 +57,7 @@ public class UltNoodleBowl
             Book = book,
             Name = name
         };
+        Undo.RecordObject(SerializedData, "Add Node");
         SerializedData.NodeDatas.Add(nod);
         return nod;
     }

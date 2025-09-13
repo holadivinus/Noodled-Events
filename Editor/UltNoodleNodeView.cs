@@ -8,6 +8,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UltEvents;
 using System.Linq;
+using UnityEditor;
 
 public class UltNoodleNodeView : Node
 {
@@ -33,6 +34,15 @@ public class UltNoodleNodeView : Node
 
         CreateFlowPorts();
         CreateDataPorts();
+
+        RegisterCallback<MouseDownEvent>(OnMouseDown);
+    }
+    
+    private void OnMouseDown(MouseDownEvent evt)
+    {
+        // workaround for OnGraphViewChanged calling drags many times during a move
+        if (evt.button == 0)
+            Undo.RegisterCompleteObjectUndo(Node.Bowl, "Move Node");
     }
 
     private void CreateFlowPorts()
@@ -55,7 +65,7 @@ public class UltNoodleNodeView : Node
             var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
             var connector = new EdgeConnector<Edge>(listener);
             port.AddManipulator(connector);
-            
+
             _flowOutputs[fo.ID] = port;
             outputContainer.Add(port);
         }

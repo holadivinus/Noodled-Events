@@ -23,7 +23,6 @@ public class UltNoodleTreeView : GraphView
 
     // TODO: copy/pasting and duplication doesn't work for some reason
     // TODO: zoom to fit all nodes on open
-    // TODO: is undo/redo possible?
 
     public UltNoodleTreeView()
     {
@@ -36,6 +35,8 @@ public class UltNoodleTreeView : GraphView
 
         StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{UltNoodleEditor.EditorFolder}/Styles/UltNoodleEditor.uss");
         styleSheets.Add(styleSheet);
+
+        Undo.undoRedoPerformed += OnUndoRedo;
     }
 
     public void InitializeSearch(EditorWindow baseWindow)
@@ -50,6 +51,12 @@ public class UltNoodleTreeView : GraphView
 
             UltNoodleSearchWindow.Open(this, ctx.screenMousePosition);
         };
+    }
+
+    public void OnUndoRedo()
+    {
+        if (_bowl != null)
+            PopulateView(_bowl);
     }
 
     public void RenderNewNodes()
@@ -129,13 +136,13 @@ public class UltNoodleTreeView : GraphView
         {
             var parentView = FindNodeView(node);
 
-            foreach (var fo in node.FlowOutputs)
+            foreach (var fi in node.FlowInputs)
             {
-                if (fo.Target != null)
+                foreach (var fo in fi.Sources)
                 {
-                    var childView = FindNodeView(fo.Target.Node);
-                    var parentPort = parentView.GetPortForFlowOutput(fo);
-                    var childPort = childView.GetPortForFlowInput(fo.Target);
+                    var parentPort = parentView.GetPortForFlowInput(fi);
+                    var childView = FindNodeView(fo.Node);
+                    var childPort = childView.GetPortForFlowOutput(fo);
                     if (parentPort != null && childPort != null)
                         AddElement(parentPort.ConnectTo(childPort));
                 }
@@ -204,6 +211,8 @@ public class UltNoodleTreeView : GraphView
             {
                 if (element is UltNoodleNodeView nodeView)
                 {
+                    Undo.RecordObject(_bowl.SerializedData, "Delete Node");
+
                     // manually removing edges due to how data input constants are implemented
                     foreach (var port in nodeView.GetAllPorts())
                     {
@@ -211,11 +220,15 @@ public class UltNoodleTreeView : GraphView
                             HandleEdgeRemoval(portEdge);
                     }
                     _bowl.SerializedData.NodeDatas.Remove(nodeView.Node);
+                    EditorUtility.SetDirty(_bowl.SerializedData);
                 }
 
-
                 if (element is Edge edge)
+                {
+                    Undo.RecordObject(_bowl.SerializedData, "Remove Connection");
                     HandleEdgeRemoval(edge);
+                    EditorUtility.SetDirty(_bowl.SerializedData);
+                }
             }
         }
 
@@ -223,7 +236,9 @@ public class UltNoodleTreeView : GraphView
         {
             foreach (var edge in graphViewChange.edgesToCreate)
             {
+                Undo.RecordObject(_bowl.SerializedData, "Create Connection");
                 HandleEdgeCreation(edge);
+                EditorUtility.SetDirty(_bowl.SerializedData);
             }
         }
 
@@ -234,6 +249,7 @@ public class UltNoodleTreeView : GraphView
                 if (element is UltNoodleNodeView view)
                 {
                     view.Node.Position = view.GetPosition().position;
+                    EditorUtility.SetDirty(_bowl.SerializedData);
                 }
             }
         }
