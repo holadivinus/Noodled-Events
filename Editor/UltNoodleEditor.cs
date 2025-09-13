@@ -114,6 +114,7 @@ public class UltNoodleEditor : EditorWindow
     SkipUpdates:
 
         EditorApplication.update += OnUpdate;
+        Selection.selectionChanged += OnFocus;
 
         treeView = root.Q<UltNoodleTreeView>();
         inspectorView = root.Q<UltNoodleInspectorView>();
@@ -130,6 +131,7 @@ public class UltNoodleEditor : EditorWindow
         selectedOnlyTog.RegisterValueChangedCallback(e =>
         {
             EditorPrefs.SetBool("SelectedBowlsOnly", e.newValue);
+            Bowls.Clear(); // clear bowls so we can regen
             this.OnFocus(); // update displays
         });
         selectedOnlyTog.style.marginTop = 3;
