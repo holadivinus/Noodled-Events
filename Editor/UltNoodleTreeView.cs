@@ -5,6 +5,7 @@ using NoodledEvents;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.UIElements;
 
 public class UltNoodleTreeView : GraphView
@@ -21,8 +22,7 @@ public class UltNoodleTreeView : GraphView
     private Port _pendingEdgeOriginPort;
     private Vector2 _newNodeSpawnPos;
 
-    // TODO: zoom to fit all nodes on open
-    // TODO: comment node
+    // TODO: grouping
 
     public UltNoodleTreeView()
     {
@@ -120,6 +120,7 @@ public class UltNoodleTreeView : GraphView
 
         DisplayAllNodes();
         DisplayAllConnections();
+        DisplayAllNotes();
     }
 
     private UltNoodleNodeView FindNodeView(SerializedNode node)
@@ -172,6 +173,36 @@ public class UltNoodleTreeView : GraphView
         }
     }
 
+    private void DisplayAllNotes()
+    {
+        foreach (var note in _bowl.SerializedData.NoteDatas)
+        {
+            var noteView = new UltNoodleNoteView(note);
+            AddElement(noteView);
+        }
+    }
+
+    public override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+    {
+        if (_bowl == null) return;
+
+        Vector2 localMousePos = contentViewContainer.WorldToLocal(evt.mousePosition);
+
+        evt.menu.AppendAction("Add Note", (a) =>
+        {
+            Undo.RecordObject(_bowl.SerializedData, "Add Note");
+
+            var note = new UltNoodleNoteData("", localMousePos);
+            _bowl.SerializedData.NoteDatas.Add(note);
+            EditorUtility.SetDirty(_bowl.SerializedData);
+
+            var noteView = new UltNoodleNoteView(note);
+            AddElement(noteView);
+        });
+
+        base.BuildContextualMenu(evt);
+    }
+
     private void OnUndoRedo()
     {
         if (_bowl != null)
@@ -187,12 +218,6 @@ public class UltNoodleTreeView : GraphView
             bookTag = nv.Node.BookTag,
             position = nv.GetPosition().position
         }).ToList();
-
-        foreach (var node in nodes)
-        {
-            if (string.IsNullOrEmpty(node.bookTag))
-                Debug.LogWarning($"Node {node.cookBookName}:{node.bookTag} has empty booktag, copy/paste may not work correctly");
-        }
 
         var edges = elements.OfType<Edge>()
             .Select(e =>
