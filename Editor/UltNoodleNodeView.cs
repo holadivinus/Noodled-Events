@@ -30,14 +30,17 @@ public class UltNoodleNodeView : Node
         style.top = node.Position.y;
 
         if (node.NoadType == SerializedNode.NodeType.BowlInOut)
+        {
             this.capabilities &= ~Capabilities.Deletable; // cannot delete the primary node
+            this.capabilities &= ~Capabilities.Copiable;  // cannot copy the primary node
+        }
 
         CreateFlowPorts();
         CreateDataPorts();
 
         RegisterCallback<MouseDownEvent>(OnMouseDown);
     }
-    
+
     private void OnMouseDown(MouseDownEvent evt)
     {
         // workaround for OnGraphViewChanged calling drags many times during a move
@@ -221,6 +224,12 @@ public class UltNoodleNodeView : Node
         foreach (var port in _flowOutputs.Values) yield return port;
         foreach (var port in _dataInputs.Values) yield return port;
         foreach (var port in _dataOutputs.Values) yield return port;
+    }
+
+    public Port GetPortByName(string name, Direction dir)
+    {
+        var search = dir == Direction.Input ? _flowInputs.Values.Concat(_dataInputs.Values) : _flowOutputs.Values.Concat(_dataOutputs.Values);
+        return search.FirstOrDefault(p => p.portName == name);
     }
 
     public void RebuildConstantField(NoodleDataInput input)

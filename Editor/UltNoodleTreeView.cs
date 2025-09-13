@@ -21,8 +21,8 @@ public class UltNoodleTreeView : GraphView
     private Port _pendingEdgeOriginPort;
     private Vector2 _newNodeSpawnPos;
 
-    // TODO: copy/pasting and duplication doesn't work for some reason
     // TODO: zoom to fit all nodes on open
+    // TODO: comment node
 
     public UltNoodleTreeView()
     {
@@ -37,6 +37,9 @@ public class UltNoodleTreeView : GraphView
         styleSheets.Add(styleSheet);
 
         Undo.undoRedoPerformed += OnUndoRedo;
+        serializeGraphElements = SerializeGraphElementsImpl;
+        unserializeAndPaste = UnserializeAndPasteImpl;
+        canPasteSerializedData = CanPasteSerializedDataImpl;
     }
 
     public void InitializeSearch(EditorWindow baseWindow)
@@ -51,12 +54,6 @@ public class UltNoodleTreeView : GraphView
 
             UltNoodleSearchWindow.Open(this, ctx.screenMousePosition);
         };
-    }
-
-    public void OnUndoRedo()
-    {
-        if (_bowl != null)
-            PopulateView(_bowl);
     }
 
     public void RenderNewNodes()
@@ -172,6 +169,137 @@ public class UltNoodleTreeView : GraphView
             var nodeView = new UltNoodleNodeView(node);
             nodeView.OnNodeSelected = OnNodeSelected;
             AddElement(nodeView);
+        }
+    }
+
+    private void OnUndoRedo()
+    {
+        if (_bowl != null)
+            PopulateView(_bowl);
+    }
+
+    private string SerializeGraphElementsImpl(IEnumerable<GraphElement> elements)
+    {
+        var nodes = elements.OfType<UltNoodleNodeView>().Select(nv => new NodeData()
+        {
+            id = nv.Node.ID,
+            cookBookName = nv.Node.Book.GetType().FullName,
+            bookTag = nv.Node.BookTag,
+            position = nv.GetPosition().position
+        }).ToList();
+
+        foreach (var node in nodes)
+        {
+            if (string.IsNullOrEmpty(node.bookTag))
+                Debug.LogWarning($"Node {node.cookBookName}:{node.bookTag} has empty booktag, copy/paste may not work correctly");
+        }
+
+        var edges = elements.OfType<Edge>()
+            .Select(e =>
+            {
+                if (e.output?.node is UltNoodleNodeView fromNode &&
+                    e.input?.node is UltNoodleNodeView toNode)
+                {
+                    return new EdgeData
+                    {
+                        fromNodeId = fromNode.Node.ID,
+                        fromPortName = e.output.portName,
+                        toNodeId = toNode.Node.ID,
+                        toPortName = e.input.portName
+                    };
+                }
+                return null;
+            })
+            .Where(ed => ed != null)
+            .ToList();
+
+        var wrapper = new NodeWrapper() { nodes = nodes, edges = edges };
+        return JsonUtility.ToJson(wrapper);
+    }
+
+    private bool CanPasteSerializedDataImpl(string data)
+    {
+        try
+        {
+            var wrapper = JsonUtility.FromJson<NodeWrapper>(data);
+            return wrapper != null && wrapper.nodes != null && wrapper.nodes.Count > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void UnserializeAndPasteImpl(string operationName, string data)
+    {
+        var wrapper = JsonUtility.FromJson<NodeWrapper>(data);
+        if (wrapper == null || wrapper.nodes == null || wrapper.nodes.Count == 0) return;
+
+        Undo.RecordObject(_bowl.SerializedData, operationName);
+
+        Dictionary<string, string> oldToNewIds = new();
+
+        Vector2 avg = Vector2.zero;
+        foreach (var nodeData in wrapper.nodes)
+            avg += nodeData.position;
+        avg /= wrapper.nodes.Count;
+
+        Vector2 viewCenter = contentViewContainer.WorldToLocal(layout.center);
+
+        ClearSelection();
+        foreach (var nodeData in wrapper.nodes)
+        {
+            var book = UltNoodleEditor.AllBooks.FirstOrDefault(b => b.GetType().FullName == nodeData.cookBookName);
+            if (book == null)
+            {
+                Debug.LogWarning($"Could not find cook book {nodeData.cookBookName} when pasting nodes, skipping");
+                continue;
+            }
+
+            var def = UltNoodleEditor.AllNodeDefs.FirstOrDefault(d => d.BookTag == nodeData.bookTag && d.CookBook == book);
+            if (def == null)
+            {
+                Debug.LogWarning($"Could not find node def {nodeData.id} in book {book.name} when pasting nodes, skipping");
+                continue;
+            }
+
+            UltNoodleBowl bowl = UltNoodleEditor.Editor.CurrentBowl;
+            if (bowl == null) return;
+            var nod = bowl.AddNode(def.Name, book).MatchDef(def);
+            nod.BookTag = def.BookTag != string.Empty ? def.BookTag : def.Name;
+
+            if (operationName == "Duplicate")
+                nod.Position = nodeData.position + new Vector2(20, 20); // offset a bit so user can see the duplicate
+            else
+                nod.Position = nodeData.position + viewCenter - avg; // keep relative positions, center around view
+
+            bowl.Validate();
+            UltNoodleEditor.Editor.TreeView.RenderNewNodes();
+            oldToNewIds[nodeData.id] = nod.ID;
+
+            AddToSelection(FindNodeView(nod));
+        }
+
+        foreach (var edgeData in wrapper.edges)
+        {
+            if (!oldToNewIds.TryGetValue(edgeData.fromNodeId, out var newFromId)) continue;
+            if (!oldToNewIds.TryGetValue(edgeData.toNodeId, out var newToId)) continue;
+
+            var fromNode = _bowl.SerializedData.NodeDatas.FirstOrDefault(n => n.ID == newFromId);
+            var toNode = _bowl.SerializedData.NodeDatas.FirstOrDefault(n => n.ID == newToId);
+            if (fromNode == null || toNode == null) continue;
+
+            var fromView = FindNodeView(fromNode);
+            var toView = FindNodeView(toNode);
+            if (fromView == null || toView == null) continue;
+
+            var fromPort = fromView.GetPortByName(edgeData.fromPortName, Direction.Output);
+            var toPort = toView.GetPortByName(edgeData.toPortName, Direction.Input);
+            if (fromPort == null || toPort == null) continue;
+
+            var edge = fromPort.ConnectTo(toPort);
+            AddElement(edge);
+            HandleEdgeCreation(edge);
         }
     }
 
@@ -313,5 +441,30 @@ public class UltNoodleTreeView : GraphView
         var field = container?.Q<VisualElement>("ConstantField");
         if (field != null)
             field.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+    }
+
+    [Serializable]
+    private class NodeWrapper
+    {
+        public List<NodeData> nodes;
+        public List<EdgeData> edges;
+    }
+
+    [Serializable]
+    private class NodeData
+    {
+        public string id;
+        public string cookBookName;
+        public string bookTag;
+        public Vector2 position;
+    }
+
+    [Serializable]
+    private class EdgeData
+    {
+        public string fromNodeId;
+        public string fromPortName;
+        public string toNodeId;
+        public string toPortName;
     }
 }
