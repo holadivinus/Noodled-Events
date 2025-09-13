@@ -63,18 +63,33 @@ public class UltNoodleBowlSelector : VisualElement
             pathLabel.style.marginTop = 2;
             box.Add(pathLabel);
 
+            VisualElement buttonRow = new();
+            buttonRow.style.flexDirection = FlexDirection.Row;
+
             var selectButton = new Button(() => _editor.SelectBowl(bowl))
             {
                 text = isSelected ? "Selected" : "Select"
             };
+            selectButton.style.flexGrow = 1;
+            selectButton.style.marginRight = 0;
             if (isSelected)
             {
                 selectButton.style.unityFontStyleAndWeight = FontStyle.Bold;
                 selectButton.SetEnabled(false);
             }
-            selectButton.style.marginTop = 4;
-            box.Add(selectButton);
+            buttonRow.Add(selectButton);
 
+            var gameObjectButton = new Button(() => EditorGUIUtility.PingObject(bowl.Component))
+            {
+                tooltip = "Highlight Bowl in Hierarchy",
+            };
+            gameObjectButton.style.width = 20;
+            gameObjectButton.style.backgroundImage = new StyleBackground((Texture2D)EditorGUIUtility.IconContent("d_GameObject Icon").image);
+
+            gameObjectButton.style.marginLeft = 0;
+
+            buttonRow.Add(gameObjectButton);
+            box.Add(buttonRow);
             scroll.Add(box);
         }
     }
