@@ -114,6 +114,11 @@ public class UltNoodleEditor : EditorWindow
     SkipUpdates:
 
         EditorApplication.update += OnUpdate;
+        EditorSceneManager.sceneOpened += (newScene, mode) =>
+        {
+            ResetViews();
+            OnFocus();
+        };
         Selection.selectionChanged += OnFocus;
 
         treeView = root.Q<UltNoodleTreeView>();
@@ -293,12 +298,7 @@ public class UltNoodleEditor : EditorWindow
         if ((Selection.activeGameObject == null || !Selection.activeGameObject.TryGetComponent(out SerializedBowl _)) && EditorPrefs.GetBool("SelectedBowlsOnly", true))
         {
             // nothing selected, and we're only showing selected bowls
-            _currentBowl = null;
-            Bowls.Clear();
-
-            OnBowlsChanged?.Invoke();
-            treeView?.PopulateView(null);
-            inspectorView?.UpdateSelection(null);
+            ResetViews();
             return;
         }
 
@@ -323,6 +323,7 @@ public class UltNoodleEditor : EditorWindow
                 }
             }
         };
+
         if (!_created)
             EditorApplication.delayCall += makeUI;
         else makeUI.Invoke();
@@ -520,10 +521,41 @@ public class UltNoodleEditor : EditorWindow
         Debug.Log("Compiled!");
     }
 
+    private void ResetViews()
+    {
+        _currentBowl = null;
+        Bowls.Clear();
+
+        OnBowlsChanged?.Invoke();
+        treeView?.PopulateView(null);
+        inspectorView?.UpdateSelection(null);
+    }
+
     private void OnUpdate()
     {
         while (MainThread.TryDequeue(out Action act))
             act.Invoke();
+
+        if (!EditorPrefs.GetBool("SelectedBowlsOnly", true))
+        {
+            foreach (var bowl in Bowls)
+            {
+                if (bowl == null
+                    || bowl.SerializedData == null
+                    || bowl.Component == null)
+                {
+                    Bowls.Remove(bowl);
+                    if (_currentBowl == bowl)
+                    {
+                        _currentBowl = null;
+                        inspectorView?.UpdateSelection(null);
+                        treeView?.PopulateView(null);
+                    }
+                    OnBowlsChanged?.Invoke();
+                    break; // we modified the collection, so we need to restart
+                }
+            }
+        }
     }
 
     public static ConcurrentQueue<Action> MainThread = new();
