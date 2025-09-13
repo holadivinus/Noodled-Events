@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -28,3 +29,4 @@ public class UltNoodleEdgeConnectorListener : IEdgeConnectorListener
         // from input to output, nothing special needed here
     }
 }
+#endif

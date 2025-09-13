@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -96,3 +97,4 @@ public class UltNoodleBowlSelector : VisualElement
         }
     }
 }
+#endif

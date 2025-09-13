@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -508,3 +509,4 @@ public class UltNoodleTreeView : GraphView
         public string toPortName;
     }
 }
+#endif

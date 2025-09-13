@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Linq;
 using NoodledEvents;
 using NoodledEvents.Assets.Noodled_Events;
@@ -81,3 +82,4 @@ public class UltNoodleBowl
         }
     }
 }
+#endif

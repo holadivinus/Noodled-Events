@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -169,3 +170,4 @@ public class UltNoodleInspectorView : VisualElement
         Object = 13
     }
 }
+#endif
