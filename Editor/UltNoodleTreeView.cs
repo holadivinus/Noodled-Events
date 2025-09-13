@@ -23,6 +23,13 @@ public class UltNoodleTreeView : GraphView
     private Vector2 _newNodeSpawnPos;
 
     // TODO: grouping
+    // TODO: re-implement dragging objects into graph
+    // TODO: handle multi selection and show child bowls w/ show selected bowls only
+    // TODO: node method selection menu
+    // TODO: varman variable selection menu
+    // TODO: inline type.gettype for data inputs
+    // TODO: remember bowl when switching between show all and show selected
+    // TODO: add run button to the flow in/out inspector
 
     public UltNoodleTreeView()
     {
@@ -69,6 +76,14 @@ public class UltNoodleTreeView : GraphView
             if (PendingEdgeOriginPort != null)
             {
                 var originPort = PendingEdgeOriginPort; // cache it, it might get cleared while we're in this function
+                if (originPort.capacity == Port.Capacity.Single && originPort.connected)
+                {
+                    // we are already connected and can't handle multiple, let's disconnect first
+                    var existingEdge = originPort.connections.First();
+                    HandleEdgeRemoval(existingEdge);
+                    RemoveElement(existingEdge);
+                }
+
                 List<Port> targetPorts = InternalGetCompatiblePorts(originPort, nodeView.GetAllPorts());
                 if (targetPorts.Count == 0)
                 {
@@ -177,7 +192,7 @@ public class UltNoodleTreeView : GraphView
     {
         foreach (var note in _bowl.SerializedData.NoteDatas)
         {
-            var noteView = new UltNoodleNoteView(note);
+            var noteView = new UltNoodleNoteView(note, _bowl.SerializedData);
             AddElement(noteView);
         }
     }
@@ -196,7 +211,7 @@ public class UltNoodleTreeView : GraphView
             _bowl.SerializedData.NoteDatas.Add(note);
             EditorUtility.SetDirty(_bowl.SerializedData);
 
-            var noteView = new UltNoodleNoteView(note);
+            var noteView = new UltNoodleNoteView(note, _bowl.SerializedData);
             AddElement(noteView);
         });
 
@@ -342,15 +357,15 @@ public class UltNoodleTreeView : GraphView
 
             // flow ports
             if (startPort.userData is NoodleFlowOutput fo && endPort.userData is NoodleFlowInput fi)
-                return true;
+                return fo.CanConnectTo(fi);
             if (startPort.userData is NoodleFlowInput fi2 && endPort.userData is NoodleFlowOutput fo2)
-                return true;
+                return fo2.CanConnectTo(fi2);
 
             // data ports
             if (startPort.userData is NoodleDataOutput dout && endPort.userData is NoodleDataInput din)
-                return din.Type.Type.IsAssignableFrom(dout.Type.Type);
+                return dout.Type.Type.IsAssignableFrom(din.Type.Type) || din.Type.Type.IsAssignableFrom(dout.Type.Type);
             if (startPort.userData is NoodleDataInput din2 && endPort.userData is NoodleDataOutput dout2)
-                return din2.Type.Type.IsAssignableFrom(dout2.Type.Type);
+                return dout2.Type.Type.IsAssignableFrom(din2.Type.Type) || din2.Type.Type.IsAssignableFrom(dout2.Type.Type);
 
             return false;
         }).ToList();

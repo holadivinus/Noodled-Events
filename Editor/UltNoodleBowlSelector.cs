@@ -42,9 +42,11 @@ public class UltNoodleBowlSelector : VisualElement
             box.style.backgroundColor = new Color(0.18f, 0.18f, 0.18f);
             box.style.borderTopWidth = box.style.borderBottomWidth = 1;
             box.style.borderLeftWidth = box.style.borderRightWidth = 1;
-            box.style.borderTopColor = box.style.borderBottomColor =box.style.borderLeftColor = box.style.borderRightColor = new Color(0.25f, 0.25f, 0.25f);
+            box.style.borderTopColor = box.style.borderBottomColor = box.style.borderLeftColor = box.style.borderRightColor = new Color(0.25f, 0.25f, 0.25f);
 
-            var nameField = new TextField("Name");
+            var nameField = new TextField(bowl.SerializedData.gameObject.name);
+            nameField.labelElement.style.color = Color.white;
+            nameField.labelElement.style.fontSize = 13;
             nameField.value = bowl.SerializedData.BowlName;
             if (isSelected)
                 nameField.style.unityFontStyleAndWeight = FontStyle.Bold;
@@ -56,9 +58,9 @@ public class UltNoodleBowlSelector : VisualElement
             });
             box.Add(nameField);
 
-            var pathLabel = new Label(bowl.SerializedData.Path);
-            pathLabel.style.fontSize = 10;
-            pathLabel.style.color = new Color(0.7f, 0.7f, 0.7f);
+            var pathLabel = new Label(bowl.SerializedData.EventHolder.GetType().Name + "." + bowl.SerializedData.EventFieldPath);
+            pathLabel.style.fontSize = 11;
+            pathLabel.style.color = Color.white;
             pathLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
             pathLabel.style.marginTop = 2;
             box.Add(pathLabel);

@@ -408,6 +408,37 @@ namespace NoodledEvents
         [NonSerialized] public NoodleFlowInput Target;
         [SerializeField] public string ID = Guid.NewGuid().ToString();
 
+        public bool CanConnectTo(NoodleFlowInput targetInput)
+        {
+            if (targetInput == null)
+                return true;
+
+            var visited = new HashSet<SerializedNode>();
+
+            bool Visit(SerializedNode node)
+            {
+                if (!visited.Add(node))
+                    return true; // already seen, avoid infinite loops
+
+                foreach (var output in node.FlowOutputs)
+                {
+                    if (output.Target == null)
+                        continue;
+
+                    var nextNode = output.Target.Node;
+
+                    if (nextNode == Node) // trying to connect back to the origin
+                        return false;
+
+                    if (!Visit(nextNode))
+                        return false;
+                }
+                return true;
+            }
+
+            return Visit(targetInput.Node);
+        }
+
         public void Connect(NoodleFlowInput input)
         {
             if (Target != null)

@@ -2,6 +2,8 @@ using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental.GraphView;
+using UnityEditor;
+using NoodledEvents;
 
 public class UltNoodleNoteView : GraphElement
 {
@@ -12,11 +14,13 @@ public class UltNoodleNoteView : GraphElement
 
     private UltNoodleNoteData _data;
 
-    public UltNoodleNoteView(UltNoodleNoteData data)
+    public UltNoodleNoteView(UltNoodleNoteData data, SerializedBowl bowl)
     {
         _data = data;
 
         capabilities = Capabilities.Selectable | Capabilities.Movable | Capabilities.Resizable;
+        pickingMode = PickingMode.Position;
+        focusable = true;
 
         style.position = Position.Absolute;
         style.left = _data.Position.x;
@@ -48,7 +52,7 @@ public class UltNoodleNoteView : GraphElement
         _editField.style.display = DisplayStyle.None;
         _editField.style.flexGrow = 1;
         _editField.style.whiteSpace = WhiteSpace.Normal;
-        
+
         Add(_editField);
 
         _displayLabel.RegisterCallback<MouseDownEvent>(evt =>
@@ -56,6 +60,19 @@ public class UltNoodleNoteView : GraphElement
             if (evt.button == (int)MouseButton.LeftMouse && evt.clickCount == 2)
             {
                 BeginEdit();
+                evt.StopPropagation();
+            }
+
+            if (evt.button == 1 && evt.clickCount == 1)
+            {
+                var menu = new GenericMenu();
+                menu.AddItem(new GUIContent("Delete Note"), false, () =>
+                {
+                    Undo.RecordObject(bowl, "Delete Note");
+                    bowl.NoteDatas.Remove(_data);
+                    RemoveFromHierarchy();
+                });
+                menu.ShowAsContext();
                 evt.StopPropagation();
             }
         });
