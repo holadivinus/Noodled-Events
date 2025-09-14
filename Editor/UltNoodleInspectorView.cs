@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UltEvents;
-using Codice.Client.Common.TreeGrouper;
 
 public class UltNoodleInspectorView : VisualElement
 {
@@ -18,7 +17,8 @@ public class UltNoodleInspectorView : VisualElement
         if (nodeView == null || nodeView.Node == null)
             return;
 
-        string title = nodeView.Node.NoadType == NoodledEvents.SerializedNode.NodeType.BowlInOut
+        bool isInOut = nodeView.Node.NoadType == NoodledEvents.SerializedNode.NodeType.BowlInOut;
+        string title = isInOut
                         ? "Bowl In/Out"
                         : nodeView.Node.Name;
         var nodeTitle = new Label(title)
@@ -34,12 +34,33 @@ public class UltNoodleInspectorView : VisualElement
 
         Add(nodeTitle);
 
+        if(isInOut)
+        {
+            var button = new Button(() => 
+            {
+                var bowl = nodeView.Node.Bowl;
+                //compile and run evt
+                bowl.Compile();
+
+                UltNoodleBowl.EvtIsExecRn = true;
+                bowl.Event.DynamicInvoke(new object[bowl.Event.ParameterCount]);
+                UltNoodleBowl.EvtIsExecRn = false;
+
+                // recompile to reset state
+                bowl.Compile();
+            }) 
+            {
+                text = "Run"
+            };
+            Add(button);
+            return;
+        }
         DrawDataInputs(nodeView);
 
         var separator = new VisualElement { style = { height = 12 } };
         Add(separator);
-
-        DrawDataOutputs(nodeView);
+            DrawDataOutputs(nodeView);
+        
     }
 
     private void DrawDataInputs(UltNoodleNodeView nodeView)

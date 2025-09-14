@@ -114,11 +114,14 @@ public class UltNoodleEditor : EditorWindow
     SkipUpdates:
 
         EditorApplication.update += OnUpdate;
-        EditorSceneManager.sceneOpened += (newScene, mode) =>
+        void contextChanged()
         {
             ResetViews();
             OnFocus();
-        };
+        }
+        EditorSceneManager.sceneOpened += (_,_) => contextChanged();
+        PrefabStage.prefabStageOpened  += (_)   => contextChanged();
+        PrefabStage.prefabStageClosing += (_)   => contextChanged(); // described as "Prefab stage is about to be opened" in docs but functions as "Prefab stage is closed"
         Selection.selectionChanged += OnFocus;
 
         treeView = root.Q<UltNoodleTreeView>();
