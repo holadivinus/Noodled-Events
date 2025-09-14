@@ -34,7 +34,7 @@
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:Button display-tooltip-when-elided="true" name="ConfigBT" style="position: absolute; right: 3px; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; top: 3px;">
-            <ui:VisualElement style="background-image: url(&apos;project://database/Assets/Noodled-Events/Editor/UI%20Assets/cog.png?fileID=2800000&amp;guid=8cbd3d352e7b23d4388bd19f3e201d71&amp;type=3#cog&apos;); width: 15px; height: 15px; scale: 0.7 0.7;" />
+            <ui:VisualElement style="background-image: url(&apos;project://database/Assets/Noodled-Events/Editor/Styles/Assets/cog.png?fileID=2800000&amp;guid=8cbd3d352e7b23d4388bd19f3e201d71&amp;type=3#cog&apos;); width: 15px; height: 15px; scale: 0.7 0.7;" />
         </ui:Button>
     </ui:VisualElement>
     <ui:VisualElement name="ErrorPage" style="position: relative; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(75, 36, 36, 0.48); display: none;">

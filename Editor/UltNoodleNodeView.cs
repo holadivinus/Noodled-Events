@@ -101,7 +101,7 @@ public class UltNoodleNodeView : Node
             VisualElement varManDropdown = CreateVarManDropdown(di);
 
             VisualElement field = CreateFieldForType(di);
-            if (field != null && (varManDropdown == null || di.EditorConstName == ""))
+            if (field != null && (varManDropdown == null || string.IsNullOrWhiteSpace(di.EditorConstName)))
             {
                 field.name = "ConstantField";
                 if (port.connected)
@@ -167,7 +167,8 @@ public class UltNoodleNodeView : Node
 
     private VisualElement CreateVarManDropdown(NoodleDataInput input)
     {
-        var options = _varManVarOptions[input.Type.Type];
+        if (!_varManVarOptions.TryGetValue(input.Type.Type, out var options))
+            return null;
         if (options.Count <= 1) return null;
 
         var dropdown = new DropdownField();
@@ -408,7 +409,7 @@ public class UltNoodleNodeView : Node
         var newDropdown = CreateVarManDropdown(input);
 
         var newField = CreateFieldForType(input);
-        if (newField != null && (newDropdown == null || input.EditorConstName == ""))
+        if (newField != null && (newDropdown == null || string.IsNullOrWhiteSpace(input.EditorConstName)))
         {
             newField.name = "ConstantField";
             if (port.connected)
