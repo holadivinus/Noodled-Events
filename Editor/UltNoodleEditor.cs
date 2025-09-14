@@ -309,6 +309,7 @@ public class UltNoodleEditor : EditorWindow
 
         foreach (var bowl in Bowls.ToArray())
             bowl.Validate();
+        treeView?.Validate();
 
         // autogen bowlsUIs
         EditorApplication.CallbackFunction makeUI = () =>

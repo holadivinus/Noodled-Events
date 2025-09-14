@@ -21,6 +21,8 @@ public class UltNoodleNodeView : Node
     private readonly Dictionary<string, Port> _dataInputs = new();
     private readonly Dictionary<string, Port> _dataOutputs = new();
 
+    private Dictionary<Type, List<NoodleDataInput>> _varManVarOptions = new();
+
     public UltNoodleNodeView(SerializedNode node)
     {
         this.Node = node;
@@ -35,6 +37,8 @@ public class UltNoodleNodeView : Node
             this.capabilities &= ~Capabilities.Deletable; // cannot delete the primary node
             this.capabilities &= ~Capabilities.Copiable;  // cannot copy the primary node
         }
+
+        Validate();
 
         CreateFlowPorts();
         CreateDataPorts();
@@ -94,13 +98,23 @@ public class UltNoodleNodeView : Node
             container.style.flexDirection = FlexDirection.Row;
             container.Add(port);
 
+            VisualElement varManDropdown = CreateVarManDropdown(di);
+
             VisualElement field = CreateFieldForType(di);
-            if (field != null)
+            if (field != null && (varManDropdown == null || di.EditorConstName == ""))
             {
                 field.name = "ConstantField";
                 if (port.connected)
                     field.style.display = DisplayStyle.None;
                 container.Add(field);
+            }
+
+            if (varManDropdown != null)
+            {
+                varManDropdown.name = "VarManDropdown";
+                if (port.connected)
+                    varManDropdown.style.display = DisplayStyle.None;
+                container.Add(varManDropdown);
             }
 
             inputContainer.Add(container);
@@ -125,6 +139,72 @@ public class UltNoodleNodeView : Node
             _dataOutputs[dout.ID] = port;
             outputContainer.Add(port);
         }
+    }
+
+    public void Validate(bool tryRebuildInputs = false)
+    {
+        if (UltNoodleEditor.Editor == null || UltNoodleEditor.Editor.CurrentBowl == null)
+            return;
+
+        _varManVarOptions.Clear();
+        var bowl = UltNoodleEditor.Editor.CurrentBowl;
+        foreach (var type in Node.DataInputs.Select(i => i.Type.Type).Distinct())
+        {
+            var applicables = bowl.VarManVars.Where(var => var.Type.Type.IsAssignableFrom(type)).ToList();
+            applicables.Insert(0, new NoodleDataInput() { Name = "none" });
+            _varManVarOptions[type] = applicables;
+        }
+
+        // TODO: rebuilding inputs is a bit janky, should be smarter about what changed or just entirely refactor how constants/varman inputs work
+        if (tryRebuildInputs)
+        {
+            foreach (var input in Node.DataInputs)
+            {
+                RebuildConstantField(input);
+            }
+        }
+    }
+
+    private VisualElement CreateVarManDropdown(NoodleDataInput input)
+    {
+        var options = _varManVarOptions[input.Type.Type];
+        if (options.Count <= 1) return null;
+
+        var dropdown = new DropdownField();
+        dropdown.choices = options.Select(v => v.Name).ToList();
+        
+        dropdown.RegisterValueChangedCallback(evt =>
+        {
+            string prev = input.EditorConstName;
+            string now = evt.newValue == "none" ? "" : evt.newValue;
+            if (evt.newValue == "none")
+            {
+                input.EditorConstName = "";
+            }
+            else
+            {
+                var selected = options.FirstOrDefault(v => v.Name == evt.newValue);
+                if (selected == null) return;
+
+                input.EditorConstName = evt.newValue;
+                input.ValDefs = selected.ValDefs;
+                input.DefaultObject = selected.DefaultObject;
+                input.DefaultStringValue = selected.DefaultStringValue;
+            }
+
+            // only rebuild if we changed from const to varman or vice versa
+            if ((prev == "" && now != "") || (prev != "" && now == ""))
+                RebuildConstantField(input);
+        });
+        dropdown.value = string.IsNullOrEmpty(input.EditorConstName) ? "" : input.EditorConstName;
+        dropdown.style.justifyContent = Justify.FlexEnd;
+        dropdown.style.flexShrink = 1;
+        dropdown.style.flexGrow = 0;
+        dropdown.style.minWidth = 0;
+        if (string.IsNullOrEmpty(input.EditorConstName))
+            dropdown.style.width = 18; // shrink to only show dropdown arrow
+
+        return dropdown;
     }
 
     private VisualElement CreateFieldForType(NoodleDataInput input)
@@ -319,13 +399,29 @@ public class UltNoodleNodeView : Node
             container.Remove(oldField);
         }
 
+        var oldDropdown = container.Q<VisualElement>("VarManDropdown");
+        if (oldDropdown != null)
+        {
+            container.Remove(oldDropdown);
+        }
+
+        var newDropdown = CreateVarManDropdown(input);
+
         var newField = CreateFieldForType(input);
-        if (newField != null)
+        if (newField != null && (newDropdown == null || input.EditorConstName == ""))
         {
             newField.name = "ConstantField";
             if (port.connected)
                 newField.style.display = DisplayStyle.None;
             container.Add(newField);
+        }
+
+        if (newDropdown != null)
+        {
+            newDropdown.name = "VarManDropdown";
+            if (port.connected)
+                newDropdown.style.display = DisplayStyle.None;
+            container.Add(newDropdown);
         }
 
         RefreshExpandedState();

@@ -26,7 +26,6 @@ public class UltNoodleTreeView : GraphView
     // port from original
     // TODO: node method selection menu
     // TODO: dragging objects into graph (requires above)
-    // TODO: varman variable selection menu
     // TODO: quick node delete button
 
     // general improvements
@@ -69,6 +68,16 @@ public class UltNoodleTreeView : GraphView
 
             UltNoodleSearchWindow.Open(this, ctx.screenMousePosition);
         };
+    }
+
+    public void Validate()
+    {
+        if (_bowl == null) return;
+        foreach (var node in _bowl.SerializedData.NodeDatas)
+        {
+            var view = FindNodeView(node);
+            view?.Validate(true);
+        }
     }
 
     public void RenderNewNodes()
@@ -489,6 +498,9 @@ public class UltNoodleTreeView : GraphView
         var field = container?.Q<VisualElement>("ConstantField");
         if (field != null)
             field.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        var dropdown = container?.Q<DropdownField>("VarManDropdown");
+        if (dropdown != null)
+            dropdown.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
     [Serializable]
