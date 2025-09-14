@@ -59,8 +59,7 @@ public class UltNoodleInspectorView : VisualElement
 
         var separator = new VisualElement { style = { height = 12 } };
         Add(separator);
-            DrawDataOutputs(nodeView);
-        
+        DrawDataOutputs(nodeView);
     }
 
     private void DrawDataInputs(UltNoodleNodeView nodeView)

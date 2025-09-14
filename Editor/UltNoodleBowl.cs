@@ -8,7 +8,6 @@ using UnityEngine;
 
 public class UltNoodleBowl
 {
-    // TODO: assign this
     public static bool EvtIsExecRn;
 
     public VarMan[] VarMans = new VarMan[0];
