@@ -87,6 +87,7 @@ public class UltNoodleNodeView : Node
             );
             port.portName = string.IsNullOrEmpty(di.Name) ? di.Type?.Type.Name ?? "In" : di.Name;
             port.userData = di;
+            port.tooltip = di.Type?.Type.Name ?? "Unknown";
             _dataInputs[di.ID] = port;
 
             var container = new VisualElement();
@@ -97,7 +98,8 @@ public class UltNoodleNodeView : Node
             if (field != null)
             {
                 field.name = "ConstantField";
-                field.SetEnabled(!port.connected);
+                if (port.connected)
+                    field.style.display = DisplayStyle.None;
                 container.Add(field);
             }
 
@@ -114,6 +116,7 @@ public class UltNoodleNodeView : Node
             );
             port.portName = string.IsNullOrEmpty(dout.Name) ? dout.Type?.Type.Name ?? "Out" : dout.Name;
             port.userData = dout;
+            port.tooltip = dout.Type?.Type.Name ?? "Unknown";
 
             var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
             var connector = new EdgeConnector<Edge>(listener);
@@ -212,6 +215,74 @@ public class UltNoodleNodeView : Node
             objField.RegisterValueChangedCallback(evt => input.DefaultObject = evt.newValue);
             field = objField;
         }
+        else if (type == typeof(Type))
+        {
+            // TODO: this entire UI is a bit clunky, it should probably get an actual search window
+            var textField = new TextField();
+            textField.value = input.DefaultStringValue ?? "";
+            field = textField;
+
+            // Manual "change output type for delegates.Create" node
+            // This is a bodge, The correct course of action here was to make
+            // & use a "dynamic NodeDef" api
+            // TODO i supposed
+            void UpdateDelegateOutput()
+            {
+                if (Node.Name.StartsWith("delegates.Create_with")
+                 && input.Name.StartsWith("Param Type"))
+                {
+                    int paramNum = int.Parse(input.Name.Replace("Param Type ", ""));
+                    Type t = null;
+                    try
+                    {
+                        t = Type.GetType(input.DefaultStringValue, true, true);
+                    }
+                    catch (Exception) { t = typeof(object); }
+                    Node.DataOutputs[paramNum + 1].Type = t;
+                }
+            }
+
+            void TryUpdateType()
+            {
+                textField.value = textField.value.Trim();
+                if (TypeTranslator.SimpleNames2Types.TryGetValue(textField.value.ToLower(), out Type v))
+                {
+                    textField.value = string.Join(',', v.AssemblyQualifiedName.Split(',').Take(2));
+                    input.DefaultStringValue = textField.value;
+                    UpdateDelegateOutput();
+                    return;
+                }
+                foreach (Type t in UltNoodleEditor.SearchableTypes)
+                {
+                    if (string.Compare(t.Name, textField.value, StringComparison.CurrentCultureIgnoreCase) == 0)
+                    {
+                        textField.value = string.Join(',', t.AssemblyQualifiedName.Split(',').Take(2));
+                        input.DefaultStringValue = textField.value;
+                        UpdateDelegateOutput();
+                        return;
+                    }
+                }
+
+                // string doesn't match any type name, might be raw gettype input
+                input.DefaultStringValue = textField.value;
+            }
+
+            textField.RegisterCallback<KeyDownEvent>(e =>
+            {
+                if (e.keyCode == KeyCode.Return)
+                    TryUpdateType();
+                input.DefaultStringValue = textField.value;
+                UpdateDelegateOutput();
+            });
+            textField.RegisterCallback<FocusOutEvent>(e =>
+            {
+                TryUpdateType();
+                input.DefaultStringValue = textField.value;
+                UpdateDelegateOutput();
+            });
+
+            UpdateDelegateOutput();
+        }
 
         if (field != null)
             field.style.flexGrow = 1;
@@ -252,7 +323,8 @@ public class UltNoodleNodeView : Node
         if (newField != null)
         {
             newField.name = "ConstantField";
-            newField.SetEnabled(port.connected == false);
+            if (port.connected)
+                newField.style.display = DisplayStyle.None;
             container.Add(newField);
         }
 

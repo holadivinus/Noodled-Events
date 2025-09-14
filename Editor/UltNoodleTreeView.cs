@@ -23,14 +23,21 @@ public class UltNoodleTreeView : GraphView
     private Port _pendingEdgeOriginPort;
     private Vector2 _newNodeSpawnPos;
 
-    // TODO: grouping
-    // TODO: re-implement dragging objects into graph
-    // TODO: handle multi selection and show child bowls w/ show selected bowls only
+    // port from original
     // TODO: node method selection menu
+    // TODO: dragging objects into graph (requires above)
     // TODO: varman variable selection menu
-    // TODO: inline type.gettype for data inputs
+    // TODO: quick node delete button
+
+    // general improvements
+    // TODO: copy node default values
     // TODO: remember bowl when switching between show all and show selected
-    // TODO: add run button to the flow in/out inspector
+
+    // extras
+    // TODO: grouping
+    // TODO: handle multi selection and show child bowls w/ show selected bowls only
+    // TODO: try to replicate the shadergraph redirect node
+    // TODO: bookmarks window/popout list
 
     public UltNoodleTreeView()
     {
