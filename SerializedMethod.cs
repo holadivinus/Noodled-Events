@@ -20,6 +20,8 @@ namespace NoodledEvents
                 Parameters = value.GetParameters().Select(p => new SerializedType(p.ParameterType)).ToArray();
             }
         }
+        public MethodBase RawMethod => m;
+        
         private MethodBase m;
         [SerializeField] string _assemblyMethodName;
         [SerializeField] public SerializedType[] Parameters;

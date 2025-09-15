@@ -47,6 +47,47 @@ public class UltNoodleNodeView : Node
         CreateDataPorts();
 
         RegisterCallback<MouseDownEvent>(OnMouseDown);
+
+        titleButtonContainer.ElementAt(0).RemoveFromHierarchy(); // don't allow collapsing nodes, it doesn't work well with our UI
+        titleButtonContainer.AddToClassList("ult-node-button-container");
+
+        // TODO: this entire node-swapping system is very janky
+        AddTitleButton("d_Assembly Icon", () =>
+        {
+            Dictionary<string, CookBook.NodeDef> entries = new();
+            foreach (CookBook cb in UltNoodleEditor.AllBooks)
+            {
+                var alternatives = cb.GetAlternatives(Node);
+                if (alternatives == null || alternatives.Count == 0) continue;
+                foreach (var entry in alternatives)
+                {
+                    if (entries.ContainsKey(entry.Key)) continue;
+                    entries[entry.Key] = entry.Value;
+                }
+            }
+
+            var menu = new GenericMenu();
+            foreach (var option in entries.Keys)
+            {
+                menu.AddItem(new GUIContent(option), false, () =>
+                {
+                    var nodeDef = entries[option];
+                    var newNode = UltNoodleEditor.Editor.CurrentBowl.AddNode(nodeDef.Name, nodeDef.CookBook).MatchDef(nodeDef);
+                    newNode.BookTag = nodeDef.BookTag != string.Empty ? nodeDef.BookTag : nodeDef.Name;
+                    newNode.Position = Node.Position;
+                    Node.Bowl.NodeDatas.Remove(Node);
+                    UltNoodleEditor.Editor.CurrentBowl.Validate();
+                    nodeDef.CookBook.SwapConnections(Node, newNode);
+                    UltNoodleEditor.Editor.TreeView.PopulateView(UltNoodleEditor.Editor.CurrentBowl);
+                });
+            }
+            menu.ShowAsContext();
+        });
+
+        AddTitleButton("winbtn_win_close", () =>
+        {
+            UltNoodleEditor.Editor.TreeView.DeleteElements(new[] { this });
+        });
     }
 
     private void OnMouseDown(MouseDownEvent evt)
@@ -168,6 +209,29 @@ public class UltNoodleNodeView : Node
         }
     }
 
+    private void AddTitleButton(string iconName, Action onClick)
+    {
+        if (Node.NoadType == SerializedNode.NodeType.BowlInOut)
+            return;
+
+        var button = new VisualElement();
+        button.AddToClassList("ult-node-button");
+
+        var icon = new Image()
+        {
+            image = EditorGUIUtility.IconContent(iconName).image as Texture2D,
+            scaleMode = ScaleMode.ScaleToFit
+        };
+        icon.AddToClassList("ult-node-button-icon");
+        button.Add(icon);
+
+        button.RegisterCallback<MouseEnterEvent>(e => icon.AddToClassList("ult-node-button-icon-hover"));
+        button.RegisterCallback<MouseLeaveEvent>(e => icon.RemoveFromClassList("ult-node-button-icon-hover"));
+        button.AddManipulator(new Clickable(onClick));
+
+        titleButtonContainer.Add(button);
+    }
+
     private VisualElement CreateVarManDropdown(NoodleDataInput input)
     {
         if (!_varManVarOptions.TryGetValue(input.Type.Type, out var options))
@@ -176,7 +240,7 @@ public class UltNoodleNodeView : Node
 
         var dropdown = new DropdownField();
         dropdown.choices = options.Select(v => v.Name).ToList();
-        
+
         dropdown.RegisterValueChangedCallback(evt =>
         {
             string prev = input.EditorConstName;

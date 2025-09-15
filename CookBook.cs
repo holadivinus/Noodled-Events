@@ -99,7 +99,7 @@ namespace NoodledEvents
         public virtual void SwapConnections(SerializedNode oldNode, SerializedNode newNode)
         {
             if (oldNode.FlowInputs.Length > 0 && newNode.FlowInputs.Length > 0)
-                foreach (var fsrc in oldNode.FlowInputs[0].Sources)
+                foreach (var fsrc in oldNode.FlowInputs[0].Sources.ToList())
                     fsrc.Connect(newNode.FlowInputs[0]);
 
             if (oldNode.FlowOutputs.Length > 0 && newNode.FlowOutputs.Length > 0)

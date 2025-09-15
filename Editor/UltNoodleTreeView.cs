@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NoodledEvents;
+using UltEvents;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
@@ -22,11 +23,6 @@ public class UltNoodleTreeView : GraphView
 
     private Port _pendingEdgeOriginPort;
     private Vector2 _newNodeSpawnPos;
-
-    // port from original
-    // TODO: node method selection menu
-    // TODO: dragging objects into graph (requires above)
-    // TODO: quick node delete button
 
     // general improvements
     // TODO: copy node default values
@@ -53,6 +49,57 @@ public class UltNoodleTreeView : GraphView
         serializeGraphElements = SerializeGraphElementsImpl;
         unserializeAndPaste = UnserializeAndPasteImpl;
         canPasteSerializedData = CanPasteSerializedDataImpl;
+
+        RegisterCallback<DragEnterEvent>(evt => { DragAndDrop.visualMode = DragAndDropVisualMode.Move; });
+        RegisterCallback<DragUpdatedEvent>(evt => { DragAndDrop.visualMode = DragAndDropVisualMode.Move; });
+        RegisterCallback<DragPerformEvent>(evt =>
+        {
+            Vector2 localMousePos = contentViewContainer.WorldToLocal(evt.mousePosition);
+            UnityEngine.Object target = DragAndDrop.objectReferences.FirstOrDefault();
+            if (target == null) return;
+
+            void GenerateNode(UnityEngine.Object obj)
+            {
+                Type type = obj.GetType();
+                var node = Bowl.AddNode(type.Name, UltNoodleEditor.AllBooks.First(c => c is ObjectMethodCookBook));
+                node.AddDataIn(type.Name, type, obj);
+
+                var method = new SerializedMethod();
+                var methodType = type;
+                while (method.RawMethod == null)
+                {
+                    if (methodType == null) // extremely unlikely, but just in case
+                    {
+                        Debug.LogError($"Could not find any methods on type {type.FullName}");
+                        return;
+                    }
+
+                    method.Method = methodType.GetMethods(UltEventUtils.AnyAccessBindings).FirstOrDefault();
+                    methodType = methodType.BaseType;
+                }
+
+                node.BookTag = JsonUtility.ToJson(method);
+                node.Position = localMousePos;
+
+                Bowl.Validate();
+                UltNoodleEditor.Editor.TreeView.RenderNewNodes();
+            }
+
+            if (target is GameObject go)
+            {
+                GenericMenu menu = new();
+                menu.AddDisabledItem(new GUIContent("Select Target"), false);
+                menu.AddSeparator("");
+                menu.AddItem(new GUIContent("GameObject"), false, () => GenerateNode(go));
+                foreach (var comp in go.GetComponents<Component>())
+                {
+                    Component localComp = comp;
+                    menu.AddItem(new GUIContent($"{localComp.GetType().Name}"), false, () => GenerateNode(localComp));
+                }
+                menu.ShowAsContext();
+            }
+            else GenerateNode(target);
+        });
     }
 
     public void InitializeSearch(EditorWindow baseWindow)
