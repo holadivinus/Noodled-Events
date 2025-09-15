@@ -313,6 +313,7 @@ public class UltNoodleNodeView : Node
         {
             var vectorField = new Vector2Field();
             vectorField.value = input.DefaultVector2Value;
+            vectorField.style.minWidth = 100; // numbers act a bit weirdly in small widths
             vectorField.RegisterValueChangedCallback(evt => input.DefaultVector2Value = evt.newValue);
             field = vectorField;
         }
@@ -320,12 +321,14 @@ public class UltNoodleNodeView : Node
         {
             var vectorField = new Vector3Field();
             vectorField.value = input.DefaultVector3Value;
+            vectorField.style.minWidth = 140; // numbers act a bit weirdly in small widths
             vectorField.RegisterValueChangedCallback(evt => input.DefaultVector3Value = evt.newValue);
             field = vectorField;
         }
         else if (type == typeof(Vector4) || fauxType == PersistentArgumentType.Vector4)
         {
             var vectorField = new Vector4Field();
+            vectorField.style.minWidth = 187; // numbers act a bit weirdly in small widths
             vectorField.value = input.DefaultVector4Value;
             vectorField.RegisterValueChangedCallback(evt => input.DefaultVector4Value = evt.newValue);
             field = vectorField;

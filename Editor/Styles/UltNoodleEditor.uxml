@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <!-- TODO: this could probably be replaced with a proper Toolbar and ToolbarMenu, but this is fine for now -->
-    <!-- Related to above, grid toggle and toggle for the side windows -->
-    <ui:VisualElement name="GroupPath" style="height: auto; flex-direction: row;">
+    <uie:Toolbar>
+        <uie:ToolbarMenu display-tooltip-when-elided="true" name="NodesMenu" text="Nodes" />
+        <uie:ToolbarMenu display-tooltip-when-elided="true" name="ViewMenu" text="View" />
+        <uie:ToolbarMenu display-tooltip-when-elided="true" name="HelpMenu" text="Help" />
         <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
-        <ui:Label text="Current Version: 1.0.0" display-tooltip-when-elided="true" name="CurVersionNum" style="-unity-text-align: middle-left;" />
-        <ui:Button text="Up to Date." display-tooltip-when-elided="true" name="NextVersionBT" />
-    </ui:VisualElement>
-    <ui:TwoPaneSplitView fixed-pane-initial-dimension="300">
+        <ui:Label text="" display-tooltip-when-elided="true" name="NoticeLabel" style="-unity-text-align: middle-left;" />
+    </uie:Toolbar>
+    <ui:TwoPaneSplitView fixed-pane-initial-dimension="300" name="MainSplit">
         <ui:VisualElement name="left-panel" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); width: 300px;">
-            <ui:TwoPaneSplitView orientation="Vertical" fixed-pane-index="1" fixed-pane-initial-dimension="200">
+            <ui:TwoPaneSplitView orientation="Vertical" fixed-pane-index="1" fixed-pane-initial-dimension="200" name="LeftSplit">
                 <ui:VisualElement name="top-panel" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
                     <ui:Label tabindex="-1" text="Inspector" display-tooltip-when-elided="true" />
                     <UltNoodleInspectorView />

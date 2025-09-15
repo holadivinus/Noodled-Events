@@ -19,8 +19,10 @@ public class UltNoodleTreeView : GraphView
     public UltNoodleBowl Bowl => _bowl;
     public Port PendingEdgeOriginPort { get => _pendingEdgeOriginPort; internal set => _pendingEdgeOriginPort = value; }
     public Vector2 NewNodeSpawnPos { get => _newNodeSpawnPos; internal set => _newNodeSpawnPos = value; }
+    public bool GridEnabled => _gridBackground != null && _gridBackground.visible;
 
     private UltNoodleBowl _bowl;
+    private GridBackground _gridBackground;
 
     private Port _pendingEdgeOriginPort;
     private Vector2 _newNodeSpawnPos;
@@ -32,7 +34,8 @@ public class UltNoodleTreeView : GraphView
 
     public UltNoodleTreeView()
     {
-        Insert(0, new GridBackground());
+        _gridBackground = new();
+        Insert(0, _gridBackground);
 
         this.AddManipulator(new ContentZoomer());
         this.AddManipulator(new ContentDragger());
@@ -111,6 +114,15 @@ public class UltNoodleTreeView : GraphView
 
             UltNoodleSearchWindow.Open(this, ctx.screenMousePosition);
         };
+    }
+
+    public void ToggleGrid()
+    {
+        if (_gridBackground != null)
+        {
+            _gridBackground.visible = !_gridBackground.visible;
+            _gridBackground.StretchToParentSize();
+        }
     }
 
     public void Validate()

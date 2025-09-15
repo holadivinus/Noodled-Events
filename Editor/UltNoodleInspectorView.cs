@@ -48,9 +48,9 @@ public class UltNoodleInspectorView : VisualElement
 
         Add(nodeTitle);
 
-        if(isInOut)
+        if (isInOut)
         {
-            var button = new Button(() => 
+            var button = new Button(() =>
             {
                 var bowl = nodeView.Node.Bowl;
                 //compile and run evt
@@ -62,7 +62,7 @@ public class UltNoodleInspectorView : VisualElement
 
                 // recompile to reset state
                 bowl.Compile();
-            }) 
+            })
             {
                 text = "Run"
             };

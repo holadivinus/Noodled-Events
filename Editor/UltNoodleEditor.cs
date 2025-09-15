@@ -12,6 +12,7 @@ using UltEvents;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.SceneManagement;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
@@ -74,46 +75,6 @@ public class UltNoodleEditor : EditorWindow
         StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{EditorFolder}/Styles/UltNoodleEditor.uss");
         root.styleSheets.Add(styleSheet);
 
-        TextAsset packageData = AssetDatabase.LoadAssetAtPath<TextAsset>(BaseFolder + "package.json");
-        string version = packageData.text.Split("\"version\": \"")[1].Split('"')[0];
-        root.Q<Label>("CurVersionNum").text = "Current Version: " + version;
-        if (!InPackage())
-            goto SkipUpdates;
-        Button updateBT = root.Q<Button>("NextVersionBT");
-        updateBT.text = "Checking for Updates...";
-        GetRequest("https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json", (resp) =>
-        {
-            string remoteVersion = resp.Split("\"version\": \"")[1].Split('"')[0];
-            Debug.Log(remoteVersion);
-            if (new Version(remoteVersion) > new Version(version))
-            {
-                updateBT.text = "Click to Update to (" + remoteVersion + ")!";
-                bool updatin = false;
-                updateBT.clicked += () =>
-                {
-                    if (updatin) return;
-                    updatin = true;
-                    var req = Client.Add("https://github.com/holadivinus/Noodled-Events.git");
-                    float c = 0;
-                    EditorApplication.update += () =>
-                    {
-                        c += .01f * 5;
-                        if (c > 300) c = 0;
-                        updateBT.text = "Updating";
-                        for (int i = 0; i < (int)(c / 20); i++)
-                        {
-                            updateBT.text += ".";
-                        }
-                    };
-                };
-            }
-            else
-            {
-                updateBT.text = "Up to Date.";
-            }
-        });
-    SkipUpdates:
-
         EditorApplication.update += OnUpdate;
         void contextChanged()
         {
@@ -135,25 +96,87 @@ public class UltNoodleEditor : EditorWindow
 
         bowlSelector.AttachToEditor(this);
 
-        // search autorefresh tog
-        var selectedOnlyTog = new Toggle("Show Selected Bowls Only") { value = EditorPrefs.GetBool("SelectedBowlsOnly", true) };
-        selectedOnlyTog.RegisterValueChangedCallback(e =>
+        var mainSplit = root.Q<TwoPaneSplitView>("MainSplit");
+        var leftSplit = root.Q<TwoPaneSplitView>("LeftSplit");
+
+        // setup toolbar options
+        var nodesMenu = root.Q<ToolbarMenu>("NodesMenu");
+        var viewMenu = root.Q<ToolbarMenu>("ViewMenu");
+        var helpMenu = root.Q<ToolbarMenu>("HelpMenu");
+
+        nodesMenu.menu.AppendAction("Regenerate Nodes", (a) => CollectNodes(), (a) => _collecting ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+
+        void UpdateSplit() => UpdateLeftSplitVisibility(leftSplit, mainSplit, inspectorView.visible, bowlSelector.visible);
+        viewMenu.menu.AppendAction("Inspector", (a) => { inspectorView.visible = !inspectorView.visible; UpdateSplit(); }, (a) => inspectorView.visible ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+        viewMenu.menu.AppendAction("Bowl Selector", (a) => { bowlSelector.visible = !bowlSelector.visible; UpdateSplit(); }, (a) => bowlSelector.visible ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+        viewMenu.menu.AppendAction("Grid Background", (a) => treeView.ToggleGrid(), (a) => treeView.GridEnabled ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+        viewMenu.menu.AppendAction("Selected Bowls Only", (a) =>
         {
-            EditorPrefs.SetBool("SelectedBowlsOnly", e.newValue);
-            _bowlToReselect = _currentBowl?.SerializedData;
+            bool enabled = !EditorPrefs.GetBool("SelectedBowlsOnly", true);
+            EditorPrefs.SetBool("SelectedBowlsOnly", enabled);
+            _bowlToReselect = !enabled || Selection.activeGameObject == _currentBowl?.SerializedData?.gameObject
+                ? _currentBowl?.SerializedData
+                : null; // only reselect if we're disabling the toggle or the current bowl's gameobject is selected
+            
             Bowls.Clear(); // clear bowls so we can regen
             this.OnFocus(); // update displays
-        });
-        selectedOnlyTog.style.marginTop = 3;
-        root.Q("GroupPath").Insert(1, selectedOnlyTog);
+        }, (a) => EditorPrefs.GetBool("SelectedBowlsOnly", true) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+        viewMenu.menu.AppendAction("Rebuild View", (a) => contextChanged(), (a) => DropdownMenuAction.Status.Normal);
 
-        root.Q("GroupPath").Insert(0, new Button(CollectNodes) { text = "Regen Nodes" });
+        helpMenu.menu.AppendAction("GitHub", (a) => Application.OpenURL("https://github.com/holadivinus/Noodled-Events"), (a) => DropdownMenuAction.Status.Normal);
+
+        if (InPackage())
+            CheckForUpdates(root.Q<Label>("NoticeLabel"),
+                () => { helpMenu.menu.AppendAction("Update", (a) => TryUpdate(), (a) => DropdownMenuAction.Status.Normal); },
+                () => { helpMenu.menu.AppendAction("Up to Date", (a) => { }, (a) => DropdownMenuAction.Status.Disabled); });
 
         if ((AllNodeDefs.Count == 0 || AllBooks == null) && !Application.isPlaying)
         {
             CollectNodes();
         }
         _created = true;
+    }
+
+    private void CheckForUpdates(Label noticeLabel, Action ifUpdate, Action ifUpToDate)
+    {
+        TextAsset packageData = AssetDatabase.LoadAssetAtPath<TextAsset>(BaseFolder + "package.json");
+        string version = packageData.text.Split("\"version\": \"")[1].Split('"')[0];
+
+        noticeLabel.text = "Checking for Updates...";
+        GetRequest("https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json", (resp) =>
+        {
+            string remoteVersion = resp.Split("\"version\": \"")[1].Split('"')[0];
+            Debug.Log(remoteVersion);
+            if (new Version(remoteVersion) > new Version(version))
+            {
+                noticeLabel.text = $"Update available! ({remoteVersion})";
+                ifUpdate.Invoke();
+            }
+            else
+            {
+                noticeLabel.text = "";
+                ifUpToDate.Invoke();
+            }
+        });
+    }
+
+    private static bool _isUpdating;
+    private void TryUpdate()
+    {
+        if (_isUpdating) return;
+        _isUpdating = true;
+        var req = Client.Add("https://github.com/holadivinus/Noodled-Events.git");
+        Debug.Log("Updating...");
+        void check()
+        {
+            if (req.Error != null)
+            {
+                Debug.LogError("Failed to update: " + req.Error.message);
+                _isUpdating = false;
+                EditorApplication.update -= check;
+            }
+        }
+        EditorApplication.update += check; // we're going to get reloaded if the update works, so this gets automatically detached
     }
 
     private Label LoadingText;
@@ -566,6 +589,45 @@ public class UltNoodleEditor : EditorWindow
                     break; // we modified the collection, so we need to restart
                 }
             }
+        }
+    }
+
+    // for whatever ungodly reason, TwoPaneSplitViews don't let you uncollapse a single child, so we have to do this mess instead
+    private void UpdateLeftSplitVisibility(TwoPaneSplitView leftSplit, TwoPaneSplitView mainSplit, bool topShouldBeVisible, bool bottomShouldBeVisible)
+    {
+        if (leftSplit == null || mainSplit == null)
+            return;
+
+        if (topShouldBeVisible && bottomShouldBeVisible)
+        {
+            // show both
+            leftSplit.UnCollapse();
+            mainSplit.UnCollapse();
+            return;
+        }
+
+        if (!topShouldBeVisible && !bottomShouldBeVisible)
+        {
+            // hide entire left column
+            mainSplit.CollapseChild(0); // assuming left panel is child 0 of mainSplit
+            return;
+        }
+
+        // exactly one child should be visible:
+        // make sure left column is visible first...
+        leftSplit.UnCollapse();
+        mainSplit.UnCollapse();
+
+        // then collapse the OTHER child so only the desired one remains visible
+        if (topShouldBeVisible)
+        {
+            // collapse bottom (child index 1)
+            leftSplit.CollapseChild(1);
+        }
+        else // bottomShouldBeVisible
+        {
+            // collapse top (child index 0)
+            leftSplit.CollapseChild(0);
         }
     }
 
