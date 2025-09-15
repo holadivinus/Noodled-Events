@@ -231,41 +231,10 @@ namespace NoodledEvents
     public class NoodleDataInput // has 1 source
     {
         public NoodleDataInput() { }
-        public NoodleDataInput(SerializedNode node, Type t, string paramName, object defaultValue) 
+        public NoodleDataInput(SerializedNode node, Type t, string paramName, object defaultValue)
         {
             Node = node; Type = new SerializedType(t); Name = paramName;
-            if (defaultValue is UnityEngine.Object obj) DefaultObject = obj;
-            else
-            {
-                //call the executioner
-                switch (defaultValue)
-                {
-                    case bool b:
-                        DefaultBoolValue = b;
-                        break;
-                    case float f:
-                        DefaultFloatValue = f;
-                        break;
-                    case int i:
-                        DefaultIntValue = i;
-                        break;
-                    case Vector2 v2:
-                        DefaultVector2Value = v2;
-                        break;
-                    case Vector3 v3:
-                        DefaultVector3Value = v3;
-                        break;
-                    case Vector4 v4:
-                        DefaultVector4Value = v4;
-                        break;
-                    case Quaternion q:
-                        DefaultQuaternionValue = q;
-                        break;
-                    case string s:
-                        DefaultStringValue = s;
-                        break;
-                }
-            }
+            SetDefault(defaultValue);
         }
         public string Name;
         [NonSerialized] public SerializedNode Node;
@@ -332,6 +301,43 @@ namespace NoodledEvents
             if (typeof(UnityEngine.Object).IsAssignableFrom(Type))
                 return DefaultObject;
             return null;
+        }
+
+        public void SetDefault(object val)
+        {
+            if (val is UnityEngine.Object obj)
+            {
+                DefaultObject = obj;
+                return;
+            }
+
+            switch (val)
+            {
+                case bool b:
+                    DefaultBoolValue = b;
+                    break;
+                case float f:
+                    DefaultFloatValue = f;
+                    break;
+                case int i:
+                    DefaultIntValue = i;
+                    break;
+                case Vector2 v2:
+                    DefaultVector2Value = v2;
+                    break;
+                case Vector3 v3:
+                    DefaultVector3Value = v3;
+                    break;
+                case Vector4 v4:
+                    DefaultVector4Value = v4;
+                    break;
+                case Quaternion q:
+                    DefaultQuaternionValue = q;
+                    break;
+                case string s:
+                    DefaultStringValue = s;
+                    break;
+            }
         }
 
         [SerializeField] public string DefaultStringValue;

@@ -60,6 +60,7 @@ public class UltNoodleEditor : EditorWindow
     private UltNoodleTreeView treeView;
     private UltNoodleInspectorView inspectorView;
     private UltNoodleBowlSelector bowlSelector;
+    private SerializedBowl _bowlToReselect = null;
 
     public void CreateGUI()
     {
@@ -119,9 +120,9 @@ public class UltNoodleEditor : EditorWindow
             ResetViews();
             OnFocus();
         }
-        EditorSceneManager.sceneOpened += (_,_) => contextChanged();
-        PrefabStage.prefabStageOpened  += (_)   => contextChanged();
-        PrefabStage.prefabStageClosing += (_)   => contextChanged(); // described as "Prefab stage is about to be opened" in docs but functions as "Prefab stage is closed"
+        EditorSceneManager.sceneOpened += (_, _) => contextChanged();
+        PrefabStage.prefabStageOpened += (_) => contextChanged();
+        PrefabStage.prefabStageClosing += (_) => contextChanged(); // described as "Prefab stage is about to be opened" in docs but functions as "Prefab stage is closed"
         Selection.selectionChanged += OnFocus;
 
         treeView = root.Q<UltNoodleTreeView>();
@@ -139,6 +140,7 @@ public class UltNoodleEditor : EditorWindow
         selectedOnlyTog.RegisterValueChangedCallback(e =>
         {
             EditorPrefs.SetBool("SelectedBowlsOnly", e.newValue);
+            _bowlToReselect = _currentBowl?.SerializedData;
             Bowls.Clear(); // clear bowls so we can regen
             this.OnFocus(); // update displays
         });
@@ -323,7 +325,12 @@ public class UltNoodleEditor : EditorWindow
                     continue;
                 if (!Bowls.Any(b => b.SerializedData == bowl) && (Selection.activeGameObject == bowl.gameObject || !EditorPrefs.GetBool("SelectedBowlsOnly", true)) && !PrefabUtility.IsPartOfAnyPrefab(bowl))
                 {
-                    NewBowl(bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath, _currentBowl == null || !Bowls.Contains(_currentBowl));
+                    // if we have a dedicated bowl to select (from toggling SelectedBowlsOnly), we only select that one
+                    // otherwise, we select the first bowl we find
+                    bool shouldSelect = (_bowlToReselect == null || _bowlToReselect == bowl) && (_currentBowl == null || !Bowls.Contains(_currentBowl));
+                    NewBowl(bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath, shouldSelect);
+                    if (shouldSelect)
+                        _bowlToReselect = null;
                 }
             }
         };

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using NoodledEvents;
 using UltEvents;
 using UnityEditor;
@@ -23,10 +24,6 @@ public class UltNoodleTreeView : GraphView
 
     private Port _pendingEdgeOriginPort;
     private Vector2 _newNodeSpawnPos;
-
-    // general improvements
-    // TODO: copy node default values
-    // TODO: remember bowl when switching between show all and show selected
 
     // extras
     // TODO: grouping
@@ -300,7 +297,8 @@ public class UltNoodleTreeView : GraphView
             id = nv.Node.ID,
             cookBookName = nv.Node.Book.GetType().FullName,
             bookTag = nv.Node.BookTag,
-            position = nv.GetPosition().position
+            position = nv.GetPosition().position,
+            inputConstants = nv.Node.DataInputs.Select(di => di.GetDefault()).ToArray()
         }).ToList();
 
         var edges = elements.OfType<Edge>()
@@ -323,7 +321,7 @@ public class UltNoodleTreeView : GraphView
             .ToList();
 
         var wrapper = new NodeWrapper() { nodes = nodes, edges = edges };
-        return JsonUtility.ToJson(wrapper);
+        return JsonConvert.SerializeObject(wrapper, new Vector2Converter(), new UEObjectConverter());
     }
 
     private bool CanPasteSerializedDataImpl(string data)
@@ -341,7 +339,12 @@ public class UltNoodleTreeView : GraphView
 
     private void UnserializeAndPasteImpl(string operationName, string data)
     {
-        var wrapper = JsonUtility.FromJson<NodeWrapper>(data);
+        var settings = new JsonSerializerSettings
+        {
+            TypeNameHandling = TypeNameHandling.Objects,
+            Converters = new List<JsonConverter> { new Vector2Converter(), new UEObjectConverter() }
+        };
+        var wrapper = JsonConvert.DeserializeObject<NodeWrapper>(data, settings);
         if (wrapper == null || wrapper.nodes == null || wrapper.nodes.Count == 0) return;
 
         Undo.RecordObject(_bowl.SerializedData, operationName);
@@ -381,6 +384,28 @@ public class UltNoodleTreeView : GraphView
                 nod.Position = nodeData.position + new Vector2(20, 20); // offset a bit so user can see the duplicate
             else
                 nod.Position = nodeData.position + viewCenter - avg; // keep relative positions, center around view
+
+            for (int i = 0; i < nod.DataInputs.Length; i++)
+            {
+                if (nodeData.inputConstants == null || i >= nodeData.inputConstants.Length)
+                {
+                    Debug.LogWarning($"Not enough input constants provided when pasting node {nod.ID}, skipping remaining");
+                    break;
+                }
+
+                object constant = nodeData.inputConstants[i];
+                if (constant is string str && str.StartsWith("GlobalObjectId_V1"))
+                {
+                    if (!GlobalObjectId.TryParse(str, out var globalId))
+                    {
+                        Debug.LogWarning($"Could not parse GlobalObjectId when pasting node {nod.ID}, input {i}, skipping");
+                        continue;
+                    }
+                    constant = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(globalId);
+                }
+
+                nod.DataInputs[i].SetDefault(constant);
+            }
 
             bowl.Validate();
             UltNoodleEditor.Editor.TreeView.RenderNewNodes();
@@ -686,6 +711,7 @@ public class UltNoodleTreeView : GraphView
         public string cookBookName;
         public string bookTag;
         public Vector2 position;
+        public object[] inputConstants;
     }
 
     [Serializable]
