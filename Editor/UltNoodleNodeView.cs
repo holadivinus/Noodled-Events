@@ -16,10 +16,10 @@ public class UltNoodleNodeView : Node
     public SerializedNode Node { get; }
     public Action<UltNoodleNodeView> OnNodeSelected;
 
-    private readonly Dictionary<string, Port> _flowInputs = new();
-    private readonly Dictionary<string, Port> _flowOutputs = new();
-    private readonly Dictionary<string, Port> _dataInputs = new();
-    private readonly Dictionary<string, Port> _dataOutputs = new();
+    protected readonly Dictionary<string, Port> _flowInputs = new();
+    protected readonly Dictionary<string, Port> _flowOutputs = new();
+    protected readonly Dictionary<string, Port> _dataInputs = new();
+    protected readonly Dictionary<string, Port> _dataOutputs = new();
 
     private Dictionary<Type, List<NoodleDataInput>> _varManVarOptions = new();
 
@@ -28,6 +28,9 @@ public class UltNoodleNodeView : Node
         this.Node = node;
         this.title = node.Name;
         this.viewDataKey = node.ID;
+
+        if (node.NoadType == SerializedNode.NodeType.Redirect)
+            return; // let the subclass handle it
 
         style.left = node.Position.x;
         style.top = node.Position.y;
@@ -387,6 +390,9 @@ public class UltNoodleNodeView : Node
 
     public void RebuildConstantField(NoodleDataInput input)
     {
+        if (Node.NoadType == SerializedNode.NodeType.Redirect)
+            return; // redirect nodes don't do constants
+
         if (!_dataInputs.TryGetValue(input.ID, out var port))
             return;
 

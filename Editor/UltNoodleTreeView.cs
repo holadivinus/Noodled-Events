@@ -35,7 +35,6 @@ public class UltNoodleTreeView : GraphView
     // extras
     // TODO: grouping
     // TODO: handle multi selection and show child bowls w/ show selected bowls only
-    // TODO: try to replicate the shadergraph redirect node
     // TODO: bookmarks window/popout list
 
     public UltNoodleTreeView()
@@ -116,9 +115,7 @@ public class UltNoodleTreeView : GraphView
                         Port localPort = port;
                         menu.AddItem(new GUIContent(localPort.portName), false, () =>
                         {
-                            var edge = originPort.ConnectTo(localPort);
-                            AddElement(edge);
-                            HandleEdgeCreation(edge);
+                            HandleEdgeCreation(originPort, localPort, true);
                         });
                     }
                     menu.ShowAsContext();
@@ -126,8 +123,7 @@ public class UltNoodleTreeView : GraphView
                 }
 
                 Port targetPort = targetPorts.First();
-                AddElement(originPort.ConnectTo(targetPort));
-                HandleEdgeCreation(originPort.connections.First());
+                HandleEdgeCreation(originPort, targetPort, true);
             }
         }
     }
@@ -174,7 +170,9 @@ public class UltNoodleTreeView : GraphView
                     var childView = FindNodeView(fo.Node);
                     var childPort = childView.GetPortForFlowOutput(fo);
                     if (parentPort != null && childPort != null)
-                        AddElement(parentPort.ConnectTo(childPort));
+                    {
+                        HandleEdgeCreation(childPort, parentPort, false);
+                    }
                 }
             }
 
@@ -187,7 +185,7 @@ public class UltNoodleTreeView : GraphView
                     var childPort = childView.GetPortForDataInput(target);
                     if (parentPort != null && childPort != null)
                     {
-                        AddElement(parentPort.ConnectTo(childPort));
+                        HandleEdgeCreation(parentPort, childPort, false);
                         ToggleNodeConstantField(childPort, false);
                     }
                 }
@@ -199,6 +197,13 @@ public class UltNoodleTreeView : GraphView
     {
         foreach (var node in _bowl.SerializedData.NodeDatas)
         {
+            if (node.NoadType == SerializedNode.NodeType.Redirect)
+            {
+                var redirectView = new UltNoodleRedirectNodeView(node);
+                redirectView.OnNodeSelected = OnNodeSelected;
+                AddElement(redirectView);
+                continue;
+            }
             var nodeView = new UltNoodleNodeView(node);
             nodeView.OnNodeSelected = OnNodeSelected;
             AddElement(nodeView);
@@ -354,9 +359,7 @@ public class UltNoodleTreeView : GraphView
             var toPort = toView.GetPortByName(edgeData.toPortName, Direction.Input);
             if (fromPort == null || toPort == null) continue;
 
-            var edge = fromPort.ConnectTo(toPort);
-            AddElement(edge);
-            HandleEdgeCreation(edge);
+            HandleEdgeCreation(fromPort, toPort, true);
         }
     }
 
@@ -390,30 +393,93 @@ public class UltNoodleTreeView : GraphView
 
     private GraphViewChange OnGraphViewChanged(GraphViewChange graphViewChange)
     {
-        if (graphViewChange.elementsToRemove != null)
+        void HandleDelete(GraphElement element, List<GraphElement> extrasToRemove, bool forceUpdate = false)
         {
-            foreach (var element in graphViewChange.elementsToRemove)
+            if (element is UltNoodleNodeView nodeView)
             {
-                if (element is UltNoodleNodeView nodeView)
-                {
-                    Undo.RecordObject(_bowl.SerializedData, "Delete Node");
+                Undo.RecordObject(_bowl.SerializedData, "Delete Node");
 
+                if (nodeView is UltNoodleRedirectNodeView)
+                {
+                    // TODO: try to reconnect nodes that were connected to this redirect node
+                    // the below seemed to work fine for flow ports, but data ports acted weird
+                    /* var inEdges = graphViewChange.elementsToRemove
+                        .OfType<Edge>()
+                        .Where(e => e.input.node == nodeView)
+                        .ToList();
+                    var outEdges = graphViewChange.elementsToRemove
+                        .OfType<Edge>()
+                        .Where(e => e.output.node == nodeView)
+                        .ToList();
+
+                    foreach (var inEdge in inEdges)
+                    {
+                        foreach (var outEdge in outEdges)
+                        {
+                            // make sure we aren't connecting to a node that is also being deleted
+                            if (!graphViewChange.elementsToRemove.Contains(inEdge.output.node)
+                                && !graphViewChange.elementsToRemove.Contains(outEdge.input.node))
+                                HandleEdgeCreation(inEdge.output, outEdge.input, true);
+                        }
+                    } */
+                }
+                else
+                {
                     // manually removing edges due to how data input constants are implemented
                     foreach (var port in nodeView.GetAllPorts())
                     {
                         foreach (var portEdge in port.connections.ToList())
                             HandleEdgeRemoval(portEdge);
                     }
-                    _bowl.SerializedData.NodeDatas.Remove(nodeView.Node);
-                    EditorUtility.SetDirty(_bowl.SerializedData);
                 }
 
-                if (element is Edge edge)
+                _bowl.SerializedData.NodeDatas.Remove(nodeView.Node);
+                if (forceUpdate)
+                    DeleteElements(new GraphElement[] { nodeView });
+
+                EditorUtility.SetDirty(_bowl.SerializedData);
+            }
+
+            if (element is Edge edge)
+            {
+                Undo.RecordObject(_bowl.SerializedData, "Remove Connection");
+                HandleEdgeRemoval(edge);
+
+                if (edge.input.node is UltNoodleRedirectNodeView redirectView)
                 {
-                    Undo.RecordObject(_bowl.SerializedData, "Remove Connection");
-                    HandleEdgeRemoval(edge);
-                    EditorUtility.SetDirty(_bowl.SerializedData);
+                    // if both of our inputs are disconnected, delete this node
+                    if (extrasToRemove != null && redirectView.GetAllPorts().All(p => !p.connected))
+                        extrasToRemove.Add(redirectView);
                 }
+
+                if (edge.output.node is UltNoodleRedirectNodeView redirectView2)
+                {
+                    // if both of our inputs are disconnected, delete this node
+                    if (extrasToRemove != null && redirectView2.GetAllPorts().All(p => !p.connected))
+                        extrasToRemove.Add(redirectView2);
+                }
+
+                if (forceUpdate)
+                    DeleteElements(new GraphElement[] { edge });
+
+                EditorUtility.SetDirty(_bowl.SerializedData);
+            }
+        }
+
+        List<GraphElement> extrasToRemove = new();
+        if (graphViewChange.elementsToRemove != null)
+        {
+            foreach (var element in graphViewChange.elementsToRemove)
+            {
+                HandleDelete(element, extrasToRemove);
+            }
+        }
+
+        if (extrasToRemove != null)
+        {
+            foreach (var extra in extrasToRemove)
+            {
+                HandleDelete(extra, null, true);
             }
         }
 
@@ -422,7 +488,7 @@ public class UltNoodleTreeView : GraphView
             foreach (var edge in graphViewChange.edgesToCreate)
             {
                 Undo.RecordObject(_bowl.SerializedData, "Create Connection");
-                HandleEdgeCreation(edge);
+                HandleEdgeCreation(edge, true);
                 EditorUtility.SetDirty(_bowl.SerializedData);
             }
         }
@@ -442,26 +508,82 @@ public class UltNoodleTreeView : GraphView
         return graphViewChange;
     }
 
-    private void HandleEdgeCreation(Edge edge)
+    private void HandleEdgeCreation(Port fromPort, Port toPort, bool connect)
     {
-        var parentView = edge.output.node as UltNoodleNodeView;
-        var childView = edge.input.node as UltNoodleNodeView;
+        Edge edge = fromPort.ConnectTo(toPort);
+        AddElement(edge);
+        HandleEdgeCreation(edge, connect);
+    }
 
-        if (parentView != null && childView != null)
+    private void HandleEdgeCreation(Edge edge, bool connect)
+    {
+        var fromPort = edge.output;
+        var toPort = edge.input;
+
+        var parentView = fromPort.node as UltNoodleNodeView;
+        var childView = toPort.node as UltNoodleNodeView;
+
+        if (connect && parentView != null && childView != null)
         {
-            if (edge.output.userData is NoodleFlowOutput fo &&
-                edge.input.userData is NoodleFlowInput fi)
+            if (fromPort.userData is NoodleFlowOutput fo &&
+                toPort.userData is NoodleFlowInput fi)
             {
                 fi.Connect(fo);
             }
 
-            if (edge.output.userData is NoodleDataOutput dout &&
-                edge.input.userData is NoodleDataInput din)
+            if (fromPort.userData is NoodleDataOutput dout &&
+                toPort.userData is NoodleDataInput din)
             {
                 din.Connect(dout);
-                ToggleNodeConstantField(edge.input, false);
+                ToggleNodeConstantField(toPort, false);
             }
         }
+
+        // double click edge to create redirect node
+        edge.RegisterCallback<MouseDownEvent>(evt =>
+        {
+            if (evt.clickCount != 2 || evt.button != 0) // double left click
+                return;
+            
+            RemoveElement(edge);
+            foreach (var portEdge in edge.output.connections.ToList())
+                HandleEdgeRemoval(portEdge);
+
+            var node = _bowl.AddNode("Redirector", UltNoodleEditor.AllBooks.First(c => c is CommonsCookBook));
+            node.NoadType = SerializedNode.NodeType.Redirect;
+            node.Position = contentViewContainer.WorldToLocal(evt.mousePosition) - new Vector2(36.5f, 20.5f); // center of node
+            node.BookTag = "redirect";
+
+            if (fromPort.userData is NoodleFlowOutput || fromPort.userData is NoodleFlowInput)
+            {
+                node.AddFlowIn("");
+                node.AddFlowOut("");
+            }
+            else if (fromPort.userData is NoodleDataOutput dOut && toPort.userData is NoodleDataInput dIn)
+            {
+                var type = dOut.Type.Type.IsAssignableFrom(dIn.Type.Type) ? dIn.Type : dOut.Type;
+                node.AddDataIn("", type);
+                node.AddDataOut("", type);
+            }
+            else
+            {
+                Debug.LogWarning("Could not determine port types when creating redirect node");
+                return;
+            }
+
+            evt.StopPropagation();
+
+            var rerouteView = new UltNoodleRedirectNodeView(node);
+            AddElement(rerouteView);
+
+            var parentPort = edge.output;
+            var rerouteInput = rerouteView.inputContainer[0] as Port;
+            HandleEdgeCreation(parentPort, rerouteInput, true);
+
+            var rerouteOutput = rerouteView.outputContainer[0] as Port;
+            var childPort = edge.input;
+            HandleEdgeCreation(rerouteOutput, childPort, true);
+        });
     }
 
     private void HandleEdgeRemoval(Edge edge)

@@ -100,7 +100,7 @@ namespace NoodledEvents
         public NoodleDataInput[] DataInputs = new NoodleDataInput[0];
         public NoodleDataOutput[] DataOutputs = new NoodleDataOutput[0];
 
-        public enum NodeType { BowlInOut, Normal }
+        public enum NodeType { BowlInOut, Normal, Redirect }
 
         public NodeType NoadType;
 
@@ -130,7 +130,7 @@ namespace NoodledEvents
             // since a data out knows if it's being used, it can fetch data preemptively for advanced/abstracted outputs
             // thing is data-ins might be within another event, in that case the data-in would need to inject pcalls that
             // save the data-out to some silly component. uahrh
-            if (NoadType == NodeType.BowlInOut) 
+            if (NoadType == NodeType.BowlInOut)
             {
                 foreach (var o in DataOutputs)
                     o.CompEvt = Bowl.Event;

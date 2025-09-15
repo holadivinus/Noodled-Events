@@ -17,6 +17,20 @@ public class UltNoodleInspectorView : VisualElement
         if (nodeView == null || nodeView.Node == null)
             return;
 
+        if (nodeView.Node.NoadType == NoodledEvents.SerializedNode.NodeType.Redirect)
+        {
+            var label = new Label("Redirect nodes have no editable properties.")
+            {
+                style = {
+                    fontSize = 14,
+                    marginTop = 12,
+                    unityTextAlign = TextAnchor.MiddleCenter
+                }
+            };
+            Add(label);
+            return;
+        }
+
         bool isInOut = nodeView.Node.NoadType == NoodledEvents.SerializedNode.NodeType.BowlInOut;
         string title = isInOut
                         ? "Bowl In/Out"

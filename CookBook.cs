@@ -52,6 +52,36 @@ namespace NoodledEvents
             // method overrides of this func should also call base.CompileNode(evt, node, dataRoot);
             // so that errors can be displayed on the node
             node.Bowl.ErroredNode = node;
+
+            // if any of our inputs are connected to a redirect, we need to find the real source and copy its compEvt/compCall
+            foreach (var input in node.DataInputs.Where(di => di.Source?.Node?.NoadType == SerializedNode.NodeType.Redirect))
+            {
+                var redirectChain = new List<SerializedNode>();
+                var current = input.Source.Node;
+
+                // collect the redirect chain
+                while (current != null && current.NoadType == SerializedNode.NodeType.Redirect)
+                {
+                    redirectChain.Add(current);
+                    current = current.DataInputs[0].Source?.Node;
+                }
+
+                // current is now the source node (or null if not connected)
+
+                if (current != null && current.DataOutputs.Length > 0)
+                {
+                    var compEvt = current.DataOutputs[0].CompEvt;
+                    var call = current.DataOutputs[0].CompCall;
+
+                    // set all redirects in the chain to use this compEvt/compCall
+                    for (int i = redirectChain.Count - 1; i >= 0; i--)
+                    {
+                        var r = redirectChain[i];
+                        r.DataOutputs[0].CompEvt = compEvt;
+                        r.DataOutputs[0].CompCall = call;
+                    }
+                }
+            }
         }
         public virtual void PostCompile(SerializedBowl bowl)
         {

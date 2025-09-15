@@ -878,6 +878,13 @@ public class CommonsCookBook : CookBook
                         evtNext3.Book.CompileNode(evt, evtNext3, dataRoot);
                 }
                 break;
+            case "redirect": // basically a no-op, just continue
+                {
+                    var nextNode = node.FlowOutputs.FirstOrDefault()?.Target?.Node;
+                    if (nextNode != null)
+                        nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+                }
+                break;
             default:
                 if (node.BookTag.Contains("_scene_") && node.BookTag.EndsWith("_var"))
                 {
