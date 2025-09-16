@@ -260,6 +260,7 @@ namespace NoodledEvents
                 case "Vector4":
                     return DefaultVector4Value;
                 case "Color":
+                case "Color32":
                     return DefaultColorValue;
                 case "Quaternion":
                     return DefaultQuaternionValue;
@@ -334,8 +335,23 @@ namespace NoodledEvents
                 case Quaternion q:
                     DefaultQuaternionValue = q;
                     break;
+                case Color c:
+                    DefaultColorValue = c;
+                    break;
+                case Color32 c32:
+                    DefaultColorValue = c32;
+                    break;
                 case string s:
                     DefaultStringValue = s;
+                    break;
+                // these are janky workarounds for how newtonsoft deserializes numbers
+                case long l:
+                    if (l < int.MinValue || l > int.MaxValue) throw new ArgumentOutOfRangeException("long default value out of int range");
+                    DefaultIntValue = (int)l;
+                    break;
+                case double d:
+                    if (d < float.MinValue || d > float.MaxValue) throw new ArgumentOutOfRangeException("double default value out of float range");
+                    DefaultFloatValue = (float)d;
                     break;
             }
         }

@@ -9,6 +9,8 @@ using System.Linq;
 
 public class UltNoodleRedirectNodeView : UltNoodleNodeView
 {
+    public bool IsPendingDelete { get; set; }
+
     public UltNoodleRedirectNodeView(SerializedNode node) : base(node)
     {
         if (node.NoadType != SerializedNode.NodeType.Redirect)
@@ -38,7 +40,7 @@ public class UltNoodleRedirectNodeView : UltNoodleNodeView
     {
         foreach (var fi in Node.FlowInputs)
         {
-            var port = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(float));
+            var port = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, null);
             port.portName = "";
             port.userData = fi;
             _flowInputs[fi.ID] = port;
@@ -47,7 +49,7 @@ public class UltNoodleRedirectNodeView : UltNoodleNodeView
 
         foreach (var fo in Node.FlowOutputs)
         {
-            var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
+            var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, null);
             port.portName = "";
             port.userData = fo;
             _flowOutputs[fo.ID] = port;

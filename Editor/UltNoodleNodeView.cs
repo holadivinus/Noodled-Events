@@ -101,7 +101,7 @@ public class UltNoodleNodeView : Node
     {
         foreach (var fi in Node.FlowInputs)
         {
-            var port = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(float));
+            var port = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, null);
             port.portName = string.IsNullOrEmpty(fi.Name) ? "Flow In" : fi.Name;
             port.userData = fi;
             _flowInputs[fi.ID] = port;
@@ -110,7 +110,7 @@ public class UltNoodleNodeView : Node
 
         foreach (var fo in Node.FlowOutputs)
         {
-            var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
+            var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, null);
             port.portName = string.IsNullOrEmpty(fo.Name) ? "Flow Out" : fo.Name;
             port.userData = fo;
 

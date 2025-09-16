@@ -36,6 +36,7 @@ public class UEObjectConverter : JsonConverter
         if (obj == null)
         {
             writer.WriteNull();
+            return;
         }
 
         GlobalObjectId globalId = GlobalObjectId.GetGlobalObjectIdSlow(obj);
