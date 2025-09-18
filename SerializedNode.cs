@@ -309,6 +309,7 @@ namespace NoodledEvents
             if (val is UnityEngine.Object obj)
             {
                 DefaultObject = obj;
+                if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Object;
                 return;
             }
 
@@ -316,42 +317,54 @@ namespace NoodledEvents
             {
                 case bool b:
                     DefaultBoolValue = b;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Bool;
                     break;
                 case float f:
                     DefaultFloatValue = f;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Float;
                     break;
                 case int i:
                     DefaultIntValue = i;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Int;
                     break;
                 case Vector2 v2:
                     DefaultVector2Value = v2;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Vector2;
                     break;
                 case Vector3 v3:
                     DefaultVector3Value = v3;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Vector3;
                     break;
                 case Vector4 v4:
                     DefaultVector4Value = v4;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Vector4;
                     break;
                 case Quaternion q:
                     DefaultQuaternionValue = q;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Quaternion;
                     break;
                 case Color c:
                     DefaultColorValue = c;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Color;
                     break;
                 case Color32 c32:
                     DefaultColorValue = c32;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Color32;
                     break;
                 case string s:
                     DefaultStringValue = s;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.String;
                     break;
                 // these are janky workarounds for how newtonsoft deserializes numbers
                 case long l:
                     if (l < int.MinValue || l > int.MaxValue) throw new ArgumentOutOfRangeException("long default value out of int range");
                     DefaultIntValue = (int)l;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Int;
                     break;
                 case double d:
                     if (d < float.MinValue || d > float.MaxValue) throw new ArgumentOutOfRangeException("double default value out of float range");
                     DefaultFloatValue = (float)d;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Float;
                     break;
             }
         }
