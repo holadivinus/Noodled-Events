@@ -169,6 +169,10 @@ public static class UltNoodleRuntimeExtensions
             if (@out.Flow) nod.AddFlowOut(@out.Name);
             else nod.AddDataOut(@out.Name, @out.Type);
         }
+
+        if (def.BookTag == "flow_redirect" || def.BookTag == "data_redirect")
+            nod.NoadType = SerializedNode.NodeType.Redirect;
+
         return nod;
     }
     public static PersistentArgumentType GetArgType(this Type type)

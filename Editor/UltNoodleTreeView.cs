@@ -147,6 +147,14 @@ public class UltNoodleTreeView : GraphView
         {
             if (FindNodeView(node) != null) continue; // already exists
 
+            if (node.NoadType == SerializedNode.NodeType.Redirect)
+            {
+                var redirectView = new UltNoodleRedirectNodeView(node);
+                redirectView.OnNodeSelected = OnNodeSelected;
+                AddElement(redirectView);
+                continue;
+            }
+
             var nodeView = new UltNoodleNodeView(node);
             nodeView.OnNodeSelected = OnNodeSelected;
             AddElement(nodeView);
@@ -261,6 +269,25 @@ public class UltNoodleTreeView : GraphView
         {
             if (node.NoadType == SerializedNode.NodeType.Redirect)
             {
+                /* TODO: TEMPORARY BACKWARDS COMPAT */
+                if (node.BookTag == "redirect") // old redirect setup
+                {
+                    if (node.FlowInputs.Length == 1 && node.FlowOutputs.Length == 1)
+                    {
+                        node.BookTag = "flow_redirect";
+                    }
+                    else if (node.DataInputs.Length == 1 && node.DataOutputs.Length == 1)
+                    {
+                        node.BookTag = "data_redirect";
+                        foreach (var di in node.DataInputs)
+                        {
+                            di.Type.Type = typeof(object); // old had specific types, new is generic
+                        }
+                    }
+                    else
+                        Debug.LogWarning($"Redirect node {node.ID} has unexpected number of inputs/outputs, cannot auto-upgrade");
+                }
+
                 var redirectView = new UltNoodleRedirectNodeView(node);
                 redirectView.OnNodeSelected = OnNodeSelected;
                 AddElement(redirectView);
@@ -485,7 +512,7 @@ public class UltNoodleTreeView : GraphView
 
     private GraphViewChange OnGraphViewChanged(GraphViewChange graphViewChange)
     {
-        void HandleDelete(GraphElement element, List<GraphElement> extrasToRemove, bool forceUpdate = false)
+        void HandleDelete(GraphElement element, List<GraphElement> extrasToRemove)
         {
             if (element is UltNoodleNodeView nodeView)
             {
@@ -526,8 +553,6 @@ public class UltNoodleTreeView : GraphView
                 }
 
                 _bowl.SerializedData.NodeDatas.Remove(nodeView.Node);
-                if (forceUpdate)
-                    DeleteElements(new GraphElement[] { nodeView });
 
                 EditorUtility.SetDirty(_bowl.SerializedData);
             }
@@ -553,9 +578,6 @@ public class UltNoodleTreeView : GraphView
                 if (edge.output.node is UltNoodleRedirectNodeView redirectView2)
                     HandleRedirectNode(redirectView2);
 
-                if (forceUpdate)
-                    DeleteElements(new GraphElement[] { edge });
-
                 EditorUtility.SetDirty(_bowl.SerializedData);
             }
         }
@@ -573,23 +595,10 @@ public class UltNoodleTreeView : GraphView
         {
             foreach (var edge in graphViewChange.edgesToCreate)
             {
-                if ((edge.input.node is UltNoodleRedirectNodeView uR && uR.IsPendingDelete) || (edge.output.node is UltNoodleRedirectNodeView uRo && uRo.IsPendingDelete))
-                {
-                    extrasToRemove.Add(edge);
-                    continue;
-                }
-
                 Undo.RecordObject(_bowl.SerializedData, "Create Connection");
                 HandleEdgeCreation(edge, true);
                 EditorUtility.SetDirty(_bowl.SerializedData);
             }
-        }
-
-        foreach (var extra in extrasToRemove)
-        {
-            HandleDelete(extra, null, true);
-            if (graphViewChange.edgesToCreate != null && graphViewChange.edgesToCreate.Contains(extra))
-                graphViewChange.edgesToCreate.Remove((Edge)extra);
         }
 
         if (graphViewChange.movedElements != null)
@@ -644,33 +653,26 @@ public class UltNoodleTreeView : GraphView
             if (evt.clickCount != 2 || evt.button != 0) // double left click
                 return;
 
-            var targetPorts = fromPort.connections.Select(e => e.input).ToList();
-            
-            foreach (var portEdge in fromPort.connections.ToList())
-            {
-                RemoveElement(portEdge);
-                HandleEdgeRemoval(portEdge);
-            }
+            RemoveElement(edge);
+            HandleEdgeRemoval(edge);
 
             var node = _bowl.AddNode("Redirector", UltNoodleEditor.AllBooks.First(c => c is CommonsCookBook));
-            node.NoadType = SerializedNode.NodeType.Redirect;
             node.Position = contentViewContainer.WorldToLocal(evt.mousePosition) - new Vector2(36.5f, 20.5f); // center of node
-            node.BookTag = "redirect";
 
             if (fromPort.userData is NoodleFlowOutput || fromPort.userData is NoodleFlowInput)
             {
-                node.AddFlowIn("");
-                node.AddFlowOut("");
+                node.MatchDef(UltNoodleEditor.AllNodeDefs.First(d => d.CookBook is CommonsCookBook && d.BookTag == "flow_redirect"));
+                node.BookTag = "flow_redirect";
             }
             else if (fromPort.userData is NoodleDataOutput dOut && toPort.userData is NoodleDataInput dIn)
             {
-                var type = dOut.Type.Type.IsAssignableFrom(dIn.Type.Type) ? dIn.Type : dOut.Type;
-                node.AddDataIn("", type);
-                node.AddDataOut("", type);
+                node.MatchDef(UltNoodleEditor.AllNodeDefs.First(d => d.CookBook is CommonsCookBook && d.BookTag == "data_redirect"));
+                node.BookTag = "data_redirect";
             }
             else
             {
                 Debug.LogWarning("Could not determine port types when creating redirect node");
+                _bowl.SerializedData.NodeDatas.Remove(node);
                 return;
             }
 
@@ -683,10 +685,7 @@ public class UltNoodleTreeView : GraphView
             HandleEdgeCreation(fromPort, rerouteInput, true);
 
             var rerouteOutput = rerouteView.outputContainer[0] as Port;
-            foreach (var target in targetPorts)
-            {
-                HandleEdgeCreation(rerouteOutput, target, true);
-            }
+            HandleEdgeCreation(rerouteOutput, toPort, true);
         });
     }
 

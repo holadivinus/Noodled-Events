@@ -19,8 +19,6 @@ public class UltNoodleRedirectNodeView : UltNoodleNodeView
         style.left = node.Position.x;
         style.top = node.Position.y;
 
-        this.capabilities &= ~Capabilities.Copiable;  // cannot copy redirects
-
         CreateFlowPorts();
         CreateDataPorts();
 
@@ -69,6 +67,7 @@ public class UltNoodleRedirectNodeView : UltNoodleNodeView
             );
             port.portName = "";
             port.userData = di;
+            port.portColor = new(0.5176f, 0.8941f, 0.9059f);
             _dataInputs[di.ID] = port;
             inputContainer.Add(port);
         }
@@ -83,6 +82,7 @@ public class UltNoodleRedirectNodeView : UltNoodleNodeView
             );
             port.portName = "";
             port.userData = dout;
+            port.portColor = new(0.5176f, 0.8941f, 0.9059f);
             _dataOutputs[dout.ID] = port;
             outputContainer.Add(port);
         }
