@@ -269,25 +269,6 @@ public class UltNoodleTreeView : GraphView
         {
             if (node.NoadType == SerializedNode.NodeType.Redirect)
             {
-                /* TODO: TEMPORARY BACKWARDS COMPAT */
-                if (node.BookTag == "redirect") // old redirect setup
-                {
-                    if (node.FlowInputs.Length == 1 && node.FlowOutputs.Length == 1)
-                    {
-                        node.BookTag = "flow_redirect";
-                    }
-                    else if (node.DataInputs.Length == 1 && node.DataOutputs.Length == 1)
-                    {
-                        node.BookTag = "data_redirect";
-                        foreach (var di in node.DataInputs)
-                        {
-                            di.Type.Type = typeof(object); // old had specific types, new is generic
-                        }
-                    }
-                    else
-                        Debug.LogWarning($"Redirect node {node.ID} has unexpected number of inputs/outputs, cannot auto-upgrade");
-                }
-
                 var redirectView = new UltNoodleRedirectNodeView(node);
                 redirectView.OnNodeSelected = OnNodeSelected;
                 AddElement(redirectView);
