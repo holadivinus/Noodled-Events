@@ -84,7 +84,7 @@ public class UltNoodleEditor : EditorWindow
         EditorSceneManager.sceneOpened += (_, _) => contextChanged();
         PrefabStage.prefabStageOpened += (_) => contextChanged();
         PrefabStage.prefabStageClosing += (_) => contextChanged(); // described as "Prefab stage is about to be opened" in docs but functions as "Prefab stage is closed"
-        Selection.selectionChanged += OnFocus;
+        Selection.selectionChanged += contextChanged;
 
         treeView = root.Q<UltNoodleTreeView>();
         inspectorView = root.Q<UltNoodleInspectorView>();
@@ -323,13 +323,6 @@ public class UltNoodleEditor : EditorWindow
         // lets get all ult event sources in the scene;
         // then, graph them out
 
-        if ((Selection.activeGameObject == null || !Selection.activeGameObject.TryGetComponent(out SerializedBowl _)) && EditorPrefs.GetBool("SelectedBowlsOnly", true))
-        {
-            // nothing selected, and we're only showing selected bowls
-            ResetViews();
-            return;
-        }
-
         var curScene = SceneManager.GetActiveScene();
 
         foreach (var bowl in Bowls.ToArray())
@@ -337,30 +330,84 @@ public class UltNoodleEditor : EditorWindow
         treeView?.Validate();
 
         // autogen bowlsUIs
-        EditorApplication.CallbackFunction makeUI = () =>
+        void ProcessBowls()
         {
             PrefabStage prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-            foreach (var bowl in prefabStage?.prefabContentsRoot.GetComponentsInChildren<SerializedBowl>(true) ?? Resources.FindObjectsOfTypeAll<SerializedBowl>())
+            IEnumerable<SerializedBowl> bowls = prefabStage?.prefabContentsRoot.GetComponentsInChildren<SerializedBowl>(true)
+                            ?? Resources.FindObjectsOfTypeAll<SerializedBowl>();
+
+            foreach (var bowl in bowls)
             {
-                if (bowl == null)
+                if (bowl == null || (prefabStage == null && bowl.gameObject.scene != curScene))
                     continue;
-                if (prefabStage == null && bowl.gameObject.scene != curScene)
-                    continue;
-                if (!Bowls.Any(b => b.SerializedData == bowl) && (Selection.activeGameObject == bowl.gameObject || !EditorPrefs.GetBool("SelectedBowlsOnly", true)) && !PrefabUtility.IsPartOfAnyPrefab(bowl))
+
+                bool isBowlNew = !Bowls.Any(b => b.SerializedData == bowl);
+                bool isBowlSelected = Selection.gameObjects.Contains(bowl.gameObject)
+                                    || Selection.transforms.Any(t => bowl.transform.IsChildOf(t))
+                                    || !EditorPrefs.GetBool("SelectedBowlsOnly", true);
+                bool isNotPartOfPrefab = !PrefabUtility.IsPartOfAnyPrefab(bowl);
+
+                if (isBowlNew && isBowlSelected && isNotPartOfPrefab)
                 {
-                    // if we have a dedicated bowl to select (from toggling SelectedBowlsOnly), we only select that one
-                    // otherwise, we select the first bowl we find
-                    bool shouldSelect = (_bowlToReselect == null || _bowlToReselect == bowl) && (_currentBowl == null || !Bowls.Contains(_currentBowl));
+                    bool shouldSelect = (_bowlToReselect == null || _bowlToReselect == bowl)
+                            && (_currentBowl == null || !Bowls.Contains(_currentBowl));
+
                     NewBowl(bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath, shouldSelect);
+
                     if (shouldSelect)
                         _bowlToReselect = null;
                 }
             }
-        };
+
+            Bowls.Sort((a, b) =>
+            {
+                Transform ta = a.SerializedData.transform;
+                Transform tb = b.SerializedData.transform;
+
+                // sort 1: hierarchy depth (shallower comes first)
+                int depthA = GetDepth(ta);
+                int depthB = GetDepth(tb);
+                if (depthA != depthB)
+                    return depthA.CompareTo(depthB);
+
+                // sort 2: sibling index at this level
+                int siblingCompare = ta.GetSiblingIndex().CompareTo(tb.GetSiblingIndex());
+                if (siblingCompare != 0)
+                    return siblingCompare;
+
+                // sort 3: component order if same GameObject
+                if (ta == tb)
+                {
+                    var compsA = ta.GetComponents<SerializedBowl>();
+                    var compsB = tb.GetComponents<SerializedBowl>();
+
+                    int indexA = Array.IndexOf(compsA, a.SerializedData);
+                    int indexB = Array.IndexOf(compsB, b.SerializedData);
+
+                    return indexA.CompareTo(indexB);
+                }
+
+                return 0;
+            });
+
+            OnBowlsChanged?.Invoke();
+        }
 
         if (!_created)
-            EditorApplication.delayCall += makeUI;
-        else makeUI.Invoke();
+            EditorApplication.delayCall += ProcessBowls;
+        else
+            ProcessBowls();
+
+        int GetDepth(Transform t)
+        {
+            int depth = 0;
+            while (t.parent != null)
+            {
+                depth++;
+                t = t.parent;
+            }
+            return depth;
+        }
     }
 
     public UltNoodleBowl NewBowl(Component eventComponent, SerializedType fieldType, string eventField, bool select = true)

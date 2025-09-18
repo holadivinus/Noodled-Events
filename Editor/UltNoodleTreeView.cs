@@ -35,7 +35,7 @@ public class UltNoodleTreeView : GraphView
 
     // extras
     // TODO: grouping
-    // TODO: handle multi selection and show child bowls w/ show selected bowls only
+    // TODO: BowlSelector might benefit from showing it in the form of the scene hierarchy
     // TODO: bookmarks window/popout list
 
     public UltNoodleTreeView()
