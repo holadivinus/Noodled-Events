@@ -9,8 +9,6 @@ using System.Linq;
 
 public class UltNoodleRedirectNodeView : UltNoodleNodeView
 {
-    public bool IsPendingDelete { get; set; }
-
     public UltNoodleRedirectNodeView(SerializedNode node) : base(node)
     {
         if (node.NoadType != SerializedNode.NodeType.Redirect)
@@ -25,6 +23,14 @@ public class UltNoodleRedirectNodeView : UltNoodleNodeView
         RegisterCallback<MouseDownEvent>(OnMouseDown);
         
         titleContainer.RemoveFromHierarchy();
+    }
+
+    public void MatchPortColor(Port basePort)
+    {
+        foreach (var port in _dataInputs.Values.Concat(_dataOutputs.Values))
+        {
+            port.portColor = basePort.portColor;
+        }
     }
 
     private void OnMouseDown(MouseDownEvent evt)
@@ -50,6 +56,11 @@ public class UltNoodleRedirectNodeView : UltNoodleNodeView
             var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, null);
             port.portName = "";
             port.userData = fo;
+
+            var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
+            var connector = new EdgeConnector<Edge>(listener);
+            port.AddManipulator(connector);
+
             _flowOutputs[fo.ID] = port;
             outputContainer.Add(port);
         }
@@ -83,6 +94,11 @@ public class UltNoodleRedirectNodeView : UltNoodleNodeView
             port.portName = "";
             port.userData = dout;
             port.portColor = new(0.5176f, 0.8941f, 0.9059f);
+            
+            var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
+            var connector = new EdgeConnector<Edge>(listener);
+            port.AddManipulator(connector);
+
             _dataOutputs[dout.ID] = port;
             outputContainer.Add(port);
         }

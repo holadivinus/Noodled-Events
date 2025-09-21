@@ -179,6 +179,7 @@ public class UltNoodleTreeView : GraphView
 
                 if (targetPorts.Count > 1)
                 {
+                    // TODO: for whatever unholy reason, if this occurs on a child-of-selected bowl, edges will connect to 0,0 instead of the actual port until refreshed
                     GenericMenu menu = new();
                     foreach (var port in targetPorts)
                     {
@@ -493,82 +494,39 @@ public class UltNoodleTreeView : GraphView
 
     private GraphViewChange OnGraphViewChanged(GraphViewChange graphViewChange)
     {
-        void HandleDelete(GraphElement element, List<GraphElement> extrasToRemove)
-        {
-            if (element is UltNoodleNodeView nodeView)
-            {
-                Undo.RecordObject(_bowl.SerializedData, "Delete Node");
-
-                if (nodeView is UltNoodleRedirectNodeView)
-                {
-                    // TODO: try to reconnect nodes that were connected to this redirect node
-                    // the below seemed to work fine for flow ports, but data ports acted weird
-                    /* var inEdges = graphViewChange.elementsToRemove
-                        .OfType<Edge>()
-                        .Where(e => e.input.node == nodeView)
-                        .ToList();
-                    var outEdges = graphViewChange.elementsToRemove
-                        .OfType<Edge>()
-                        .Where(e => e.output.node == nodeView)
-                        .ToList();
-
-                    foreach (var inEdge in inEdges)
-                    {
-                        foreach (var outEdge in outEdges)
-                        {
-                            // make sure we aren't connecting to a node that is also being deleted
-                            if (!graphViewChange.elementsToRemove.Contains(inEdge.output.node)
-                                && !graphViewChange.elementsToRemove.Contains(outEdge.input.node))
-                                HandleEdgeCreation(inEdge.output, outEdge.input, true);
-                        }
-                    } */
-                }
-                else
-                {
-                    // manually removing edges due to how data input constants are implemented
-                    foreach (var port in nodeView.GetAllPorts())
-                    {
-                        foreach (var portEdge in port.connections.ToList())
-                            HandleEdgeRemoval(portEdge);
-                    }
-                }
-
-                _bowl.SerializedData.NodeDatas.Remove(nodeView.Node);
-
-                EditorUtility.SetDirty(_bowl.SerializedData);
-            }
-
-            if (element is Edge edge)
-            {
-                Undo.RecordObject(_bowl.SerializedData, "Remove Connection");
-                HandleEdgeRemoval(edge);
-
-                void HandleRedirectNode(UltNoodleRedirectNodeView redirectView)
-                {
-                    // if both of our inputs are disconnected, delete this node
-                    if (extrasToRemove != null && redirectView.GetAllPorts().All(p => !p.connected))
-                    {
-                        extrasToRemove.Add(redirectView);
-                        redirectView.IsPendingDelete = true;
-                    }
-                }
-
-                if (edge.input.node is UltNoodleRedirectNodeView redirectView)
-                    HandleRedirectNode(redirectView);
-
-                if (edge.output.node is UltNoodleRedirectNodeView redirectView2)
-                    HandleRedirectNode(redirectView2);
-
-                EditorUtility.SetDirty(_bowl.SerializedData);
-            }
-        }
-
-        List<GraphElement> extrasToRemove = new();
         if (graphViewChange.elementsToRemove != null)
         {
             foreach (var element in graphViewChange.elementsToRemove)
             {
-                HandleDelete(element, extrasToRemove);
+                if (element is UltNoodleNodeView nodeView)
+                {
+                    Undo.RecordObject(_bowl.SerializedData, "Delete Node");
+
+                    if (nodeView is UltNoodleRedirectNodeView)
+                    {
+                        // TODO: try to reconnect nodes that were connected to this redirect node
+                    }
+                    else
+                    {
+                        // manually removing edges due to how data input constants are implemented
+                        foreach (var port in nodeView.GetAllPorts())
+                        {
+                            foreach (var portEdge in port.connections.ToList())
+                                HandleEdgeRemoval(portEdge);
+                        }
+                    }
+
+                    _bowl.SerializedData.NodeDatas.Remove(nodeView.Node);
+
+                    EditorUtility.SetDirty(_bowl.SerializedData);
+                }
+
+                if (element is Edge edge)
+                {
+                    Undo.RecordObject(_bowl.SerializedData, "Remove Connection");
+                    HandleEdgeRemoval(edge);
+                    EditorUtility.SetDirty(_bowl.SerializedData);
+                }
             }
         }
 
@@ -626,6 +584,13 @@ public class UltNoodleTreeView : GraphView
                 din.Connect(dout);
                 ToggleNodeConstantField(toPort, false);
             }
+        }
+
+        if (childView is UltNoodleRedirectNodeView redirectView)
+        {
+            // change port colors to indicate type of data
+            // we delay it a frame to avoid issues with the port not being fully initialized yet (mainly the color not being set yet)
+            EditorApplication.delayCall += () => redirectView.MatchPortColor(fromPort);
         }
 
         // double click edge to create redirect node
