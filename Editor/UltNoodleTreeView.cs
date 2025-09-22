@@ -239,7 +239,7 @@ public class UltNoodleTreeView : GraphView
                 {
                     var parentPort = parentView.GetPortForFlowInput(fi);
                     var childView = FindNodeView(fo.Node);
-                    var childPort = childView.GetPortForFlowOutput(fo);
+                    var childPort = childView?.GetPortForFlowOutput(fo);
                     if (parentPort != null && childPort != null)
                     {
                         HandleEdgeCreation(childPort, parentPort, false);
