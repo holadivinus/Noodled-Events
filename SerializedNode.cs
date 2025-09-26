@@ -69,7 +69,7 @@ namespace NoodledEvents
         {
             Bowl = bowl;
             NoadType = SerializedNode.NodeType.BowlInOut;
-            Position = new Vector2(-210, 0);
+            Position = Vector2.zero;
 
             FieldInfo evtField = bowl.BowlEvtHolderType.Type.GetField(bowl.EventFieldPath, UltEventUtils.AnyAccessBindings);
             
@@ -84,6 +84,7 @@ namespace NoodledEvents
         }
         [NonSerialized] public SerializedBowl Bowl;
         [SerializeField] public string Name;
+        [SerializeField] public string ID = Guid.NewGuid().ToString();
 
         public void Update() // idk lol
         {
@@ -99,7 +100,7 @@ namespace NoodledEvents
         public NoodleDataInput[] DataInputs = new NoodleDataInput[0];
         public NoodleDataOutput[] DataOutputs = new NoodleDataOutput[0];
 
-        public enum NodeType { BowlInOut, Normal }
+        public enum NodeType { BowlInOut, Normal, Redirect }
 
         public NodeType NoadType;
 
@@ -111,8 +112,6 @@ namespace NoodledEvents
             {
                 if (_position != value)
                 {
-                    if (NoadType != NodeType.BowlInOut)
-                        value = new Vector2(Mathf.Clamp(value.x, 0, Bowl.Size.x-10), Mathf.Clamp(value.y, 0, Bowl.Size.y-30));
                     PositionChanged.Invoke(_position = value);
                 }
             }
@@ -131,7 +130,7 @@ namespace NoodledEvents
             // since a data out knows if it's being used, it can fetch data preemptively for advanced/abstracted outputs
             // thing is data-ins might be within another event, in that case the data-in would need to inject pcalls that
             // save the data-out to some silly component. uahrh
-            if (NoadType == NodeType.BowlInOut) 
+            if (NoadType == NodeType.BowlInOut)
             {
                 foreach (var o in DataOutputs)
                     o.CompEvt = Bowl.Event;
@@ -232,48 +231,15 @@ namespace NoodledEvents
     public class NoodleDataInput // has 1 source
     {
         public NoodleDataInput() { }
-        public NoodleDataInput(SerializedNode node, Type t, string paramName, object defaultValue) 
+        public NoodleDataInput(SerializedNode node, Type t, string paramName, object defaultValue)
         {
             Node = node; Type = new SerializedType(t); Name = paramName;
-            if (defaultValue is UnityEngine.Object obj) DefaultObject = obj;
-            else
-            {
-                //call the executioner
-                switch (defaultValue)
-                {
-                    case bool b:
-                        DefaultBoolValue = b;
-                        break;
-                    case float f:
-                        DefaultFloatValue = f;
-                        break;
-                    case int i:
-                        DefaultIntValue = i;
-                        break;
-                    case Vector2 v2:
-                        DefaultVector2Value = v2;
-                        break;
-                    case Vector3 v3:
-                        DefaultVector3Value = v3;
-                        break;
-                    case Vector4 v4:
-                        DefaultVector4Value = v4;
-                        break;
-                    case Quaternion q:
-                        DefaultQuaternionValue = q;
-                        break;
-                    case string s:
-                        DefaultStringValue = s;
-                        break;
-                }
-            }
+            SetDefault(defaultValue);
         }
         public string Name;
         [NonSerialized] public SerializedNode Node;
         [SerializeField] public SerializedType Type;
         [NonSerialized] public NoodleDataOutput Source;
-        [NonSerialized] public VisualElement UI;
-        [NonSerialized] public bool HasMouse;
         [SerializeField] public string ID = Guid.NewGuid().ToString();
         [SerializeField] public bool UIConst;
 
@@ -294,6 +260,7 @@ namespace NoodledEvents
                 case "Vector4":
                     return DefaultVector4Value;
                 case "Color":
+                case "Color32":
                     return DefaultColorValue;
                 case "Quaternion":
                     return DefaultQuaternionValue;
@@ -337,6 +304,71 @@ namespace NoodledEvents
             return null;
         }
 
+        public void SetDefault(object val)
+        {
+            if (val is UnityEngine.Object obj)
+            {
+                DefaultObject = obj;
+                if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Object;
+                return;
+            }
+
+            switch (val)
+            {
+                case bool b:
+                    DefaultBoolValue = b;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Bool;
+                    break;
+                case float f:
+                    DefaultFloatValue = f;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Float;
+                    break;
+                case int i:
+                    DefaultIntValue = i;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Int;
+                    break;
+                case Vector2 v2:
+                    DefaultVector2Value = v2;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Vector2;
+                    break;
+                case Vector3 v3:
+                    DefaultVector3Value = v3;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Vector3;
+                    break;
+                case Vector4 v4:
+                    DefaultVector4Value = v4;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Vector4;
+                    break;
+                case Quaternion q:
+                    DefaultQuaternionValue = q;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Quaternion;
+                    break;
+                case Color c:
+                    DefaultColorValue = c;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Color;
+                    break;
+                case Color32 c32:
+                    DefaultColorValue = c32;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Color32;
+                    break;
+                case string s:
+                    DefaultStringValue = s;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.String;
+                    break;
+                // these are janky workarounds for how newtonsoft deserializes numbers
+                case long l:
+                    if (l < int.MinValue || l > int.MaxValue) throw new ArgumentOutOfRangeException("long default value out of int range");
+                    DefaultIntValue = (int)l;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Int;
+                    break;
+                case double d:
+                    if (d < float.MinValue || d > float.MaxValue) throw new ArgumentOutOfRangeException("double default value out of float range");
+                    DefaultFloatValue = (float)d;
+                    if (Type.Type == typeof(object)) ConstInput = PersistentArgumentType.Float;
+                    break;
+            }
+        }
+
         [SerializeField] public string DefaultStringValue;
         [SerializeField] public Vector4 ValDefs;
         public bool DefaultBoolValue { get => ValDefs.x != 0; set => ValDefs.x = value ? 1 : 0; }
@@ -378,8 +410,6 @@ namespace NoodledEvents
         [NonSerialized] public List<NoodleDataInput> Targets = new();
         [SerializeField] public string[] TargetIds;
         [SerializeField] public SerializedType Type;
-        [NonSerialized] public bool HasMouse;
-        [NonSerialized] public VisualElement UI;
         [SerializeField] public string ID = Guid.NewGuid().ToString();
         public void Connect(NoodleDataInput input) => input.Connect(this); //lol
 
@@ -399,9 +429,6 @@ namespace NoodledEvents
         [NonSerialized] public List<NoodleFlowOutput> Sources = new();
         [SerializeField] public string[] SourcesIds;
 
-        [NonSerialized] public bool HasMouse;
-        [NonSerialized] public VisualElement UI;
-
         [SerializeField] public string ID = Guid.NewGuid().ToString();
 
         public void Connect(NoodleFlowOutput output) => output.Connect(this);
@@ -414,9 +441,38 @@ namespace NoodledEvents
         public NoodleFlowOutput(SerializedNode node) => Node = node;
         [NonSerialized] public SerializedNode Node;
         [NonSerialized] public NoodleFlowInput Target;
-        [NonSerialized] public bool HasMouse;
-        [NonSerialized] public VisualElement UI;
         [SerializeField] public string ID = Guid.NewGuid().ToString();
+
+        public bool CanConnectTo(NoodleFlowInput targetInput)
+        {
+            if (targetInput == null)
+                return true;
+
+            var visited = new HashSet<SerializedNode>();
+
+            bool Visit(SerializedNode node)
+            {
+                if (!visited.Add(node))
+                    return true; // already seen, avoid infinite loops
+
+                foreach (var output in node.FlowOutputs)
+                {
+                    if (output.Target == null)
+                        continue;
+
+                    var nextNode = output.Target.Node;
+
+                    if (nextNode == Node) // trying to connect back to the origin
+                        return false;
+
+                    if (!Visit(nextNode))
+                        return false;
+                }
+                return true;
+            }
+
+            return Visit(targetInput.Node);
+        }
 
         public void Connect(NoodleFlowInput input)
         {

@@ -52,6 +52,36 @@ namespace NoodledEvents
             // method overrides of this func should also call base.CompileNode(evt, node, dataRoot);
             // so that errors can be displayed on the node
             node.Bowl.ErroredNode = node;
+
+            // if any of our inputs are connected to a redirect, we need to find the real source and copy its compEvt/compCall
+            foreach (var input in node.DataInputs.Where(di => di.Source?.Node?.NoadType == SerializedNode.NodeType.Redirect))
+            {
+                var redirectChain = new List<SerializedNode>();
+                var current = input.Source.Node;
+
+                // collect the redirect chain
+                while (current != null && current.NoadType == SerializedNode.NodeType.Redirect)
+                {
+                    redirectChain.Add(current);
+                    current = current.DataInputs[0].Source?.Node;
+                }
+
+                // current is now the source node (or null if not connected)
+
+                if (current != null && current.DataOutputs.Length > 0)
+                {
+                    var compEvt = current.DataOutputs[0].CompEvt;
+                    var call = current.DataOutputs[0].CompCall;
+
+                    // set all redirects in the chain to use this compEvt/compCall
+                    for (int i = redirectChain.Count - 1; i >= 0; i--)
+                    {
+                        var r = redirectChain[i];
+                        r.DataOutputs[0].CompEvt = compEvt;
+                        r.DataOutputs[0].CompCall = call;
+                    }
+                }
+            }
         }
         public virtual void PostCompile(SerializedBowl bowl)
         {
@@ -69,7 +99,7 @@ namespace NoodledEvents
         public virtual void SwapConnections(SerializedNode oldNode, SerializedNode newNode)
         {
             if (oldNode.FlowInputs.Length > 0 && newNode.FlowInputs.Length > 0)
-                foreach (var fsrc in oldNode.FlowInputs[0].Sources)
+                foreach (var fsrc in oldNode.FlowInputs[0].Sources.ToList())
                     fsrc.Connect(newNode.FlowInputs[0]);
 
             if (oldNode.FlowOutputs.Length > 0 && newNode.FlowOutputs.Length > 0)
@@ -229,13 +259,18 @@ namespace NoodledEvents
                 {
                     var o = new UnityEngine.UIElements.Button(() =>
                     {
-                        if (UltNoodleEditor.NewNodeBowl == null) return;
-                        var nod = UltNoodleEditor.NewNodeBowl.AddNode(def.Name, book).MatchDef(def);
+                        if (UltNoodleEditor.Editor == null) return;
+                        UltNoodleBowl bowl = UltNoodleEditor.Editor.CurrentBowl;
+                        if (bowl == null) return;
+                        var nod = bowl.AddNode(def.Name, book).MatchDef(def);
 
                         nod.BookTag = def.BookTag != string.Empty ? def.BookTag : def.Name;
 
-                        nod.Position = UltNoodleEditor.NewNodePos;
-                        UltNoodleEditor.NewNodeBowl.Validate();
+                        nod.Position = UltNoodleEditor.Editor.TreeView.NewNodeSpawnPos;
+                        bowl.Validate();
+                        UltNoodleEditor.Editor.TreeView.RenderNewNodes();
+
+                        UltNoodleSearchWindow.ForceClose();
                     });
                     o.text = searchTextOverride == string.Empty ? def.Name : searchTextOverride;
                     o.tooltip = tooltipOverride == string.Empty ? o.text : tooltipOverride;

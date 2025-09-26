@@ -119,7 +119,7 @@ namespace NoodledEvents.Assets.Noodled_Events
             }).Invoke());
             myInspector.Q<Button>("OpenEditorBT").clicked += () =>
             {
-                UltNoodleEditor.ShowExample();
+                UltNoodleEditor.OpenWindow();
             };
             myInspector.Q<Button>("UnpackBT").clicked += () =>
             {
@@ -218,8 +218,8 @@ namespace NoodledEvents.Assets.Noodled_Events
                                     input.EditorConstName = "";
                                     EditorUtility.SetDirty(bowl);
                                     PrefabUtility.RecordPrefabInstancePropertyModifications(bowl);
-                                    if (input.UI != null && !PrefabUtility.IsPartOfAnyPrefab(bowl))
-                                        input.UI.GetFirstAncestorOfType<UltNoodleBowlUI>().Validate();
+                                    if (!PrefabUtility.IsPartOfAnyPrefab(bowl) && UltNoodleEditor.Editor != null)
+                                        UltNoodleEditor.Editor.Bowls.FirstOrDefault(b => b.SerializedData == bowl)?.Validate();
                                 }
                     RegenList();
                 };
@@ -242,8 +242,8 @@ namespace NoodledEvents.Assets.Noodled_Events
                                     needsComp = true;
                                     EditorUtility.SetDirty(bowl);
                                     PrefabUtility.RecordPrefabInstancePropertyModifications(bowl);
-                                    if (input.UI != null && !PrefabUtility.IsPartOfAnyPrefab(bowl))
-                                        input.UI.GetFirstAncestorOfType<UltNoodleBowlUI>().Validate();
+                                    if (!PrefabUtility.IsPartOfAnyPrefab(bowl) && UltNoodleEditor.Editor != null)
+                                        UltNoodleEditor.Editor.Bowls.FirstOrDefault(b => b.SerializedData == bowl)?.Validate();
                                 }
                         if (needsComp)
                         bowl.Compile();

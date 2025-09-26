@@ -22,6 +22,18 @@ public class CommonsCookBook : CookBook
             outputs:() => new[] { new Pin("true"), new Pin("false") },
             bookTag: "if"));
 
+        // flow.redirect
+        allDefs.Add(new NodeDef(this, "flow.redirect",
+            inputs: () => new[] { new Pin("") },
+            outputs: () => new[] { new Pin("") },
+            bookTag: "flow_redirect"));
+
+        // data.redirect
+        allDefs.Add(new NodeDef(this, "data.redirect",
+            inputs: () => new[] { new Pin("", typeof(object)) },
+            outputs: () => new[] { new Pin("", typeof(object)) },
+            bookTag: "data_redirect"));
+
         #region MATH
         allDefs.Add(new NodeDef(this, "math.add_floats",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
@@ -876,6 +888,13 @@ public class CommonsCookBook : CookBook
                     var evtNext3 = node.FlowOutputs[0].Target?.Node;
                     if (evtNext3 != null)
                         evtNext3.Book.CompileNode(evt, evtNext3, dataRoot);
+                }
+                break;
+            case "flow_redirect": // basically a no-op, just continue
+                {
+                    var nextNode = node.FlowOutputs.FirstOrDefault()?.Target?.Node;
+                    if (nextNode != null)
+                        nextNode.Book.CompileNode(evt, nextNode, dataRoot);
                 }
                 break;
             default:

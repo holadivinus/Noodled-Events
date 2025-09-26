@@ -11,12 +11,12 @@ namespace NoodledEvents
         public LifeCycleEvents Evts => e ??= GetComponent<LifeCycleEvents>();
         private void OnEnable()
         {
-            if (UltNoodleBowlUI.EvtIsExecRn)
+            if (UltNoodleBowl.EvtIsExecRn)
                 Evts.OnEnable();
         }
         private void OnDisable()
         {
-            if (UltNoodleBowlUI.EvtIsExecRn)
+            if (UltNoodleBowl.EvtIsExecRn)
                 Evts.OnDisable();
         }
     }

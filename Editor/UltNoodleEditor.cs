@@ -1,18 +1,13 @@
 #if UNITY_EDITOR
-using ImageMagick;
-using Newtonsoft.Json;
 using NoodledEvents;
 using SLZ.Marrow.Warehouse;
 using SLZ.Marrow.Zones;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using UltEvents;
 using UnityEditor;
 using UnityEditor.PackageManager;
@@ -21,68 +16,35 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
-using static UnityEditor.EditorApplication;
-
 
 public class UltNoodleEditor : EditorWindow
 {
     [MenuItem("NoodledEvents/Noodle Editor")]
-    public static void ShowExample()
+    public static void OpenWindow()
     {
         UltNoodleEditor wnd = GetWindow<UltNoodleEditor>();
-        wnd.Show();
         wnd.titleContent = new GUIContent("Scene Noodle Editor");
     }
-    [SerializeField] AudioClip FordVoiceLine1;
-    [SerializeField] AudioClip FordVoiceLine2;
-    [SerializeField] AudioClip FordVoiceLine3;
-    [SerializeField] AudioClip FordVoiceLine4;
-    [SerializeField] AudioClip FordVoiceLine5;
-    [SerializeField] public Texture2D ArrowPng;
-    [SerializeField] public VisualTreeAsset UltNoodleEditorUI_UXML;
-    [SerializeField] public VisualTreeAsset UltNoodleBowlUI_UXML;
-    [SerializeField] public VisualTreeAsset UltNoodleNodeUI_UXML;
-    [SerializeField] public VisualTreeAsset UltNoodleFlowOutUI_UXML;
-    [SerializeField] public VisualTreeAsset UltNoodleDataInUI_UXML;
+
     [SerializeField] public CookBook CommonsCookBook;
     [SerializeField] public CookBook StaticCookBook;
     [SerializeField] public CookBook ObjectCookBook;
     [SerializeField] public CookBook ObjectFCookBook;
     [SerializeField] public CookBook LoopsCookBook;
     public static CookBook[] AllBooks;
-
-
-
-    //[MenuItem("NoodledEvents/test")]
-    public static void test()
-    {
-        //Selection.activeGameObject.GetComponent<UltEventHolder>().Event.PersistentCallsList[0].SetMethod(typeof(NavMeshHit).GetConstructors(UltEventUtils.AnyAccessBindings)[0], null);
-        AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<LoopsCookBook>(), "Assets/LoopsCookBook.asset");
-        return; 
-        
-    }
-
-
-    public VisualElement NodesFrame;
-    public VisualElement A;
-    public VisualElement B;
-    public VisualElement C;
-    public VisualElement D;
-    public VisualElement SearchMenu;
-    public TextField SearchBar;
-    public Label SearchProgress;
-    public ScrollView SearchedTypes;
-    public Toggle StaticsToggle;
-    private VisualElement cog;
-    public VisualElement SearchSettings;
-    public static Label TypeHinter;
+    public static List<CookBook.NodeDef> AllNodeDefs = new();
     public static UltNoodleEditor Editor;
-    private bool InPackage()
+
+    public static string BaseFolder => InPackage() ? "Packages/com.holadivinus.noodledevents/" : "Assets/Noodled-Events/";
+    public static string EditorFolder => BaseFolder + "Editor/";
+
+    private static bool InPackage()
     {
-        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        var assembly = Assembly.GetExecutingAssembly();
         var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(assembly);
         return packageInfo != null;
     }
+
     async void GetRequest(string url, Action<string> response)
     {
         using (HttpClient client = new HttpClient())
@@ -93,138 +55,147 @@ public class UltNoodleEditor : EditorWindow
             response.Invoke(stringGet);
         }
     }
+
+    public UltNoodleTreeView TreeView => treeView;
+    
+    private UltNoodleTreeView treeView;
+    private UltNoodleInspectorView inspectorView;
+    private UltNoodleBowlSelector bowlSelector;
+    private SerializedBowl _bowlToReselect = null;
+
     public void CreateGUI()
     {
         Editor = this;
+
         VisualElement root = rootVisualElement;
 
-        // Import UXML
-        var visualTree = UltNoodleEditorUI_UXML;
-        VisualElement loadedUXML = visualTree.Instantiate();
-        root.Add(loadedUXML);
-         
-        NodesFrame = root.Q(nameof(NodesFrame));
-        // These are the Node Viewing Pivots.
-        A = root.Q(nameof(A));
-        B = root.Q(nameof(B));
-        C = root.Q(nameof(C));
-        D = root.Q(nameof(D));
-        SearchMenu = root.Q(nameof(SearchMenu));
-        SearchBar = SearchMenu.Q<TextField>(nameof(SearchBar));
-        SearchedTypes = SearchMenu.Q<ScrollView>(nameof(SearchedTypes));
-        SearchMenu.visible = false;
-        TypeHinter = root.Q<Label>(nameof(TypeHinter));
-        //StaticsToggle = SearchMenu.Q<Toggle>("StaticsToggle");
-        //StaticsToggle.RegisterValueChangedCallback((v) => SearchTypes());
-        //StaticsToggle.Children().ToArray()[1].style.flexGrow = 0;
-        TextAsset packageData = AssetDatabase.LoadAssetAtPath<TextAsset>(InPackage() ? "Packages/com.holadivinus.noodledevents/package.json" : "Assets/Noodled-Events/package.json");
-        string version = packageData.text.Split("\"version\": \"")[1].Split('"')[0];
-        root.Q<Label>("CurVersionNum").text = "Current Version: " + version;
-    if (!InPackage())
-    goto SkipUpdates;
-        Button updateBT = root.Q<Button>("NextVersionBT");
-        updateBT.text = "Checking for Updates...";
-        GetRequest("https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json", (resp) =>
-        {
-            string remoteVersion = resp.Split("\"version\": \"")[1].Split('"')[0];
-            Debug.Log(remoteVersion);
-            if (new Version(remoteVersion) > new Version(version))
-            {
-                updateBT.text = "Click to Update to (" + remoteVersion + ")!";
-                bool updatin = false;
-                updateBT.clicked += () =>
-                {
-                    if (updatin) return;
-                    updatin = true;
-                    var req = Client.Add("https://github.com/holadivinus/Noodled-Events.git");
-                    float c = 0;
-                    EditorApplication.update += () =>
-                    {
-                        c += .01f * 5   ;
-                        if (c > 300) c = 0;
-                        updateBT.text = "Updating";
-                        for (int i = 0; i < (int)(c / 20); i++)
-                        {
-                            updateBT.text += ".";
-                        }
-                    };
-                };
-            }
-            else
-            {
-                updateBT.text = "Up to Date.";
-            }
-        });
-    SkipUpdates:
-        NodesFrame.RegisterCallback<WheelEvent>(OnScroll);
-        NodesFrame.RegisterCallback<MouseEnterEvent>(a => shouldShake = true);
-        NodesFrame.RegisterCallback<MouseLeaveEvent>(b => shouldShake = false);
-        NodesFrame.RegisterCallback<MouseDownEvent>(NodeFrameMouseDown);
-        NodesFrame.RegisterCallback<MouseMoveEvent>(NodeFrameMouseMove);
-        NodesFrame.RegisterCallback<MouseUpEvent>(NodeFrameMouseUp);
-        NodesFrame.RegisterCallback<KeyDownEvent>(NodeFrameKeyDown);
-        root.panel.visualTree.RegisterCallback<KeyDownEvent>(NodeFrameKeyDown);
+        VisualTreeAsset visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{EditorFolder}/Styles/UltNoodleEditor.uxml");
+        visualTree.CloneTree(root);
 
-        SearchProgress = SearchMenu.Q<Label>("SearchText");
-        SearchBar.RegisterValueChangedCallback((txt) =>
-        {
-            if (EditorPrefs.GetBool("SearchPerChar", true))
-                SearchTypes(10);
-        });
-        SearchBar.RegisterCallback<KeyDownEvent>((evt) => {
-            if (evt.keyCode == KeyCode.Return) {
-                SearchTypes(100);
-            }
-        }, TrickleDown.TrickleDown);
-        //SearchedTypes.RegisterCallback<WheelEvent>(OnSearchScroll);
+        StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{EditorFolder}/Styles/UltNoodleEditor.uss");
+        root.styleSheets.Add(styleSheet);
 
-        SearchSettings = root.Q(nameof(SearchSettings));
-        root.Q<Button>("SettingsBT").clicked += () =>
-        {
-            SearchSettings.visible = !SearchSettings.visible;
-            SearchSettings.style.display = DisplayStyle.Flex;
-        };
-
-        root.Q<Button>("fordbt").clicked += () =>
-        {
-            
-            var fordLines = new[] { FordVoiceLine1, FordVoiceLine2, FordVoiceLine3, FordVoiceLine4, FordVoiceLine5 };
-            var clip = fordLines[Mathf.RoundToInt(UnityEngine.Random.Range(0, fordLines.Length))];
-
-            // thank you old unity forum
-            Assembly unityEditorAssembly = typeof(AudioImporter).Assembly;
-            Type audioUtilClass = unityEditorAssembly.GetType("UnityEditor.AudioUtil");
-            audioUtilClass.GetMethod("PlayPreviewClip", UltEventUtils.AnyAccessBindings).Invoke(null, new object[] { clip, 0, false });
-        };
-
-        cog = root.Q(nameof(cog));
         EditorApplication.update += OnUpdate;
-
-        
-
-        // search autorefresh tog
-        var selectedOnlyTog = new Toggle("Show Selected Bowls Only") { value = EditorPrefs.GetBool("SelectedBowlsOnly", true) };
-        selectedOnlyTog.RegisterValueChangedCallback(e =>
+        void contextChanged()
         {
-            EditorPrefs.SetBool("SelectedBowlsOnly", e.newValue);
-            this.OnFocus(); // update displays
-        });
-        selectedOnlyTog.style.marginTop = 3;
-        root.Q("GroupPath").Insert(1, selectedOnlyTog);
+            ResetViews();
+            OnFocus();
+        }
+        EditorSceneManager.sceneOpened += (_, _) => contextChanged();
+        PrefabStage.prefabStageOpened += (_) => contextChanged();
+        PrefabStage.prefabStageClosing += (_) => contextChanged(); // described as "Prefab stage is about to be opened" in docs but functions as "Prefab stage is closed"
+        Selection.selectionChanged += contextChanged;
 
+        treeView = root.Q<UltNoodleTreeView>();
+        inspectorView = root.Q<UltNoodleInspectorView>();
+        bowlSelector = root.Q<UltNoodleBowlSelector>();
         LoadingText = root.Q<Label>(nameof(LoadingText));
 
-        root.Q("GroupPath").Insert(0, new Button(CollectNodes) { text = "Regen Nodes" });
+        treeView.InitializeSearch(this);
+        treeView.OnNodeSelected += (nodeView) => inspectorView.UpdateSelection(nodeView);
 
-        if (AllNodeDefs.Count == 0 || AllBooks == null)
+        bowlSelector.AttachToEditor(this);
+
+        var mainSplit = root.Q<TwoPaneSplitView>("MainSplit");
+        var leftSplit = root.Q<TwoPaneSplitView>("LeftSplit");
+
+        // setup toolbar options
+        var nodesMenu = root.Q<ToolbarMenu>("NodesMenu");
+        var viewMenu = root.Q<ToolbarMenu>("ViewMenu");
+        var helpMenu = root.Q<ToolbarMenu>("HelpMenu");
+
+        nodesMenu.menu.AppendAction("Regenerate Nodes", (a) => CollectNodes(), (a) => _collecting ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+
+        void UpdateSplit() => UpdateLeftSplitVisibility(leftSplit, mainSplit, inspectorView.visible, bowlSelector.visible);
+        viewMenu.menu.AppendAction("Inspector", (a) => { inspectorView.visible = !inspectorView.visible; UpdateSplit(); }, (a) => inspectorView.visible ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+        viewMenu.menu.AppendAction("Bowl Selector", (a) => { bowlSelector.visible = !bowlSelector.visible; UpdateSplit(); }, (a) => bowlSelector.visible ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+        viewMenu.menu.AppendAction("Grid Background", (a) => treeView.ToggleGrid(), (a) => treeView.GridEnabled ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+        viewMenu.menu.AppendAction("Selected Bowls Only", (a) =>
+        {
+            bool enabled = !EditorPrefs.GetBool("SelectedBowlsOnly", true);
+            EditorPrefs.SetBool("SelectedBowlsOnly", enabled);
+            _bowlToReselect = !enabled || Selection.activeGameObject == _currentBowl?.SerializedData?.gameObject
+                ? _currentBowl?.SerializedData
+                : null; // only reselect if we're disabling the toggle or the current bowl's gameobject is selected
+            
+            Bowls.Clear(); // clear bowls so we can regen
+            this.OnFocus(); // update displays
+        }, (a) => EditorPrefs.GetBool("SelectedBowlsOnly", true) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+        viewMenu.menu.AppendAction("Rebuild View", (a) => contextChanged(), (a) => DropdownMenuAction.Status.Normal);
+
+        helpMenu.menu.AppendAction("GitHub", (a) => Application.OpenURL("https://github.com/holadivinus/Noodled-Events"), (a) => DropdownMenuAction.Status.Normal);
+
+        if (InPackage())
+            CheckForUpdates(root.Q<Label>("NoticeLabel"),
+                () => { helpMenu.menu.AppendAction("Update", (a) => TryUpdate(), (a) => DropdownMenuAction.Status.Normal); },
+                () => { helpMenu.menu.AppendAction("Up to Date", (a) => { }, (a) => DropdownMenuAction.Status.Disabled); });
+
+        if ((AllNodeDefs.Count == 0 || AllBooks == null) && !Application.isPlaying)
         {
             CollectNodes();
         }
         _created = true;
     }
 
+    private void CheckForUpdates(Label noticeLabel, Action ifUpdate, Action ifUpToDate)
+    {
+        TextAsset packageData = AssetDatabase.LoadAssetAtPath<TextAsset>(BaseFolder + "package.json");
+        string version = packageData.text.Split("\"version\": \"")[1].Split('"')[0];
+
+        noticeLabel.text = "Checking for Updates...";
+        GetRequest("https://raw.githubusercontent.com/holadivinus/Noodled-Events/refs/heads/main/package.json", (resp) =>
+        {
+            string remoteVersion = resp.Split("\"version\": \"")[1].Split('"')[0];
+            Debug.Log(remoteVersion);
+            if (new Version(remoteVersion) > new Version(version))
+            {
+                noticeLabel.text = $"Update available! ({remoteVersion})";
+                ifUpdate.Invoke();
+            }
+            else
+            {
+                noticeLabel.text = "";
+                ifUpToDate.Invoke();
+            }
+        });
+    }
+
+    private static bool _isUpdating;
+    private void TryUpdate()
+    {
+        if (_isUpdating) return;
+        _isUpdating = true;
+        var req = Client.Add("https://github.com/holadivinus/Noodled-Events.git");
+        Debug.Log("Updating...");
+        void check()
+        {
+            if (req.Error != null)
+            {
+                Debug.LogError("Failed to update: " + req.Error.message);
+                _isUpdating = false;
+                EditorApplication.update -= check;
+            }
+        }
+        EditorApplication.update += check; // we're going to get reloaded if the update works, so this gets automatically detached
+    }
+
     private Label LoadingText;
     private static bool _collecting;
+    
+    private static Type[] s_tps;
+    public static Type[] SearchableTypes
+    {
+        get
+        {
+            if (s_tps == null)
+            {
+                s_tps = UltNoodleExtensions.GetAllTypes();
+                EditorUtility.ClearProgressBar();
+            }
+
+            return s_tps;
+        }
+    }
 
     private void CollectNodes()
     {
@@ -235,8 +206,6 @@ public class UltNoodleEditor : EditorWindow
         AllNodeDefs.Clear();
 
         CollectBooks();
-
-        //EditorUtility.DisplayProgressBar("Loading Noodle Editor...", "", 0);
 
         Dictionary<CookBook, float> nodeProgression = new();
         foreach (var b in AllBooks)
@@ -251,13 +220,13 @@ public class UltNoodleEditor : EditorWindow
             var b = book;
             var list = nodeProgression[b];
             b.CollectDefs((newNodes, percentage) => MainThread.Enqueue(() =>
-            { 
+            {
                 AllNodeDefs.AddRange(newNodes);
                 nodeProgression[b] = percentage;
                 LoadingText.text = $"!LOADING NODES! progress: [";
                 foreach (var kvp in nodeProgression)
                     if (kvp.Value != 1)
-                        LoadingText.text += $"{kvp.Key.name}: {Mathf.RoundToInt(kvp.Value*100)}%, ";
+                        LoadingText.text += $"{kvp.Key.name}: {Mathf.RoundToInt(kvp.Value * 100)}%, ";
                 if (LoadingText.text.EndsWith(", "))
                     LoadingText.text = LoadingText.text[..^2];
                 LoadingText.text += $"] | {AllNodeDefs.Count} Nodes Available.";
@@ -308,7 +277,7 @@ public class UltNoodleEditor : EditorWindow
     }
     private void CollectBooks()
     {
-        AllBooks = null; BookFilters.Clear();
+        AllBooks = null;
 
         var cookBooks = AssetDatabase.FindAssets("t:" + nameof(CookBook)).Select(guid => AssetDatabase.LoadAssetAtPath<CookBook>(AssetDatabase.GUIDToAssetPath(guid)));
         if (!cookBooks.Contains(CommonsCookBook)) cookBooks = cookBooks.Append(CommonsCookBook);
@@ -317,109 +286,149 @@ public class UltNoodleEditor : EditorWindow
         if (!cookBooks.Contains(ObjectFCookBook)) cookBooks = cookBooks.Append(ObjectFCookBook);
         if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
         AllBooks = cookBooks.ToArray();
-
-        SearchSettings.Clear();
-        // search autorefresh tog
-        var spcTog = new Toggle("Search Per Char") { value = EditorPrefs.GetBool("SearchPerChar", true) };
-        spcTog.RegisterValueChangedCallback(e =>
-        {
-            EditorPrefs.SetBool("SearchPerChar", e.newValue);
-        });
-        SearchSettings.Add(spcTog);
-
-        
-
-        foreach (CookBook book in AllBooks)
-        {
-            //also search toggle
-            var tog = new Toggle(book.name) { value = true };
-            tog.RegisterValueChangedCallback(e =>
-            {
-                BookFilters[book] = e.newValue;
-                SearchTypes(100);
-            });
-            BookFilters[book] = true;
-            SearchSettings.Add(tog);
-        }
-
-        /*
-        // load speed config
-        var spdInt = new IntegerField(EditorPrefs.GetInt("NodeLoadSpeed", 5000));
-        spdInt.label = "LoadSpeed: ";
-        SearchSettings.Add(spdInt);
-        spdInt.RegisterValueChangedCallback(evt =>
-        {
-            int val = Math.Clamp(evt.newValue, 500, 999999);
-            EditorPrefs.SetInt("NodeLoadSpeed", val);
-            spdInt.SetValueWithoutNotify(val);
-        });*/
     }
-    static Dictionary<CookBook, bool> BookFilters = new Dictionary<CookBook, bool>();
+
     private bool _created = false;
-    private bool _currentlyZooming;
-    private float _zoom = 1;
-    private Vector2 _zoomMousePos;
-    public float Zoom
+
+    public List<UltNoodleBowl> Bowls = new();
+    private UltNoodleBowl _currentBowl;
+    public Action OnBowlsChanged;
+    public UltNoodleBowl CurrentBowl
     {
-        get => _zoom;
-        private set
+        get => _currentBowl;
+        set => SelectBowl(value);
+    }
+
+    public void SelectBowl(UltNoodleBowl bowl)
+    {
+        if (bowl == null || !Bowls.Contains(bowl)) return;
+        _currentBowl = bowl;
+
+        void onReady()
         {
-            // Zoom logic; I'm bad at math and UXML doesn't compute transforms on-get/set, so we're doin it via a 1-update delay.
-            _zoom = value;
-            if (_currentlyZooming)
-                return;
-            _currentlyZooming = true;
-
-            var cpos = C.LocalToWorld(Vector2.zero);
-            A.style.left = new StyleLength(new Length(_zoomMousePos.x, LengthUnit.Pixel));
-            A.style.top = new StyleLength(new Length(_zoomMousePos.y, LengthUnit.Pixel));
-
-            C.schedule.Execute(() =>  
-            {
-                cpos = B.WorldToLocal(cpos);
-                C.style.left = new StyleLength(new Length(cpos.x - 1, LengthUnit.Pixel));
-                C.style.top = new StyleLength(new Length(cpos.y - 1, LengthUnit.Pixel));
-                B.transform.scale = Vector3.one * _zoom;
-                _currentlyZooming = false;
-            }).ExecuteLater(1);
+            treeView.PopulateView(bowl);
+            inspectorView.UpdateSelection(null);
+            OnBowlsChanged?.Invoke();
         }
-    }
-    public void SetZoom(float value, Vector2 pivot) { _zoomMousePos = pivot; Zoom = value; }
-    private void OnScroll(WheelEvent evt)
-    {
-        float scalar = Mathf.Pow((evt.delta.y < 0) ? 1.01f : .99f, 4);
-        SetZoom(Zoom * scalar, evt.localMousePosition);
-    }
 
-
-    public List<UltNoodleBowlUI> BowlUIs = new();
+        if (!_created || treeView == null)
+            EditorApplication.delayCall += onReady;
+        else
+            onReady();
+    }
 
     private void OnFocus()
     {
         // on focus we refresh the nodes
         // lets get all ult event sources in the scene;
         // then, graph them out
-        
+
         var curScene = SceneManager.GetActiveScene();
 
-        foreach (var bowl in BowlUIs.ToArray())
+        foreach (var bowl in Bowls.ToArray())
             bowl.Validate();
+        treeView?.Validate();
 
         // autogen bowlsUIs
-        EditorApplication.CallbackFunction makeUI = () =>
+        void ProcessBowls()
         {
             PrefabStage prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-            foreach (var bowl in prefabStage?.prefabContentsRoot.GetComponentsInChildren<SerializedBowl>(true) ?? Resources.FindObjectsOfTypeAll<SerializedBowl>())
+            IEnumerable<SerializedBowl> bowls = prefabStage?.prefabContentsRoot.GetComponentsInChildren<SerializedBowl>(true)
+                            ?? Resources.FindObjectsOfTypeAll<SerializedBowl>();
+
+            foreach (var bowl in bowls)
             {
-                if (prefabStage == null && bowl.gameObject.scene != curScene)
+                if (bowl == null || (prefabStage == null && bowl.gameObject.scene != curScene))
                     continue;
-                if (!BowlUIs.Any(b => b.SerializedData == bowl) && (Selection.activeGameObject == bowl.gameObject || !EditorPrefs.GetBool("SelectedBowlsOnly", true)) && !PrefabUtility.IsPartOfAnyPrefab(bowl))
-                    UltNoodleBowlUI.New(this, D, bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath);
+
+                bool isBowlNew = !Bowls.Any(b => b.SerializedData == bowl);
+                bool isBowlSelected = Selection.gameObjects.Contains(bowl.gameObject)
+                                    || Selection.transforms.Any(t => bowl.transform.IsChildOf(t))
+                                    || !EditorPrefs.GetBool("SelectedBowlsOnly", true);
+                bool isNotPartOfPrefab = !PrefabUtility.IsPartOfAnyPrefab(bowl);
+
+                if (isBowlNew && isBowlSelected && isNotPartOfPrefab)
+                {
+                    bool shouldSelect = (_bowlToReselect == null || _bowlToReselect == bowl)
+                            && (_currentBowl == null || !Bowls.Contains(_currentBowl));
+
+                    NewBowl(bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath, shouldSelect);
+
+                    if (shouldSelect)
+                        _bowlToReselect = null;
+                }
             }
-        };
+
+            Bowls.Sort((a, b) =>
+            {
+                Transform ta = a.SerializedData.transform;
+                Transform tb = b.SerializedData.transform;
+
+                // sort 1: hierarchy depth (shallower comes first)
+                int depthA = GetDepth(ta);
+                int depthB = GetDepth(tb);
+                if (depthA != depthB)
+                    return depthA.CompareTo(depthB);
+
+                // sort 2: sibling index at this level
+                int siblingCompare = ta.GetSiblingIndex().CompareTo(tb.GetSiblingIndex());
+                if (siblingCompare != 0)
+                    return siblingCompare;
+
+                // sort 3: component order if same GameObject
+                if (ta == tb)
+                {
+                    var compsA = ta.GetComponents<SerializedBowl>();
+                    var compsB = tb.GetComponents<SerializedBowl>();
+
+                    int indexA = Array.IndexOf(compsA, a.SerializedData);
+                    int indexB = Array.IndexOf(compsB, b.SerializedData);
+
+                    return indexA.CompareTo(indexB);
+                }
+
+                return 0;
+            });
+
+            OnBowlsChanged?.Invoke();
+        }
+
         if (!_created)
-            EditorApplication.delayCall += makeUI;
-        else makeUI.Invoke();
+            EditorApplication.delayCall += ProcessBowls;
+        else
+            ProcessBowls();
+
+        int GetDepth(Transform t)
+        {
+            int depth = 0;
+            while (t.parent != null)
+            {
+                depth++;
+                t = t.parent;
+            }
+            return depth;
+        }
+    }
+
+    public UltNoodleBowl NewBowl(Component eventComponent, SerializedType fieldType, string eventField, bool select = true)
+    {
+        var existingBowl = Bowls.FirstOrDefault(b => b.SerializedData != null && b.Component == eventComponent && b.EventFieldPath == eventField);
+        if (existingBowl != null)
+        {
+            if (select)
+                SelectBowl(existingBowl);
+            return existingBowl;
+        }
+
+        var newBowl = new UltNoodleBowl(this, eventComponent, fieldType, eventField);
+        Bowls.Add(newBowl);
+
+        if (select)
+            SelectBowl(newBowl);
+        else // SelectBowl already invokes OnBowlsChanged
+            OnBowlsChanged?.Invoke();
+
+        return newBowl;
     }
 
     #region Noodle Bowl Prompts
@@ -427,23 +436,23 @@ public class UltNoodleEditor : EditorWindow
     [MenuItem("CONTEXT/UltEventHolder/Noodle Bowl")]
     static void BowlSingle(MenuCommand command)
     {
-            if (Editor == null) ShowExample();
-            UltNoodleBowlUI.New(Editor, Editor.D, (UltEventHolder)command.context, new SerializedType(typeof(UltEventHolder)), "_Event");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl((UltEventHolder)command.context, new SerializedType(typeof(UltEventHolder)), "_Event");
     }
     [MenuItem("CONTEXT/CrateSpawner/Noodle Bowl", true)] static bool v2(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/CrateSpawner/Noodle Bowl")]
     static void CrateBowl(MenuCommand command)
     {
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, (CrateSpawner)command.context, new SerializedType(typeof(CrateSpawner)), "onSpawnEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl((CrateSpawner)command.context, new SerializedType(typeof(CrateSpawner)), "onSpawnEvent");
     }
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Awake()", true)] static bool v3(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Awake()")]
     static void LifeCycleEvents_Awake(MenuCommand command)
     {
         var targ = command.context as LifeCycleEvents;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_AwakeEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(LifeCycleEvents)), "_AwakeEvent");
         
     }
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Start()", true)] static bool v4(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
@@ -451,24 +460,24 @@ public class UltNoodleEditor : EditorWindow
     static void LifeCycleEvents_StartEvent(MenuCommand command)
     {
         var targ = command.context as LifeCycleEvents;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_StartEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(LifeCycleEvents)), "_StartEvent");
     }
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Enable()", true)] static bool v5(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Enable()")]
     static void LifeCycleEvents_EnableEvent(MenuCommand command)
     {
         var targ = command.context as LifeCycleEvents;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_EnableEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(LifeCycleEvents)), "_EnableEvent");
     }
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Disable()", true)] static bool v6(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Disable()")]
     static void LifeCycleEvents_DisableEvent(MenuCommand command)
     {
         var targ = command.context as LifeCycleEvents;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_DisableEvent");    
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(LifeCycleEvents)), "_DisableEvent");    
     }
     
     [MenuItem("CONTEXT/LifeCycleEvents/Noodle Bowl/Destroy()", true)] static bool v7(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
@@ -476,8 +485,8 @@ public class UltNoodleEditor : EditorWindow
     static void LifeCycleEvents_DestroyEvent(MenuCommand command)
     {
         var targ = command.context as LifeCycleEvents;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(LifeCycleEvents)), "_DestroyEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(LifeCycleEvents)), "_DestroyEvent");
         
     }
     [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Update()", true)] static bool v8(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
@@ -485,72 +494,72 @@ public class UltNoodleEditor : EditorWindow
     static void UpdateEvents_UpdateEvent(MenuCommand command)
     {
         var targ = command.context as UpdateEvents;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_UpdateEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(UpdateEvents)), "_UpdateEvent");
     }
     [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Late Update()", true)] static bool v9(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Late Update()")]
     static void UpdateEvents_LateUpdateEvent(MenuCommand command)
     {
         var targ = command.context as UpdateEvents;
-            if (Editor == null) ShowExample();
-            UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_LateUpdateEvent");
+            if (Editor == null) OpenWindow();
+            Editor.NewBowl(targ, new SerializedType(typeof(UpdateEvents)), "_LateUpdateEvent");
     }
     [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Fixed Update()", true)] static bool v10(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/UpdateEvents/Noodle Bowl/Fixed Update()")]
     static void UpdateEvents_FixedUpdateEvent(MenuCommand command)
     {
         var targ = command.context as UpdateEvents;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(UpdateEvents)), "_FixedUpdateEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(UpdateEvents)), "_FixedUpdateEvent");
     }
     [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Enter()", true)] static bool v11(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Enter()")]
     static void CollisionEvents3D_CollisionEnterEvent(MenuCommand command)
     {
         var targ = command.context as CollisionEvents3D;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionEnterEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionEnterEvent");
     }
     [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Stay()", true)] static bool v12(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Stay()")]
     static void CollisionEvents3D_CollisionStayEvent(MenuCommand command)
     {
         var targ = command.context as CollisionEvents3D;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionStayEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionStayEvent");
     }
     [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Exit()", true)] static bool v13(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/CollisionEvents3D/Noodle Bowl/Collision Exit()")]
     static void CollisionEvents3D_CollisionExitEvent(MenuCommand command)
     {
         var targ = command.context as CollisionEvents3D;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionExitEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(CollisionEvents3D)), "_CollisionExitEvent");
     }
     [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Enter()", true)] static bool v14(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Enter()")]
     static void ZoneEvents_onZoneEnter(MenuCommand command)
     {
         var targ = command.context as ZoneEvents;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(ZoneEvents)), "onZoneEnter");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(ZoneEvents)), "onZoneEnter");
     }
     [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Enter OneShot()", true)] static bool v15(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Enter OneShot()")]
     static void ZoneEvents_onZoneEnterOneShot(MenuCommand command)
     {
         var targ = command.context as ZoneEvents;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(ZoneEvents)), "onZoneEnterOneShot");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(ZoneEvents)), "onZoneEnterOneShot");
     }
     [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Exit()", true)] static bool v16(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/ZoneEvents/Noodle Bowl/On Zone Exit()")]
     static void ZoneEvents_onZoneExit(MenuCommand command)
     {
         var targ = command.context as ZoneEvents;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(ZoneEvents)), "onZoneExit");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(ZoneEvents)), "onZoneExit");
     }
 
     [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Enter()", true)] static bool v17(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
@@ -558,470 +567,119 @@ public class UltNoodleEditor : EditorWindow
     static void TriggerEvents3D_TriggerEnterEvent(MenuCommand command)
     {
         var targ = command.context as TriggerEvents3D;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerEnterEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerEnterEvent");
     }
     [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Stay()", true)] static bool v18(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Stay()")]
     static void TriggerEvents3D_TriggerStayEvent(MenuCommand command)
     {
         var targ = command.context as TriggerEvents3D;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerStayEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerStayEvent");
     }
     [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Exit()", true)] static bool v19(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/TriggerEvents3D/Noodle Bowl/Trigger Exit()")]
     static void TriggerEvents3D_TriggerExitEvent(MenuCommand command)
     {
         var targ = command.context as TriggerEvents3D;
-        if (Editor == null) ShowExample();
-        UltNoodleBowlUI.New(Editor, Editor.D, targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerExitEvent");
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(targ, new SerializedType(typeof(TriggerEvents3D)), "_TriggerExitEvent");
     }
     #endregion
 
-    private void OnLostFocus()
+    public void OnLostFocus()
     {
-        foreach (var bowlUI in BowlUIs.ToArray())
+        // TODO: this doesn't handle focus going from search -> editor/outside noodle editor, not sure how important that would be
+        if (UltNoodleSearchWindow.IsSearchOpen)
+            return; // we don't need to compile if we're just switching to search
+
+        foreach (var bowl in Bowls.ToArray())
         {
-            if (bowlUI.SerializedData != null)
-                bowlUI.SerializedData.Compile();
+            if (bowl.SerializedData != null)
+                bowl.SerializedData.Compile();
         }
         Debug.Log("Compiled!");
     }
 
-    private bool _dragging;
-    private void NodeFrameMouseDown(MouseDownEvent evt)
+    private void ResetViews()
     {
-        if (evt.button == 1 || evt.button == 2)
-        {
-            NodesFrame.CaptureMouse(); // to ensure we get MouseUp
-            _dragging = true;
-            NodesFrame.name = "grabby";
-        }
-        CloseSearchMenu();
-    }
-    public Vector2 _frameMousePosition;
-    private void NodeFrameMouseMove(MouseMoveEvent evt)
-    {
-        _frameMousePosition = evt.localMousePosition;
-        if (_dragging)
-        {
-            D.style.left = new StyleLength(new Length(D.style.left.value.value + (evt.mouseDelta.x / B.transform.scale.x), LengthUnit.Pixel));
-            D.style.top = new StyleLength(new Length(D.style.top.value.value + (evt.mouseDelta.y / B.transform.scale.y), LengthUnit.Pixel));
-        }
-        TypeHinter.style.left = evt.mousePosition.x;
-        TypeHinter.style.top = evt.mousePosition.y;
-    }
-    private void NodeFrameMouseUp(MouseUpEvent evt)
-    {
-        if (evt.button == 1 || evt.button == 2)
-        {
-            NodesFrame.ReleaseMouse();
-            _dragging = false;
-            NodesFrame.name = nameof(NodesFrame);
-        }
-    }
-    public static UltNoodleBowlUI NewNodeBowl;
-    public static Vector2 NewNodePos;
-    private void NodeFrameKeyDown(KeyDownEvent evt)
-    {
-        if (evt.keyCode == KeyCode.Space && UltNoodleBowlUI.CurrentBowlUI != null) // open Create Node Menu
-        {
-            ResetSearchFilter();
-            OpenSearchMenu(false);
-        }
+        _currentBowl = null;
+        Bowls.Clear();
+
+        OnBowlsChanged?.Invoke();
+        treeView?.PopulateView(null);
+        inspectorView?.UpdateSelection(null);
     }
 
-    public void ResetSearchFilter() 
-    {
-        FilteredNodeDefs = AllNodeDefs;
-    }
-    public void SetSearchFilter(bool pinIn, Type t) 
-    {
-        // lets cache the searchables
-
-        // reset FilteredNodeDefs
-        if (FilteredNodeDefs == AllNodeDefs)
-            FilteredNodeDefs = new();
-        else FilteredNodeDefs.Clear();
-
-        foreach (var node in AllNodeDefs)
-        {
-            try
-            {
-                foreach (var pin in pinIn ? node.Inputs : node.Outputs)
-                {
-                    if (pin.Flow) continue;
-
-                    if ((pinIn ? pin.Type : t).IsAssignableFrom(pinIn ? t : pin.Type))
-                    {
-                        FilteredNodeDefs.Add(node);
-                        break;
-                    }
-                }
-            } catch(TypeLoadException) { /* ignore evil types */ }
-        }
-        FilteredNodeDefs.Sort((a, b) =>
-        {
-            var aTs = pinIn ? a.Inputs : a.Outputs;
-            var bTs = pinIn ? b.Inputs : b.Outputs;
-            bool aHasT = aTs.Any(p => p.Type == t);
-            bool bHasT = bTs.Any(p => p.Type == t);
-            if (aHasT && !bHasT) return -1;
-            if (aHasT == bHasT) return 0;
-            if (bHasT && !aHasT) return 1;
-            throw new NotImplementedException();
-        });
-        // awesome
-    }
-    public void CloseSearchMenu()
-    {
-        SearchMenu.visible = false;
-        SearchSettings.visible = false;
-    }
-    public void OpenSearchMenu(bool useNodePos = true)
-    {
-        NewNodeBowl = UltNoodleBowlUI.CurrentBowlUI;
-        if (NewNodeBowl == null) return;
-        NewNodePos = NewNodeBowl.MousePos - new Vector2(48, 39);
-        SearchMenu.visible = !SearchMenu.visible;
-        SearchSettings.visible = false;
-        if (SearchMenu.visible)
-        {
-            SearchMenu.style.left = useNodePos ? (NewNodeBowl.LocalToWorld(NewNodePos).x + 55) : _frameMousePosition.x;
-            SearchMenu.style.top = useNodePos ? (NewNodeBowl.LocalToWorld(NewNodePos).y + 20) : _frameMousePosition.y + 25;
-            SearchBar.value = "";
-            SearchBar.Focus();
-            SearchBar.SelectAll();
-            SearchBar.schedule.Execute(() =>
-            {
-                SearchBar.Focus();
-                SearchBar.ElementAt(0).Focus();
-                SearchBar.schedule.Execute(() =>
-                {
-                    SearchBar.Focus();
-                    SearchBar.ElementAt(0).Focus();
-                    SearchTypes(25);
-                });
-                SearchTypes(25);
-            });
-        }
-    }
-    private int CurSearchProcess = 0;
-    private void SearchTypes(int findNum)
-    {
-        CallbackFunction newSearch = null;
-        CurSearchProcess++;
-        int thisSearchNum = CurSearchProcess;
-        int dispNum = findNum;
-        this.SearchedTypes.Clear();
-        string targetSearch = SearchBar.value;
-        string[] splitResults = null;
-        int j = 0;
-        bool firstRun = true;
-        if (!targetSearch.StartsWith(".") && targetSearch.Contains("."))
-        {
-            splitResults = targetSearch.Split('.');
-            targetSearch = splitResults[0] + ".";
-        }
-        // To be replaced with some better comparison algorithm.
-        bool CompareString(string stringOne, string stringTwo)
-        {
-            return stringOne.Contains(stringTwo, StringComparison.CurrentCultureIgnoreCase);
-        }
-        void EndSearch()
-        {
-            SearchProgress.style.display = DisplayStyle.None;
-            EditorApplication.update -= newSearch;
-        }
-        newSearch = () =>
-        {
-            if (CurSearchProcess != thisSearchNum)
-            {
-                EndSearch();
-                return;
-            }
-            if (firstRun)
-            {
-                firstRun = false;
-                SearchProgress.style.display = DisplayStyle.Flex;
-            }
-            // Collect first x that match
-            int i = 0;
-            for (; j < FilteredNodeDefs.Count; j++)
-            {
-                CookBook.NodeDef nd = FilteredNodeDefs[j];
-                i++;
-                SearchProgress.text = "("+Mathf.RoundToInt(Mathf.Clamp(j * 100 / (float)FilteredNodeDefs.Count, 0, 100)) + "%)";
-                if (i > 1000) break; // next loop pls
-                if (dispNum <= 0)
-                {
-                    SearchedTypes.Add(GetIncompleteListDisplay());
-                    EndSearch();
-                    return;
-                }
-                if (!BookFilters[nd.CookBook]) continue;
-
-                // Primary filter, either strict startswith or loose compare
-                if (nd.Name.StartsWith(targetSearch, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    // Secondary filter, second part compare check
-                    if ((splitResults != null) && !CompareString(nd.Name, splitResults[1]))
-                        continue;
-
-                    dispNum--;
-                    SearchedTypes.Add(nd.SearchItem);
-                }
-            }
-            if (j >= FilteredNodeDefs.Count-1)
-            {
-                EndSearch();
-            }
-        };
-        EditorApplication.update += newSearch;
-        newSearch.Invoke();
-    }
-
-    private VisualElement GetIncompleteListDisplay() {
-        var o = new Label() {
-            text = "Press Enter for a Full Search! (...)"
-        };
-
-        o.style.alignContent = Align.Center;
-        o.style.alignSelf = Align.Center;
-        o.style.unityTextAlign = TextAnchor.MiddleCenter;
-
-        return o;
-    }
-
-    
-    public static List<CookBook.NodeDef> AllNodeDefs = new();
-    List<CookBook.NodeDef> FilteredNodeDefs = new();
-
-    /*
-    private int LoadedSearchPages;
-    private void SearchTypes()
-    {
-        SearchedTypes.Clear();
-        LoadedSearchPages = 0;
-        SearchedTypes.scrollOffset = Vector2.zero;
-
-        if (SearchBar.value == "")
-            foreach (var f in TypeFolds.Values)
-                f.value = false;
-
-        string typeSearchString = SearchBar.value.Contains('.') ? SearchBar.value.Split('.').First() : SearchBar.value;
-        if (!StaticsToggle.value)
-            SortedTypes = SearchableTypes.Where(t => (t.IsSubclassOf(typeof(UnityEngine.Object)) || t == typeof(UnityEngine.Object)) && t.Name.StartsWith(typeSearchString, true, null)).ToArray();
-        else
-            SortedTypes = SearchableTypes.Where(t => t.Name.StartsWith(typeSearchString, true, null)).Where(t =>
-            {
-                try
-                {
-                    return t.GetMethods(UltEventUtils.AnyAccessBindings).Any(m => m.IsStatic);
-                } catch(TypeLoadException ex)
-                {
-                    return false;
-                }
-            }).ToArray();
-        EditorUtility.ClearProgressBar(); //unity bug
-
-        // sort todo
-        BottomSearchSpacer ??= new();
-        SearchedTypes.Add(BottomSearchSpacer);
-        LoadNextSearchPage();
-
-
-    }
-    private VisualElement BottomSearchSpacer;
-    private void LoadNextSearchPage()
-    {
-        LoadedSearchPages++;
-
-        for (int i = (LoadedSearchPages - 1)*20; i < Math.Min(LoadedSearchPages*20, SortedTypes.Length); i++)
-        {
-            Foldout f = null;
-            if (!TypeFolds.TryGetValue(SortedTypes[i], out f))
-            {
-                Type t = SortedTypes[i];
-                f = new Foldout();
-                f.text = t.FullName;
-                TypeFolds[t] = f;
-
-                f.value = false;
-
-                // when open, show each method :3
-                // if search has '.', filter methods by search
-                void SearchMethods()
-                {
-                    if (f.contentContainer.childCount == 0) // gotta generate bt for each func
-                    {
-                        // generate the Property Buttons
-                        PropertyInfo[] props = t.GetProperties(UltEventUtils.AnyAccessBindings);
-                        Foldout propFold = new Foldout();
-                        propFold.name = "Properties";
-                        propFold.text = "Properties:";
-                        propFold.Q<Toggle>().style.marginLeft = 4;
-                        f.contentContainer.Add(propFold);
-                        foreach (var prop in props)
-                        {
-                            if (prop.DeclaringType != t || prop.Name.EndsWith("_Injected")) continue;
-                            string propDisplayName = prop.PropertyType.GetFriendlyName() + " " + prop.Name;
-                            propDisplayName += " {";
-                            if (prop.GetMethod != null)
-                                propDisplayName += " get;";
-                            if (prop.SetMethod != null)
-                                propDisplayName += " set;";
-                            propDisplayName += " }";
-                            var newBT = new Button(() => 
-                            {
-                                // on prop bt click
-                                curCreateNodeBowl.SerializedData.NodeDatas.Add(new SerializedNode(curCreateNodeBowl.SerializedData, prop.GetMethod ?? prop.SetMethod)
-                                { Position = curCreateNodePos });
-                                curCreateNodeBowl.Validate();
-                                SearchMenu.visible = false;
-                            });
-                            newBT.text = propDisplayName;
-                            newBT.name = prop.Name;
-                            newBT.style.unityTextAlign = TextAnchor.MiddleLeft;
-                            propFold.Add(newBT);
-                        }
-
-                        // Generate the Method buttons
-                        var meths = t.GetMethods(UltEventUtils.AnyAccessBindings);//.Where(m => !props.Any(p => p.SetMethod == m || p.GetMethod == m));
-                        Foldout methFold = new Foldout();
-                        methFold.name = "Methods";
-                        methFold.text = "Methods:";
-                        methFold.Q<Toggle>().style.marginLeft = 4;
-                        f.contentContainer.Add(methFold);
-                        foreach (var meth in meths)
-                        {
-                            if (meth.DeclaringType != t || meth.Name.EndsWith("_Injected")) continue;
-                            string memLong = meth.Name + "(";
-                            //if (meth.ReturnType != null && meth.ReturnType != typeof(void))
-                                memLong = meth.ReturnType.GetFriendlyName() + " " + memLong;
-                            ParameterInfo[] paramz = meth.GetParameters();
-                            foreach (var param in paramz)
-                                memLong += $"{param.ParameterType.GetFriendlyName()}, ";
-                            if (paramz != null && paramz.Length > 0)
-                                memLong = memLong.Substring(0, memLong.Length - 2);
-                            memLong += ')';
-                            var newBT = new Button(() => 
-                            {
-                                // on meth bt click
-                                curCreateNodeBowl.SerializedData.NodeDatas.Add(new SerializedNode(curCreateNodeBowl.SerializedData, meth)
-                                { Position = curCreateNodePos });
-                                curCreateNodeBowl.Validate();
-                                SearchMenu.visible = false;
-                            });
-                            newBT.text = memLong;
-                            newBT.name = meth.Name;
-                            newBT.style.unityTextAlign = TextAnchor.MiddleLeft;
-                            methFold.Add(newBT);
-                        }
-                    }
-                    // '.' search
-                    if (SearchBar.value.Contains('.'))
-                    {
-                        string memSearchTerm = SearchBar.value.Split('.').Last();
-                        foreach (var chil in f.contentContainer.Children().SelectMany(c => { /*((Foldout)c).value = true;*/
-    /* return ((Foldout)c).contentContainer.Children(); }))
-                            chil.style.display = chil.name.StartsWith(memSearchTerm, true, null) ? DisplayStyle.Flex : DisplayStyle.None; 
-                    }
-                }
-
-                SearchBar.RegisterValueChangedCallback((v) =>
-                {
-                    if (f.value) // is open
-                        SearchMethods();
-                    else // not open
-                        if (f.parent != null && SearchBar.value.EndsWith('.'))
-                    {
-                        f.value = true;
-                    }
-                });
-                f.RegisterValueChangedCallback((v) =>
-                {
-                    if (v.newValue) // on open
-                        SearchMethods();
-                }); 
-
-                // if it's a UnityEngine.Object, show icon too
-                if (t.IsSubclassOf(typeof(UnityEngine.Object)) || t == typeof(UnityEngine.Object)) 
-                {
-                    var icon = EditorGUIUtility.ObjectContent(null, t).image;
-                    if (icon != null)
-                    {
-                        var iconElement = new VisualElement();
-                        iconElement.style.backgroundImage = new StyleBackground((Texture2D)icon);
-                        iconElement.name = "Icon";
-                        iconElement.style.minWidth = 20;
-                        iconElement.style.minHeight = 20;
-                        iconElement.style.marginRight = 5;
-                        f.Q<Label>().parent.Insert(1, iconElement);
-                        f.Q<Label>().parent.ElementAt(0).style.marginRight = 0;
-                    }
-                }
-            }
-            SearchedTypes.Add(f);
-        }
-        BottomSearchSpacer.style.minHeight = (SortedTypes.Length - (LoadedSearchPages * 20)) * 20;
-        BottomSearchSpacer.BringToFront();
-    }
-    private void OnSearchScroll(WheelEvent evt) // if the user scrolls down load moar.
-    {
-        LoadVisibleSearchResults();
-    }
-    private void LoadVisibleSearchResults()
-    {
-        int curScrollPage = Mathf.CeilToInt(SearchedTypes.scrollOffset.y / 162f);
-        if (curScrollPage > LoadedSearchPages)
-            for (int i = 0; i < curScrollPage - LoadedSearchPages; i++)
-                LoadNextSearchPage();
-    }*/
-
-    public Type[] SortedTypes;
-    private static Type[] s_tps;
-    public static Type[] SearchableTypes 
-    {  
-        get 
-        {
-            if (s_tps == null)
-            {
-                s_tps = UltNoodleExtensions.GetAllTypes();
-                EditorUtility.ClearProgressBar();
-            }
-                
-            return s_tps; 
-        } 
-    }
-    public static Dictionary<Type, Foldout> TypeFolds = new();
-
-    bool jig = false;
-    bool shouldShake = false;
     private void OnUpdate()
     {
-        //if (SearchMenu.visible)
-        //    LoadVisibleSearchResults();
-        cog.style.rotate = new Rotate(cog.style.rotate.value.angle.value + .01f);
-
-        // we do this so text stops magically dissapearing.
-        // However, this somehow generates garbage faster than the garbage collector.
-        // so, we'll only do this while the mouse is over the window.
-        if (shouldShake) 
-        { 
-            float f = 1.0001f;
-            jig = !jig;
-            if (jig)
-                C.transform.scale *= f;
-            else
-                C.transform.scale /= f;
-        }
-
         while (MainThread.TryDequeue(out Action act))
             act.Invoke();
+
+        if (!EditorPrefs.GetBool("SelectedBowlsOnly", true))
+        {
+            foreach (var bowl in Bowls)
+            {
+                if (bowl == null
+                    || bowl.SerializedData == null
+                    || bowl.Component == null)
+                {
+                    Bowls.Remove(bowl);
+                    if (_currentBowl == bowl)
+                    {
+                        _currentBowl = null;
+                        inspectorView?.UpdateSelection(null);
+                        treeView?.PopulateView(null);
+                    }
+                    OnBowlsChanged?.Invoke();
+                    break; // we modified the collection, so we need to restart
+                }
+            }
+        }
     }
+
+    // for whatever ungodly reason, TwoPaneSplitViews don't let you uncollapse a single child, so we have to do this mess instead
+    private void UpdateLeftSplitVisibility(TwoPaneSplitView leftSplit, TwoPaneSplitView mainSplit, bool topShouldBeVisible, bool bottomShouldBeVisible)
+    {
+        if (leftSplit == null || mainSplit == null)
+            return;
+
+        if (topShouldBeVisible && bottomShouldBeVisible)
+        {
+            // show both
+            leftSplit.UnCollapse();
+            mainSplit.UnCollapse();
+            return;
+        }
+
+        if (!topShouldBeVisible && !bottomShouldBeVisible)
+        {
+            // hide entire left column
+            mainSplit.CollapseChild(0); // assuming left panel is child 0 of mainSplit
+            return;
+        }
+
+        // exactly one child should be visible:
+        // make sure left column is visible first...
+        leftSplit.UnCollapse();
+        mainSplit.UnCollapse();
+
+        // then collapse the OTHER child so only the desired one remains visible
+        if (topShouldBeVisible)
+        {
+            // collapse bottom (child index 1)
+            leftSplit.CollapseChild(1);
+        }
+        else // bottomShouldBeVisible
+        {
+            // collapse top (child index 0)
+            leftSplit.CollapseChild(0);
+        }
+    }
+
     public static ConcurrentQueue<Action> MainThread = new();
+
     private void OnDestroy()
     {
         EditorApplication.update -= OnUpdate;
