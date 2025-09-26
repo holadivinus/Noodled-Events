@@ -104,6 +104,12 @@ public class UltNoodleNodeView : Node
             var port = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, null);
             port.portName = string.IsNullOrEmpty(fi.Name) ? "Flow In" : fi.Name;
             port.userData = fi;
+            port.portColor = Color.white;
+
+            var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
+            var connector = new EdgeConnector<Edge>(listener);
+            port.AddManipulator(connector);
+
             _flowInputs[fi.ID] = port;
             inputContainer.Add(port);
         }
@@ -113,6 +119,7 @@ public class UltNoodleNodeView : Node
             var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, null);
             port.portName = string.IsNullOrEmpty(fo.Name) ? "Flow Out" : fo.Name;
             port.userData = fo;
+            port.portColor = Color.white;
 
             var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
             var connector = new EdgeConnector<Edge>(listener);
@@ -123,24 +130,100 @@ public class UltNoodleNodeView : Node
         }
     }
 
+    private static Dictionary<Type, Color> s_typeColorOverrides = new Dictionary<Type, Color>()
+    {
+        { typeof(bool), new Color(.25f, .25f, .25f) },
+        { typeof(string), Color.red },
+        //{ typeof(object), new Color(81.0f/255f, 156.0f/255f, 214.0f/255f)},
+        { typeof(UnityEngine.Object), new Color(78.0f/255f, 201.0f/255f, 176.0f/255f)},
+        { typeof(float), new Color(134.0f/255,198.0f/255, 1f) },
+        { typeof(int), Color.green },
+        { typeof(GameObject), new Color(1, 1, 195.0f/255f)},
+        { typeof(Transform), new Color(0, 29.1f/255,1)*2 },
+        {typeof(Type), new Color(108.0f/255, 59.0f/255, 170.0f/255) },
+        {typeof(IEnumerable), Color.yellow },
+        {typeof(IEnumerator), (Color.yellow/2 + Color.red /2) },
+        {typeof(Color), Color.magenta },
+    };
+    private static bool TryGetColor(Type t, out Color o)
+    {
+        o = Color.magenta;
+        if (s_typeColorOverrides.TryGetValue(t, out var color))
+        {
+            o = color;
+            return true;
+        }
+        if (t.IsByRef)
+        {
+            if (TryGetColor(t.GetElementType(), out color))
+            {
+                o = color * .5f;
+                return true;
+            }
+        }
+        if (t.IsValueType)
+        {
+            o = new Color(134.0f / 255, 198.0f / 255, 145.0f / 255);
+            return true;
+        }
+        if (typeof(Component).IsAssignableFrom(t))
+        {
+            o = Color.yellow; return true;
+        }
+        if (typeof(UnityEngine.Object).IsAssignableFrom(t))
+        {
+            o = s_typeColorOverrides[typeof(UnityEngine.Object)] * .8f; return true;
+        }
+        if (t.IsArray)
+        {
+            if (TryGetColor(t.GetElementType(), out color))
+            {
+                o = color * 1.5f;
+                return true;
+            }
+        }
+        if (typeof(IEnumerable).IsAssignableFrom(t) && t.GenericTypeArguments.Length == 1)
+        {
+            if (TryGetColor(t.GenericTypeArguments[0], out color))
+            {
+                o = color * 1.5f;
+                return true;
+            }
+        }
+        if (typeof(Delegate).IsAssignableFrom(t))
+        {
+            o = new Color(108.0f / 255, 59.0f / 255, 170.0f / 255) * .9f; return true;
+        }
+
+        return false;
+    }
+
     private void CreateDataPorts()
     {
         foreach (var di in Node.DataInputs)
         {
+            // Unity has issues displaying special Types, so we'll use System.Object and color manually.
             var port = InstantiatePort(
                 Orientation.Horizontal,
                 Direction.Input,
                 Port.Capacity.Single,
-                di.Type?.Type ?? typeof(object)
-            );
+                typeof(object));
+            
             port.portName = string.IsNullOrEmpty(di.Name) ? di.Type?.Type.Name ?? "In" : di.Name;
             port.userData = di;
-            port.tooltip = di.Type?.Type.Name ?? "Unknown";
+            port.tooltip = di.Type?.Type?.GetFriendlyName() ?? "Unknown";
             _dataInputs[di.ID] = port;
+
+            if (di.Type?.Type != null && TryGetColor(di.Type.Type, out Color col))
+                port.elementTypeColor = port.portColor = col;
 
             var container = new VisualElement();
             container.style.flexDirection = FlexDirection.Row;
             container.Add(port);
+
+            var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
+            var connector = new EdgeConnector<Edge>(listener);
+            port.AddManipulator(connector);
 
             VisualElement varManDropdown = CreateVarManDropdown(di);
 
@@ -166,15 +249,19 @@ public class UltNoodleNodeView : Node
 
         foreach (var dout in Node.DataOutputs)
         {
+            // Unity has issues displaying special Types, so we'll use System.Object and color manually.
             var port = InstantiatePort(
-                Orientation.Horizontal,
-                Direction.Output,
-                Port.Capacity.Multi,
-                dout.Type?.Type ?? typeof(object)
-            );
+                    Orientation.Horizontal,
+                    Direction.Output,
+                    Port.Capacity.Multi,
+                    typeof(object));
+
             port.portName = string.IsNullOrEmpty(dout.Name) ? dout.Type?.Type.Name ?? "Out" : dout.Name;
             port.userData = dout;
-            port.tooltip = dout.Type?.Type.Name ?? "Unknown";
+            port.tooltip = dout.Type?.Type?.GetFriendlyName() ?? "Unknown";
+
+            if (dout.Type?.Type != null && TryGetColor(dout.Type.Type, out Color col))
+                port.elementTypeColor = port.portColor = col;
 
             var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
             var connector = new EdgeConnector<Edge>(listener);

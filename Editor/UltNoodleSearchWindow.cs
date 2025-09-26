@@ -45,11 +45,18 @@ public class UltNoodleSearchWindow : EditorWindow
 
     public static UltNoodleSearchWindow Open(UltNoodleTreeView graphView, Vector2 screenPos, Edge edge)
     {
-        if (edge.output.userData is not NoodleDataOutput dataOut) return Open(graphView, screenPos); // fallback to generic search
-        return InternalOpen(graphView, screenPos, dataOut.Type);
+        if (edge.output != null)
+        {
+            if (edge.output.userData is not NoodleDataOutput dataOut) return Open(graphView, screenPos); // fallback to generic search
+            return InternalOpen(graphView, screenPos, dataOut.Type);
+        } else
+        {
+            if (edge.input.userData is not NoodleDataInput dataIn) return Open(graphView, screenPos); // fallback to generic search
+            return InternalOpen(graphView, screenPos, dataIn.Type, false);
+        }
     }
 
-    private static UltNoodleSearchWindow InternalOpen(UltNoodleTreeView graphView, Vector2 screenPos, Type filterType)
+    private static UltNoodleSearchWindow InternalOpen(UltNoodleTreeView graphView, Vector2 screenPos, Type filterType, bool filterDir = true)
     {
         _activeWindow?.Close();
         _activeWindow = null;
@@ -57,9 +64,9 @@ public class UltNoodleSearchWindow : EditorWindow
         var window = CreateInstance<UltNoodleSearchWindow>();
         _activeWindow = window;
         window._pendingScreenPos = screenPos;
-        window.position = new Rect(-10000, -10000, 10, 10); // hide until uxml loads and we can size properly
+        window.position = new Rect(-10000, -10000, 1, 1); // hide until uxml loads and we can size properly
         if (filterType != null)
-            window.SetSearchFilter(true, filterType);
+            window.SetSearchFilter(filterDir, filterType);
         else
             window.FilteredNodeDefs = UltNoodleEditor.AllNodeDefs;
         window.ShowPopup();
@@ -85,17 +92,29 @@ public class UltNoodleSearchWindow : EditorWindow
         _settingsMenu = _searchMenu.Q<VisualElement>("SettingsMenu");
 
         // handle setting to mouse position after size is known
-        root.schedule.Execute(() =>
-            {
-                float w = _searchMenu.resolvedStyle.width;
-                float h = _searchMenu.resolvedStyle.height;
+        Action fixPosition = null;
+        int waitCounter = 0;
+        fixPosition = () =>
+        {
+            float w = _searchMenu.resolvedStyle.width;
+            float h = _searchMenu.resolvedStyle.height;
 
-                if (w > 0 && h > 0)
-                {
-                    minSize = maxSize = new Vector2(w, h);
-                    position = new Rect(_pendingScreenPos, new Vector2(w, h));
-                }
-            });
+            // root.schedule.Execute often runs too early - wait one more time.
+            if (float.NaN.Equals(w) || float.NaN.Equals(h))
+            {
+                waitCounter++;
+                if (waitCounter > 10) throw new Exception("[NoodledEvents] Search Menu failed to figure out a good Position and Size!");
+                root.schedule.Execute(fixPosition);
+                return;
+            }
+
+            if (w > 0 && h > 0)
+            {
+                minSize = maxSize = new Vector2(w, h);
+                position = new Rect(_pendingScreenPos, new Vector2(w, h));
+            }
+        };
+        root.schedule.Execute(fixPosition);
 
         // search bar callbacks
         _searchBar.RegisterValueChangedCallback((txt) =>
