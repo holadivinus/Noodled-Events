@@ -252,6 +252,7 @@ public class UltNoodleTreeView : GraphView
                 foreach (var target in dout.Targets)
                 {
                     var childView = FindNodeView(target.Node);
+                    if (childView == null) continue;
                     var parentPort = parentView.GetPortForDataOutput(dout);
                     var childPort = childView.GetPortForDataInput(target);
                     if (parentPort != null && childPort != null)

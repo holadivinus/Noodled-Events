@@ -76,15 +76,16 @@ public class UltNoodleEditor : EditorWindow
         root.styleSheets.Add(styleSheet);
 
         EditorApplication.update += OnUpdate;
-        void contextChanged()
+        void contextChanged(bool resetViews = true)
         {
-            ResetViews();
+            if (resetViews)
+                ResetViews();
             OnFocus();
         }
         EditorSceneManager.sceneOpened += (_, _) => contextChanged();
         PrefabStage.prefabStageOpened += (_) => contextChanged();
         PrefabStage.prefabStageClosing += (_) => contextChanged(); // described as "Prefab stage is about to be opened" in docs but functions as "Prefab stage is closed"
-        Selection.selectionChanged += contextChanged;
+        Selection.selectionChanged += () => contextChanged(EditorPrefs.GetBool("SelectedBowlsOnly", true));
 
         treeView = root.Q<UltNoodleTreeView>();
         inspectorView = root.Q<UltNoodleInspectorView>();
@@ -118,8 +119,8 @@ public class UltNoodleEditor : EditorWindow
                 ? _currentBowl?.SerializedData
                 : null; // only reselect if we're disabling the toggle or the current bowl's gameobject is selected
             
-            Bowls.Clear(); // clear bowls so we can regen
-            this.OnFocus(); // update displays
+            ResetViews();
+            OnFocus(); // update displays
         }, (a) => EditorPrefs.GetBool("SelectedBowlsOnly", true) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
         viewMenu.menu.AppendAction("Rebuild View", (a) => contextChanged(), (a) => DropdownMenuAction.Status.Normal);
 
@@ -303,6 +304,7 @@ public class UltNoodleEditor : EditorWindow
     {
         if (bowl == null || !Bowls.Contains(bowl)) return;
         _currentBowl = bowl;
+        _bowlToReselect = bowl.SerializedData;
 
         void onReady()
         {
