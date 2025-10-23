@@ -104,7 +104,7 @@ public class ObjectMethodCookBook : CookBook
     }
 
     private bool NeedsReflection(MethodBase meth) =>
-        (!typeof(UnityEngine.Object).IsAssignableFrom(meth.DeclaringType) // Not Targettable by Pcalls?
+        (!(typeof(UnityEngine.Object).IsAssignableFrom(meth.DeclaringType) && EditorPrefs.GetBool("InlineUltswaps")) // Not Targettable by Pcalls?
         || meth.DeclaringType.ContainsGenericParameters  // ex: List<T> vs List<bool>
         || meth.ContainsGenericParameters // yea
         || meth.GetParameters().Any(p => p.IsOut || p.ParameterType.IsByRef));
@@ -384,7 +384,7 @@ public class ObjectMethodCookBook : CookBook
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 
         #region Reflection Based Method
-        if (NeedsReflection(meth.Method)) // bonus retvals!
+        if (NeedsReflection(meth.Method) && node.DataInputs[0].DefaultObject == null) // bonus retvals!
         {
             // UAHGAHGAUGUAAAAAAS
             

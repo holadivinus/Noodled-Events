@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
-<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
     <uie:Toolbar>
         <uie:ToolbarMenu display-tooltip-when-elided="true" name="NodesMenu" text="Nodes" />
         <uie:ToolbarMenu display-tooltip-when-elided="true" name="ViewMenu" text="View" />
+        <uie:ToolbarMenu display-tooltip-when-elided="true" name="CompilationMenu" text="Compilation" />
         <uie:ToolbarMenu display-tooltip-when-elided="true" name="HelpMenu" text="Help" />
         <ui:VisualElement style="flex-shrink: 0; flex-grow: 1;" />
-        <ui:Label text="" display-tooltip-when-elided="true" name="NoticeLabel" style="-unity-text-align: middle-left;" />
+        <ui:Label display-tooltip-when-elided="true" name="NoticeLabel" style="-unity-text-align: middle-left;" />
     </uie:Toolbar>
     <ui:TwoPaneSplitView fixed-pane-initial-dimension="300" name="MainSplit">
         <ui:VisualElement name="left-panel" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); width: 300px;">
@@ -20,7 +20,7 @@
                 </ui:VisualElement>
             </ui:TwoPaneSplitView>
         </ui:VisualElement>
-        <ui:VisualElement name="right-panel" style="flex-grow: 1; background-color: rgba(28, 28, 28, 1);">
+        <ui:VisualElement name="right-panel" style="flex-grow: 1; background-color: rgb(28, 28, 28);">
             <UltNoodleTreeView focusable="true" style="flex-grow: 1;" />
         </ui:VisualElement>
     </ui:TwoPaneSplitView>

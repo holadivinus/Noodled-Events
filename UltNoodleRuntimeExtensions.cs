@@ -397,7 +397,7 @@ public static class UltNoodleRuntimeExtensions
         ingameSetCall.FSetMethod(null);
         list.Add(ingameSetCall);*/
     }
-    public const bool DEBUG_IN_COMP = false;
+    public static bool DEBUG_IN_COMP = false; // No longer constant, replace with editor pref
     public static void AddDebugLog(this List<PersistentCall> list, int retVal, bool useJson = false)
     {
         if (!DEBUG_IN_COMP) return;
