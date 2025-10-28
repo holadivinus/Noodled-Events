@@ -19,6 +19,8 @@ public class ObjectMethodCookBook : CookBook
     {
         MyDefs.Clear();
 
+        var inlineUltswaps = EditorPrefs.GetBool("InlineUltswaps");
+        // This is bc unity calls do not work off-thread. When the wiki is rewritten it should be noted that node labels are only accurate to the settings that were set when generated.
         int i = 0;
         var p = Task.Run(() => Parallel.ForEach<Type>(UltNoodleEditor.SearchableTypes, (t) =>
         {
@@ -52,7 +54,7 @@ public class ObjectMethodCookBook : CookBook
                     descriptiveText = $"{meth.ReturnType.GetFriendlyName()} {descriptiveText}";
 
 
-                    string execPinMsg = NeedsReflection(meth) ? "Reflection Exec" : "Exec";
+                    string execPinMsg = NeedsReflection(meth, inlineUltswaps) ? "Reflection Exec" : "Exec";
                     var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name,
                         inputs: () =>
                         {
@@ -103,12 +105,11 @@ public class ObjectMethodCookBook : CookBook
         p.ContinueWith(t => completedCallback.Invoke());
     }
 
-    private bool NeedsReflection(MethodBase meth) =>
-        (!(typeof(UnityEngine.Object).IsAssignableFrom(meth.DeclaringType) && EditorPrefs.GetBool("InlineUltswaps")) // Not Targettable by Pcalls?
+    private bool NeedsReflection(MethodBase meth, bool inlineUltswaps) =>
+        (!(typeof(UnityEngine.Object).IsAssignableFrom(meth.DeclaringType) && inlineUltswaps) // Not Targettable by Pcalls?
         || meth.DeclaringType.ContainsGenericParameters  // ex: List<T> vs List<bool>
         || meth.ContainsGenericParameters // yea
         || meth.GetParameters().Any(p => p.IsOut || p.ParameterType.IsByRef));
-
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
         base.CompileNode(evt, node, dataRoot);
@@ -384,7 +385,7 @@ public class ObjectMethodCookBook : CookBook
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 
         #region Reflection Based Method
-        if (NeedsReflection(meth.Method) && node.DataInputs[0].DefaultObject == null) // bonus retvals!
+        if (NeedsReflection(meth.Method, EditorPrefs.GetBool("InlineUltswaps")) && node.DataInputs[0].DefaultObject == null) // bonus retvals!
         {
             // UAHGAHGAUGUAAAAAAS
             
