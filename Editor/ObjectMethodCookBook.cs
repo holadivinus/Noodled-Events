@@ -52,7 +52,7 @@ public class ObjectMethodCookBook : CookBook
                         searchText += ")";
                     }
                     descriptiveText = $"{meth.ReturnType.GetFriendlyName()} {descriptiveText}";
-
+                    descriptiveText += $", {t.Assembly.FullName.Split(',')[0]}";
 
                     string execPinMsg = NeedsReflection(meth, inlineUltswaps) ? "Reflection Exec" : "Exec";
                     var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name,
