@@ -19,7 +19,7 @@ public class ObjectMethodCookBook : CookBook
     {
         MyDefs.Clear();
 
-        var inlineUltswaps = EditorPrefs.GetBool("InlineUltswaps", true);
+        var inlineUltswaps = EditorPrefs.GetBool("InlineUltswaps");
         // This is bc unity calls do not work off-thread. When the wiki is rewritten it should be noted that node labels are only accurate to the settings that were set when generated.
         int i = 0;
         var p = Task.Run(() => Parallel.ForEach<Type>(UltNoodleEditor.SearchableTypes, (t) =>
@@ -385,7 +385,7 @@ public class ObjectMethodCookBook : CookBook
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 
         #region Reflection Based Method
-        if (NeedsReflection(meth.Method, EditorPrefs.GetBool("InlineUltswaps", true)) && !node.DataInputs[0].HasConstObjInput()) // bonus retvals!
+        if (NeedsReflection(meth.Method, EditorPrefs.GetBool("InlineUltswaps")) && !node.DataInputs[0].HasConstObjInput()) // bonus retvals!
         {
             // UAHGAHGAUGUAAAAAAS
             

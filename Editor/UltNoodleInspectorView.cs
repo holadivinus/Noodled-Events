@@ -50,15 +50,25 @@ public class UltNoodleInspectorView : VisualElement
 
         if (isInOut)
         {
-            var button = new Button(() =>
+            Button button = null;
+            button = new Button(() =>
             {
                 var bowl = nodeView.Node.Bowl;
                 //compile and run evt
                 bowl.Compile();
 
+                System.Diagnostics.Stopwatch stopWatch = new();
+                stopWatch.Start();
+
+
                 UltNoodleBowl.EvtIsExecRn = true;
                 bowl.Event.DynamicInvoke(new object[bowl.Event.ParameterCount]);
                 UltNoodleBowl.EvtIsExecRn = false;
+
+
+                stopWatch.Stop();
+                button.text = $"Run -> {stopWatch.ElapsedTicks * 0.0001f}ms";
+
 
                 // recompile to reset state
                 bowl.Compile();
