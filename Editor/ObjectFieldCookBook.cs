@@ -39,7 +39,7 @@ public class ObjectFieldCookBook : CookBook
                         inputs: () => field.IsStatic ? new Pin[] { new Pin("Reflection Set"), new NodeDef.Pin(field.Name, field.FieldType) } : new Pin[] { new Pin("Reflection Set"), new Pin(t.GetFriendlyName(), t), new NodeDef.Pin(field.Name, field.FieldType) },
                         outputs: () => new[] { new NodeDef.Pin("sot") },
                         bookTag: JsonUtility.ToJson(new SerializedField() { Field = field }),
-                        tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.setf_{field.Name} (Reflection)")
+                        tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.setf_{field.Name} (Reflection), {t.Assembly.FullName.Split(',')[0]}")
                     );
                     newDefs.Add(setter);
                     UltNoodleEditor.MainThread.Enqueue(() => MyDefs.Add(field, (getter, setter)));

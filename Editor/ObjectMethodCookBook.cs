@@ -19,6 +19,8 @@ public class ObjectMethodCookBook : CookBook
     {
         MyDefs.Clear();
 
+        var inlineUltswaps = EditorPrefs.GetBool("InlineUltswaps", true);
+        // This is bc unity calls do not work off-thread. When the wiki is rewritten it should be noted that node labels are only accurate to the settings that were set when generated.
         int i = 0;
         var p = Task.Run(() => Parallel.ForEach<Type>(UltNoodleEditor.SearchableTypes, (t) =>
         {
@@ -50,9 +52,9 @@ public class ObjectMethodCookBook : CookBook
                         searchText += ")";
                     }
                     descriptiveText = $"{meth.ReturnType.GetFriendlyName()} {descriptiveText}";
+                    descriptiveText += $", {t.Assembly.FullName.Split(',')[0]}";
 
-
-                    string execPinMsg = NeedsReflection(meth) ? "Reflection Exec" : "Exec";
+                    string execPinMsg = NeedsReflection(meth, inlineUltswaps) ? "Reflection Exec" : "Exec";
                     var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name,
                         inputs: () =>
                         {
@@ -103,12 +105,11 @@ public class ObjectMethodCookBook : CookBook
         p.ContinueWith(t => completedCallback.Invoke());
     }
 
-    private bool NeedsReflection(MethodBase meth) =>
-        (!typeof(UnityEngine.Object).IsAssignableFrom(meth.DeclaringType) // Not Targettable by Pcalls?
+    private bool NeedsReflection(MethodBase meth, bool inlineUltswaps) =>
+        (!(typeof(UnityEngine.Object).IsAssignableFrom(meth.DeclaringType) && inlineUltswaps) // Not Targettable by Pcalls?
         || meth.DeclaringType.ContainsGenericParameters  // ex: List<T> vs List<bool>
         || meth.ContainsGenericParameters // yea
         || meth.GetParameters().Any(p => p.IsOut || p.ParameterType.IsByRef));
-
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
         base.CompileNode(evt, node, dataRoot);
@@ -384,7 +385,7 @@ public class ObjectMethodCookBook : CookBook
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 
         #region Reflection Based Method
-        if (NeedsReflection(meth.Method)) // bonus retvals!
+        if (NeedsReflection(meth.Method, EditorPrefs.GetBool("InlineUltswaps", true)) && !node.DataInputs[0].HasConstObjInput()) // bonus retvals!
         {
             // UAHGAHGAUGUAAAAAAS
             
@@ -498,28 +499,25 @@ public class ObjectMethodCookBook : CookBook
 
         UltEventHolder varyEvt = null;
         UltEventBase pre = evt;
+
         // if the source varies
-        if (node.DataInputs[0].Source != null) // Okay, for Ult-Swap-Caching: uhhh
+        if (!node.DataInputs[0].HasConstObjInput()) // Okay, for Ult-Swap-Caching: uhhh
         {                                      // if the source node is an ult-swap head, we ref a template object (lets just use the src evt)
-                                               // then, in OnCache, we get the temp obj ref as a string; tojson child evts; replace temp ref with real ref; fromJson.
-            if (node.DataInputs[0].Source.Node.BookTag == "UltSwap-Head")
-            {
-                myCall.FSetTarget(node.DataInputs[0].Source.Node.Bowl.EventHolder);
-            }
-            else
-            {
-                // we need to json
-                // make event for jsonning
-                // TODO: UltSwap Cach chip
-                varyEvt = dataRoot.StoreComp<UltEventHolder>("varyingEvt");
-                varyEvt.Event = new UltEvent();
-                varyEvt.Event.FSetPCalls(new());
-                evt = varyEvt.Event; // move stuff to the targevt
-                myCall.FSetTarget(null);
-            }
+            // we need to json
+            // make event for jsonning
+            // TODO: UltSwap Cach chip
+            varyEvt = dataRoot.StoreComp<UltEventHolder>("varyingEvt");
+            varyEvt.Event = new UltEvent();
+            varyEvt.Event.FSetPCalls(new());
+            evt = varyEvt.Event; // move stuff to the targevt
+            myCall.FSetTarget(null);
         }
-        
-        
+        else if (node.DataInputs[0].TrueSource?.Node.BookTag == "UltSwap-Head")
+        {
+            myCall.FSetTarget(node.DataInputs[0].TrueSource.Node.Bowl.EventHolder);
+        }
+
+
 
         // foreach input
         for (int j = 0; j < node.DataInputs.Length; j++) 
@@ -597,7 +595,7 @@ public class ObjectMethodCookBook : CookBook
 
         evt.PersistentCallsList.Add(myCall);
 
-        if (node.DataInputs[0].Source != null && myCall.Target == null)
+        if (!node.DataInputs[0].HasConstObjInput() && myCall.Target == null)
         {
             // if evt had data output, get data
             Component retValStore = null;

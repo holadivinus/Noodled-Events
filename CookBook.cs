@@ -132,10 +132,30 @@ namespace NoodledEvents
             /// <param name="targCall"></param>
             /// <param name="argIdx"></param>
             public PendingConnection(NoodleDataOutput o, UltEventBase targEvt, PersistentCall targCall, int argIdx) 
-            { 
-                SourceEvent = o.CompEvt; SourceCall = o.CompCall;
+            {
                 TargEvent = targEvt; TargCall = targCall;
                 TargInwardType = targCall.Method.GetParameters()[argIdx].ParameterType; TargInput = argIdx;
+                if (o.Node.NoadType == SerializedNode.NodeType.Redirect) // Handle redirect nodes /// From CookBook.CompileNode
+                {
+                    SerializedNode secondtolast = null;
+                    var current = o.Node;
+
+                    // ride the redirect chain
+                    while (current != null && current.NoadType == SerializedNode.NodeType.Redirect)
+                    {
+                        secondtolast = current;
+                        current = current.DataInputs[0].Source?.Node;
+                    }
+                    // current is now the source node (or null if not connected)
+                    // find out what connection was used
+                    o = secondtolast.DataInputs[0].Source;
+
+                    if (o == null) // Redirect with missing wire on left side
+                    {
+                        return;
+                    }
+                }
+                SourceEvent = o.CompEvt; SourceCall = o.CompCall;
                 SourceOutwardType = o.Type.Type;
                 if (o.Node.NoadType == SerializedNode.NodeType.BowlInOut)
                     ArgIsSource = Array.IndexOf(o.Node.DataOutputs, o);
@@ -182,6 +202,18 @@ namespace NoodledEvents
             public int TargInput; // the idx of the arg on the TargCall to set as Arg
             public void Connect(Transform dataRoot) // fyi this is called while the targcall is being constructed
             {
+                if (SourceEvent == null) 
+                {
+                    // People dont typically have warnings on in the log
+                    Debug.LogWarning("A data redirect node is connected to a node on the right but not the left!\n" +
+                        $"Method of node is {TargCall.MethodName}");
+                    // So il make the recieved input a proper null instead of leaving None or ret -1
+                    /// I think that new nodes with object parameters should be initialized with this instead of none, as it's more intuitive
+                    TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToObjVal(null, TargInwardType);
+                    return;
+                    // TODO: make redirect node show as red
+                }
+
                 if (SourceEvent == TargEvent) // same evt connection
                 {
                     if (ArgIsSource > -1)

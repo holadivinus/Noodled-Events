@@ -48,6 +48,8 @@ public class StaticMethodCookBook : CookBook
                         searchText += ")";
                     }
 
+                    descriptiveText += $", {t.Assembly.FullName.Split(',')[0]}";
+
 
                     var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name,
                         inputs: () =>

@@ -103,6 +103,7 @@ public class UltNoodleEditor : EditorWindow
         // setup toolbar options
         var nodesMenu = root.Q<ToolbarMenu>("NodesMenu");
         var viewMenu = root.Q<ToolbarMenu>("ViewMenu");
+        var compilationMenu = root.Q<ToolbarMenu>("CompilationMenu");
         var helpMenu = root.Q<ToolbarMenu>("HelpMenu");
 
         nodesMenu.menu.AppendAction("Regenerate Nodes", (a) => CollectNodes(), (a) => _collecting ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
@@ -123,6 +124,16 @@ public class UltNoodleEditor : EditorWindow
             OnFocus(); // update displays
         }, (a) => EditorPrefs.GetBool("SelectedBowlsOnly", true) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
         viewMenu.menu.AppendAction("Rebuild View", (a) => contextChanged(), (a) => DropdownMenuAction.Status.Normal);
+
+        compilationMenu.menu.AppendAction("Add Debug Logs", (_) => 
+            UltNoodleRuntimeExtensions.DEBUG_IN_COMP = !UltNoodleRuntimeExtensions.DEBUG_IN_COMP, 
+            (_) => UltNoodleRuntimeExtensions.DEBUG_IN_COMP ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
+        compilationMenu.menu.AppendAction("Use Inline Ultswaps", (_) => 
+        {
+            bool enabled = !EditorPrefs.GetBool("InlineUltswaps");
+            EditorPrefs.SetBool("InlineUltswaps", enabled);
+        }, (_) => EditorPrefs.GetBool("InlineUltswaps") ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
         helpMenu.menu.AppendAction("GitHub", (a) => Application.OpenURL("https://github.com/holadivinus/Noodled-Events"), (a) => DropdownMenuAction.Status.Normal);
 

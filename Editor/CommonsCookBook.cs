@@ -171,8 +171,8 @@ public class CommonsCookBook : CookBook
         completedCallback.Invoke();
     }
 
-    const string dictStoreTypeStr = "System.TimeZone, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
-    const string dictStoreFieldStr = "s_InternalSyncObject";
+    const string dictStoreTypeStr = "UnityEngine.Rendering.LensFlareCommonSRP, Unity.RenderPipelines.Core.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+    const string dictStoreFieldStr = "m_Padlock";
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
         base.CompileNode(evt, node, dataRoot);

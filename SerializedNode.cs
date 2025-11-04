@@ -396,6 +396,47 @@ namespace NoodledEvents
             if (Source != null && !Source.Targets.Contains(this))
                 Source.Targets.Add(this);
         }
+
+        [NonSerialized] public NoodleDataOutput TrueSource;
+        public bool HasConstObjInput()
+        {
+            if (DefaultObject)
+                return true;
+            if (Source != null)
+                switch (Source.Node.NoadType)
+                {
+                    case SerializedNode.NodeType.BowlInOut:
+                        return false;
+                    case SerializedNode.NodeType.Normal:
+                        if (Source.Node.BookTag == "UltSwap-Head")
+                        {
+                            TrueSource = Source;
+                            return true;
+                        }
+                        return false;
+                    case SerializedNode.NodeType.Redirect:
+                        SerializedNode secondtolast = null;
+                        var current = Source.Node;
+
+                        // ride the redirect chain
+                        while (current != null && current.NoadType == SerializedNode.NodeType.Redirect)
+                        {
+                            secondtolast = current;
+                            current = current.DataInputs[0].Source?.Node;
+                        }
+                        // current is now the source node (or null if not connected)
+                        // find out what connection was used
+                        TrueSource = secondtolast.DataInputs[0].Source;
+
+                        if (TrueSource == null || TrueSource.Node.BookTag != "UltSwap-Head") // Redirect with missing wire on left side
+                            return false;
+                        else
+                            return true;
+                    default:
+                        throw new NotImplementedException();
+                }
+            return false;
+        }
     }
     [Serializable]
     public class NoodleDataOutput // has n outputs
