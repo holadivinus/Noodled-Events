@@ -25,7 +25,9 @@ Each bowl gets a bowl element, consisting of the following:
 4. The Select button selects the given bowl, showing its nodes in the graph view.
 5. The small button with the GameObject icon highlights the bowl's GameObject when clicked on.
 
-Bowls are organized by placement in the Hierarchy. Bowls parented to root are shown first, top to bottom.
+Bowls are organized by placement in the Hierarchy. Bowls parented to root are shown first, top to bottom. 
+
+Bowls within a prefab are not included in the bowl selector. To edit a bowl that is within a prefab, go into prefab mode in either isolation or in context to edit it directly. (See [Editing a Prefab in Prefab Mode](https://docs.unity3d.com/2021.3/Documentation/Manual/EditingInPrefabMode.html))
 
 ![Bowl Selector](Docs~/bowlSelector.png)
 
