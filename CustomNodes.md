@@ -33,6 +33,7 @@ Bowls within a prefab are not included in the bowl selector. To edit a bowl that
 
 ### The Menu Bar
 The menu bar within the editor contains options and functions.
+
 ![Menu Bar](Docs~/menuBar.png)
 ```md
 Menu Bar
@@ -45,10 +46,11 @@ Menu Bar
   |   ├ Selected Bowls Only: When enabled, only shows bowls which are on gameobject currently selected in the Hierarchy.
   |   └ Rebuild View: Rebuilds the Graph View. Good first step for debugging odd issues.
   ├ Compilation
-  | ├ Add Debug Logs: Adds debugging logs to methods that use it.
-  | └ Use Inline Ultswaps: Toggle for legacy compilation method. Turn off if experiencing issues with functions.
+  |   ├ Add Debug Logs: Adds debugging logs to methods that use it.
+  |   └ Use Inline Ultswaps: Toggle for legacy compilation method. Turn off if experiencing issues with functions.
   └ Help
-     └ GitHub: Opens holadivinus/NoodledEvents on GitHub
+      ├ GitHub: Opens holadivinus/NoodledEvents on GitHub
+      └ Update: Updates the Noodled-Editor package. Only shows up when an update is available.
 ```
 
 ### The Graph View
