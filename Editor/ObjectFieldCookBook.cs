@@ -4,6 +4,7 @@ using NoodledEvents;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using UltEvents;
 using UnityEditor;
@@ -19,7 +20,22 @@ public class ObjectFieldCookBook : CookBook
     {
         MyDefs.Clear();
         int i = 0;
-        var p = Task.Run(() => Parallel.ForEach<Type>(UltNoodleEditor.SearchableTypes, (t) =>
+
+        CancellationTokenSource cts = new();
+
+        // Use ParallelOptions instance to store the CancellationToken
+        ParallelOptions options = new()
+        {
+            CancellationToken = cts.Token,
+            MaxDegreeOfParallelism = Environment.ProcessorCount
+        };
+
+        EditorApplication.quitting += () =>
+        {
+            cts.Cancel();
+        };
+
+        var p = Task.Run(() => Parallel.ForEach<Type>(UltNoodleEditor.SearchableTypes, options, (t) =>
         {
             try
             {

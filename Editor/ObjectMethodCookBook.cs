@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using UltEvents;
 using UnityEditor;
@@ -22,7 +23,23 @@ public class ObjectMethodCookBook : CookBook
         var inlineUltswaps = EditorPrefs.GetBool("InlineUltswaps");
         // This is bc unity calls do not work off-thread. When the wiki is rewritten it should be noted that node labels are only accurate to the settings that were set when generated.
         int i = 0;
-        var p = Task.Run(() => Parallel.ForEach<Type>(UltNoodleEditor.SearchableTypes, (t) =>
+
+
+        CancellationTokenSource cts = new();
+
+        // Use ParallelOptions instance to store the CancellationToken
+        ParallelOptions options = new()
+        {
+            CancellationToken = cts.Token,
+            MaxDegreeOfParallelism = Environment.ProcessorCount
+        };
+
+        EditorApplication.quitting += () =>
+        {
+            cts.Cancel();
+        };
+
+        var p = Task.Run(() => Parallel.ForEach<Type>(UltNoodleEditor.SearchableTypes, options,(t) =>
         {
             try
             {
@@ -74,13 +91,12 @@ public class ObjectMethodCookBook : CookBook
                     newNodes.Add(newDef);
 
                     UltNoodleEditor.MainThread.Enqueue(() => MyDefs.Add(meth, newDef));
-                    
+
                 }
                 progressCallback.Invoke(newNodes, (++i / (float)UltNoodleEditor.SearchableTypes.Length));
             }
             catch (TypeLoadException) { } // bro
         }));
-
         List<NodeDef> lastDefs = new();
         lastDefs.Add(new NodeDef(this, "flow.ult_swap",
             inputs: () => new Pin[] { new("") },
@@ -95,7 +111,7 @@ public class ObjectMethodCookBook : CookBook
             tooltipOverride: "Caches an UnityObject for an Ultswap"));
 
         lastDefs.Add(new NodeDef(this, "flow.ult_swap_reset",
-            inputs: () => new Pin[] { new("Reset Cache"), new("Re-cache Immediately?", typeof(bool), @const:true) },
+            inputs: () => new Pin[] { new("Reset Cache"), new("Re-cache Immediately?", typeof(bool), @const: true) },
             outputs: () => new Pin[] { },
             bookTag: "UltSwap-Reset",
             tooltipOverride: "Resets an Ultswap, use in the Post Cache exec."));
@@ -314,9 +330,9 @@ public class ObjectMethodCookBook : CookBook
                         // bowl_generated/UltSwap/PostCache/Safety/OnEnable
                         // this one is stored somewhere in PostCache;
                         // We'll seek upwards untill we find Safety with PostCache above
-                        
+
                         Transform p = dataRoot.transform;
-                        while(p != null && p.name != "Safety") // again we need a more "secure" system for in-book tagging.
+                        while (p != null && p.name != "Safety") // again we need a more "secure" system for in-book tagging.
                             p = p.parent;
                         if (p == null) return; //user error lol 3000
 
@@ -388,7 +404,7 @@ public class ObjectMethodCookBook : CookBook
         if (NeedsReflection(meth.Method, EditorPrefs.GetBool("InlineUltswaps")) && !node.DataInputs[0].HasConstObjInput()) // bonus retvals!
         {
             // UAHGAHGAUGUAAAAAAS
-            
+
 
 
             int typeArrType = evt.PersistentCallsList.FindOrAddGetTyper<Type[]>();
@@ -520,7 +536,7 @@ public class ObjectMethodCookBook : CookBook
 
 
         // foreach input
-        for (int j = 0; j < node.DataInputs.Length; j++) 
+        for (int j = 0; j < node.DataInputs.Length; j++)
         {
             // first data-in is allways the targ obj;
             if (j == 0) continue;
@@ -532,7 +548,8 @@ public class ObjectMethodCookBook : CookBook
             if (@in.Source != null) // is connected
             {
                 new PendingConnection(@in.Source, evt, myCall, j - 1).Connect(dataRoot);
-            } else
+            }
+            else
             {
                 @in.CompArg = myCall.PersistentArguments[j - 1] = new PersistentArgument(meth.Parameters[j - 1]);
 
@@ -679,7 +696,7 @@ public class ObjectMethodCookBook : CookBook
             evt.PersistentCallsList.Add(getPostRef);
             // this returns everything after the serz ref in the template evt
 
-            string removePostRef = ",\"_MethodName\":\""+ methName + "\".*";
+            string removePostRef = ",\"_MethodName\":\"" + methName + "\".*";
             var removePostRefPCall = new PersistentCall();
             removePostRefPCall.FSetMethodName("System.Text.RegularExpressions.Regex, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Replace");
             removePostRefPCall.FSetArguments(
@@ -706,7 +723,7 @@ public class ObjectMethodCookBook : CookBook
             var concatPCall = new PersistentCall();
             concatPCall.FSetMethodName("System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Concat");
             concatPCall.FSetArguments(
-                new PersistentArgument().FSetString(typeof(string).AssemblyQualifiedName).FSetType(PersistentArgumentType.ReturnValue).FSetInt(evt.PersistentCallsList.Count-1),
+                new PersistentArgument().FSetString(typeof(string).AssemblyQualifiedName).FSetType(PersistentArgumentType.ReturnValue).FSetInt(evt.PersistentCallsList.Count - 1),
                 new PersistentArgument().FSetString(typeof(string).AssemblyQualifiedName).FSetType(PersistentArgumentType.ReturnValue).FSetInt(evt.PersistentCallsList.Count - 5),
                 new PersistentArgument().FSetString(typeof(string).AssemblyQualifiedName).FSetType(PersistentArgumentType.ReturnValue).FSetInt(evt.PersistentCallsList.Count - 3));
             evt.PersistentCallsList.Add(concatPCall);
@@ -714,7 +731,7 @@ public class ObjectMethodCookBook : CookBook
             // just FromJson and Invoke!
 
             var froJs = new PersistentCall(typeof(JsonUtility).GetMethod("FromJsonOverwrite"), null);
-            froJs.PersistentArguments[0].FSetType(PersistentArgumentType.ReturnValue).FSetString(typeof(string).AssemblyQualifiedName).FSetInt(evt.PersistentCallsList.Count-1);
+            froJs.PersistentArguments[0].FSetType(PersistentArgumentType.ReturnValue).FSetString(typeof(string).AssemblyQualifiedName).FSetInt(evt.PersistentCallsList.Count - 1);
             froJs.PersistentArguments[1].FSetType(PersistentArgumentType.Object);
             froJs.PersistentArguments[1].Object = varyEvt;
             froJs.PersistentArguments[1].FSetString(typeof(object).AssemblyQualifiedName);
@@ -766,7 +783,8 @@ public class ObjectMethodCookBook : CookBook
 
         List<Type> relatives = new List<Type> { srcType };
         Type cur = srcType;
-        while (cur != typeof(object)) {
+        while (cur != typeof(object))
+        {
             cur = cur.BaseType;
             relatives.Add(cur);
         }
@@ -791,11 +809,11 @@ public class ObjectMethodCookBook : CookBook
                 string inter = method.Name.ToLower().StartsWith("internal_") ? "Internal/" : "";
                 if (meths.Any(m => (m.Name == method.Name && m != method) && m.DeclaringType == method.DeclaringType))
                 {
-                    o.TryAdd(tName + "/Methods/" + inj + inter + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text.Split('(').First() + "(...)/(" 
-                        + string.Join(", ", method.GetParameters().Select(p => p.ParameterType.GetFriendlyName() + " " + p.Name)) +")", def);
-                } 
+                    o.TryAdd(tName + "/Methods/" + inj + inter + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text.Split('(').First() + "(...)/("
+                        + string.Join(", ", method.GetParameters().Select(p => p.ParameterType.GetFriendlyName() + " " + p.Name)) + ")", def);
+                }
                 else
-                    o.TryAdd(tName + "/Methods/"+ inj + inter + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text, def);
+                    o.TryAdd(tName + "/Methods/" + inj + inter + method.ReturnType.GetFriendlyName() + " " + def.SearchItem.text, def);
             }
             foreach (var prop in props)
             {
@@ -835,9 +853,9 @@ public class ObjectMethodCookBook : CookBook
         {
             if (varyer.gameObject.name == "varyingEvt")
                 varyer.GetChild(0).GetComponent<UltEventHolder>().Event = varyer.GetComponent<UltEventHolder>().Event;
-        } 
+        }
     }
 
-    
+
 }
 #endif

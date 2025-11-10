@@ -88,6 +88,10 @@ public class UltNoodleEditor : EditorWindow
         PrefabStage.prefabStageClosing += (_) => contextChanged(); // described as "Prefab stage is about to be opened" in docs but functions as "Prefab stage is closed"
         Selection.selectionChanged += () => contextChanged(EditorPrefs.GetBool("SelectedBowlsOnly", true));
 
+        // Fixes issue where having the editor open when going in then out of play mode causes the search window to infinitely throw exceptions
+        EditorApplication.playModeStateChanged += (_) => contextChanged();
+        EditorApplication.playModeStateChanged += (_) => Editor.Close();
+
         treeView = root.Q<UltNoodleTreeView>();
         inspectorView = root.Q<UltNoodleInspectorView>();
         bowlSelector = root.Q<UltNoodleBowlSelector>();
