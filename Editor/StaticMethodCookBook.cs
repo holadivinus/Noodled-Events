@@ -72,13 +72,21 @@ public class StaticMethodCookBook : CookBook
                         {
                             var @params = meth.GetParameters();
                             if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin("Exec") };
-                            return @params.Select(p => new Pin(p.Name, p.ParameterType)).Prepend(new NodeDef.Pin("Exec")).ToArray();
+                            return @params.Select(p => new Pin(p.GetParamName(brackets: true), p.ParameterType)).Prepend(new NodeDef.Pin("Exec")).ToArray();
                         },
                         outputs: () =>
                         {
+                            var pins = new List<Pin>() { new NodeDef.Pin("Done") };
+
                             if (meth.GetRetType() != typeof(void))
-                                return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.GetFriendlyName(), meth.ReturnType) };
-                            else return new[] { new NodeDef.Pin("Done") };
+                                pins.Add( new NodeDef.Pin(meth.ReturnType.GetFriendlyName(), meth.ReturnType) );
+
+                            var refparams = meth.GetParameters().Where(p => p.ParameterType.IsByRef);
+                            foreach(var refparam in refparams)
+                                pins.Add(new Pin(refparam.GetParamName(), refparam.ParameterType));
+                            
+
+                            return pins.ToArray();
                         },
                         bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
                         searchTextOverride: searchText,
