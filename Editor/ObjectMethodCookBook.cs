@@ -77,13 +77,21 @@ public class ObjectMethodCookBook : CookBook
                         {
                             var @params = meth.GetParameters();
                             if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin(execPinMsg), new Pin(meth.DeclaringType.Name, meth.DeclaringType) };
-                            return @params.Select(p => new Pin(p.Name, p.ParameterType)).Prepend(new Pin(meth.DeclaringType.Name, meth.DeclaringType)).Prepend(new NodeDef.Pin(execPinMsg)).ToArray();
+                            return @params.Select(p => new Pin(p.GetParamName(brackets: true), p.ParameterType)).Prepend(new Pin(meth.DeclaringType.Name, meth.DeclaringType)).Prepend(new NodeDef.Pin(execPinMsg)).ToArray();
                         },
                         outputs: () =>
                         {
-                            if (meth.ReturnType != typeof(void))
-                                return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.Name, meth.ReturnType) };
-                            else return new[] { new NodeDef.Pin("Done") };
+                            var pins = new List<Pin>() { new NodeDef.Pin("Done") };
+
+                            if (meth.GetRetType() != typeof(void))
+                                pins.Add(new NodeDef.Pin(meth.ReturnType.GetFriendlyName(), meth.ReturnType));
+
+                            var refparams = meth.GetParameters().Where(p => p.ParameterType.IsByRef);
+                            foreach (var refparam in refparams)
+                                pins.Add(new Pin(refparam.GetParamName(), refparam.ParameterType));
+
+
+                            return pins.ToArray();
                         },
                         bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
                         searchTextOverride: searchText,
