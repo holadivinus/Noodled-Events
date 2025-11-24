@@ -110,8 +110,28 @@ public class StaticMethodCookBook : CookBook
         // sanity check (AddComponent() leaves this field empty)
         if (evt.PersistentCallsList == null) evt.FSetPCalls(new());
 
+        // check for ref params
+        bool hasRefParam = false;
+        var y = meth.Method.GetParameters();
+        for (int i = 0; i < y.Length; i++)
+        {
+            if (y[i].ParameterType.IsByRef)
+            {
+                hasRefParam = true;
+                break;
+            }
+        }
+        if (hasRefParam) // just pass compilation off to the Object Method Cook Book (I repurposed it :3 techdebt my beloved)
+        {
+            // no singleton pattern </3
+            UltNoodleEditor.AllBooks.FirstOrDefault(b => b.GetType() == typeof(ObjectMethodCookBook))
+                .CompileNode(evt, node, dataRoot);
+            return;
+        }
+
+
         // foreach input
-        
+
         PersistentCall myCall = new PersistentCall(); // make my PCall
         myCall.SetMethod(meth.Method, null);
         if (node.DataInputs.Length > 0)

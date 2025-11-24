@@ -490,7 +490,7 @@ public class UltNoodleTreeView : GraphView
             //if (startPort.userData is NoodleDataInput din2 && endPort.userData is NoodleDataOutput dout2)
             //    return dout2.Type.Type.IsAssignableFrom(din2.Type.Type) || din2.Type.Type.IsAssignableFrom(dout2.Type.Type);
 
-            return false;
+            return true;
         }).ToList();
     }
 
