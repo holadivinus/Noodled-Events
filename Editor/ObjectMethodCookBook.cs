@@ -102,7 +102,7 @@ public class ObjectMethodCookBook : CookBook
             inputs: () => new Pin[] { new("") },
             outputs: () => new Pin[] { new("On Cache"), new("Post Cache"), new("Cached", typeof(UnityEngine.Object)) },
             bookTag: "UltSwap-Head",
-            tooltipOverride: "Cache and Use arrayGetValueMeth found UnityObject."));
+            tooltipOverride: "Cache and Use a found UnityObject."));
 
         lastDefs.Add(new NodeDef(this, "flow.ult_swap_end",
             inputs: () => new Pin[] { new("Finish Cache"), new("Cached", typeof(UnityEngine.Object)) },
