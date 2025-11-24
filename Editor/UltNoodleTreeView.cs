@@ -483,14 +483,23 @@ public class UltNoodleTreeView : GraphView
             if (startPort.userData is NoodleFlowInput fi2 && endPort.userData is NoodleFlowOutput fo2)
                 return fo2.CanConnectTo(fi2);
 
-            // lobotomy, temp, couldnt connect object to RaycastHit&
-            //// data ports
-            //if (startPort.userData is NoodleDataOutput dout && endPort.userData is NoodleDataInput din)
-            //    return dout.Type.Type.IsAssignableFrom(din.Type.Type) || din.Type.Type.IsAssignableFrom(dout.Type.Type);
-            //if (startPort.userData is NoodleDataInput din2 && endPort.userData is NoodleDataOutput dout2)
-            //    return dout2.Type.Type.IsAssignableFrom(din2.Type.Type) || din2.Type.Type.IsAssignableFrom(dout2.Type.Type);
 
-            return true;
+            // data ports
+            // shenanig
+            Type tout = null;
+            Type tin = null;
+            if (startPort.userData is NoodleDataOutput dout)  tout = dout.Type.Type;
+            if (startPort.userData is NoodleDataInput  din)   tin = din.Type.Type;
+            if (endPort.userData   is NoodleDataOutput dout2) tout = dout2.Type.Type;
+            if (endPort.userData   is NoodleDataInput  din2)  tin = din2.Type.Type;
+            if (tout != null &&  tin != null)
+            {
+                if (tout.IsByRef) tout = tout.GetElementType();
+                if (tin.IsByRef) tin = tin.GetElementType();
+                return tout.IsAssignableFrom(tin) || tin.IsAssignableFrom(tout);
+            }
+
+            return false;
         }).ToList();
     }
 
