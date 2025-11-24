@@ -144,6 +144,16 @@ public static class UltNoodleRuntimeExtensions
                 throw new Exception("MethodBase has no retval: " + method.DeclaringType.Name + "." + method.Name);
         }
     }
+    public static string GetParamName(this ParameterInfo parameterInfo, bool brackets = false) // unsure if prefix should be capitalized or not
+    {
+        if (parameterInfo.IsIn)
+            return (brackets ? "[In] " : "in " )+ parameterInfo.Name;
+        else if (parameterInfo.IsOut)
+            return (brackets ? "[Out] " : "out ") + parameterInfo.Name;
+        else if (parameterInfo.ParameterType.IsByRef)
+            return (brackets ? "[Ref] " : "ref ") + parameterInfo.Name;
+        else return parameterInfo.Name;
+    }
     public static List<SerializedNode> GatherDescendants(this SerializedNode node, List<SerializedNode> list = null)
     {
         if (list == null) list = new List<SerializedNode>();

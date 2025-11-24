@@ -67,18 +67,37 @@ public class StaticMethodCookBook : CookBook
                     descriptiveText += $", {t.Assembly.FullName.Split(',')[0]}";
 
 
+                    bool hasRefParam = false;
+                    var y = meth.GetParameters();
+                    for (int i = 0; i < y.Length; i++)
+                    {
+                        if (y[i].ParameterType.IsByRef)
+                        {
+                            hasRefParam = true;
+                            break;
+                        }
+                    }
+                    string execPinMsg = hasRefParam ? "Reflection Exec" : "Exec";
                     var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name,
                         inputs: () =>
                         {
                             var @params = meth.GetParameters();
-                            if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin("Exec") };
-                            return @params.Select(p => new Pin(p.Name, p.ParameterType)).Prepend(new NodeDef.Pin("Exec")).ToArray();
+                            if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin(execPinMsg) };
+                            return @params.Select(p => new Pin(p.GetParamName(brackets: true), p.ParameterType)).Prepend(new NodeDef.Pin(execPinMsg)).ToArray();
                         },
                         outputs: () =>
                         {
+                            var pins = new List<Pin>() { new NodeDef.Pin("Done") };
+
                             if (meth.GetRetType() != typeof(void))
-                                return new[] { new NodeDef.Pin("Done"), new NodeDef.Pin(meth.ReturnType.GetFriendlyName(), meth.ReturnType) };
-                            else return new[] { new NodeDef.Pin("Done") };
+                                pins.Add( new NodeDef.Pin(meth.ReturnType.GetFriendlyName(), meth.ReturnType) );
+
+                            var refparams = meth.GetParameters().Where(p => p.ParameterType.IsByRef);
+                            foreach(var refparam in refparams)
+                                pins.Add(new Pin(refparam.GetParamName(), refparam.ParameterType));
+                            
+
+                            return pins.ToArray();
                         },
                         bookTag: JsonUtility.ToJson(new SerializedMethod() { Method = meth }),
                         searchTextOverride: searchText,
@@ -102,8 +121,28 @@ public class StaticMethodCookBook : CookBook
         // sanity check (AddComponent() leaves this field empty)
         if (evt.PersistentCallsList == null) evt.FSetPCalls(new());
 
+        // check for ref params
+        bool hasRefParam = false;
+        var y = meth.Method.GetParameters();
+        for (int i = 0; i < y.Length; i++)
+        {
+            if (y[i].ParameterType.IsByRef)
+            {
+                hasRefParam = true;
+                break;
+            }
+        }
+        if (hasRefParam) // just pass compilation off to the Object Method Cook Book (I repurposed it :3 techdebt my beloved)
+        {
+            // no singleton pattern </3
+            UltNoodleEditor.AllBooks.FirstOrDefault(b => b.GetType() == typeof(ObjectMethodCookBook))
+                .CompileNode(evt, node, dataRoot);
+            return;
+        }
+
+
         // foreach input
-        
+
         PersistentCall myCall = new PersistentCall(); // make my PCall
         myCall.SetMethod(meth.Method, null);
         if (node.DataInputs.Length > 0)

@@ -401,7 +401,7 @@ public class ObjectMethodCookBook : CookBook
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 
         #region Reflection Based Method
-        if (NeedsReflection(meth.Method, EditorPrefs.GetBool("InlineUltswaps")) && !node.DataInputs[0].HasConstObjInput()) // bonus retvals!
+        if ((NeedsReflection(meth.Method, EditorPrefs.GetBool("InlineUltswaps")) && !node.DataInputs[0].HasConstObjInput()) || meth.Method.IsStatic) // bonus retvals! // isStatic here bc im repurposing this func to handle statics with reference params
         {
             // UAHGAHGAUGUAAAAAAS
 
@@ -443,22 +443,25 @@ public class ObjectMethodCookBook : CookBook
 
             for (int i = 0; i < methodParams.Length; i++)
             {
+                int v = 1;
+                if (meth.Method.IsStatic)
+                    v = 0;
                 ParameterInfo p = methodParams[i];
 
                 var editorSetCall = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
                 editorSetCall.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(paramArr), typeof(Array));
                 editorSetCall.PersistentArguments[1].Int = i;
 
-                if (node.DataInputs[i + 1].Source != null)
-                    new PendingConnection(node.DataInputs[i + 1].Source, evt, editorSetCall, 2).Connect(dataRoot);
+                if (node.DataInputs[i + v].Source != null)
+                    new PendingConnection(node.DataInputs[i + v].Source, evt, editorSetCall, 2).Connect(dataRoot);
                 else
                 {
-                    editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[i + 1].GetPCallType()).SafeSetValue(node.DataInputs[i + 1].GetDefault());
+                    editorSetCall.PersistentArguments[2].FSetType(node.DataInputs[i + v].GetPCallType()).SafeSetValue(node.DataInputs[i + v].GetDefault());
                     if (p.ParameterType == typeof(Type))
                     {
-                        node.DataInputs[i + 1].CompEvt = evt;
-                        node.DataInputs[i + 1].CompCall = editorSetCall;
-                        node.DataInputs[i + 1].CompArg = editorSetCall.PersistentArguments[2];
+                        node.DataInputs[i + v].CompEvt = evt;
+                        node.DataInputs[i + v].CompCall = editorSetCall;
+                        node.DataInputs[i + v].CompArg = editorSetCall.PersistentArguments[2];
                     }
                 }
 
@@ -477,6 +480,11 @@ public class ObjectMethodCookBook : CookBook
                 new Type[] { typeof(MethodInfo), typeof(object), typeof(object[]) }, null), null);
             invokeMethod.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(getTargMethod), typeof(MethodInfo));
 
+            if (meth.Method.IsStatic)
+            {
+                invokeMethod.PersistentArguments[1].FSetType(PersistentArgumentType.Object).SafeSetValue(null);
+            }
+            else
             if (node.DataInputs[0].Source != null)
                 new PendingConnection(node.DataInputs[0].Source, evt, invokeMethod, 1).Connect(dataRoot);
             else
@@ -495,8 +503,57 @@ public class ObjectMethodCookBook : CookBook
 
             if (node.DataOutputs.Length > 0)
             {
-                node.DataOutputs[0].CompCall = invokeMethod;
-                node.DataOutputs[0].CompEvt = evt;
+                // gooooood ive got my work cut out
+                // we've got two-ish scenarios
+
+                // 1: void, ref params
+
+                // 2: ret, no ref params
+                // 3: ret, ref params
+                var refParamArrayIdx = new List<int>();
+
+                var y = meth.Method.GetParameters();
+                for (int i = 0; i < y.Length; i++)
+                {
+                    if (y[i].ParameterType.IsByRef)
+                        refParamArrayIdx.Add(i);
+                }
+
+                if (refParamArrayIdx.Count > 0) // void + ref or ret + ref
+                {
+                    var arrayGetValueMeth = typeof(Array).GetMethod("GetValue",UltEventUtils.AnyAccessBindings,null,new Type[] { typeof(int) }, null);
+                    var v = 0; // to not clone the array getvalue logic i use this to offset the data output node
+                    if (meth.Method.GetReturnType() != typeof(void)) // ret + ref
+                    {
+                        node.DataOutputs[0].CompCall = invokeMethod;
+                        node.DataOutputs[0].CompEvt = evt;
+                        v = 1;
+                    }
+                    for (int i = 0; i < refParamArrayIdx.Count; i++)
+                    {
+                        var output = node.DataOutputs[i + v];
+                        if (output.Targets.Count > 0) 
+                        {
+                            var GetValueCallIdx = evt.PersistentCallsList.AddRunMethod
+                            (
+                                arrayGetValueMeth,
+                                evt.PersistentCallsList.IndexOf(paramArr),
+                                refParamArrayIdx[i]
+                            );
+                            evt.PersistentCallsList[GetValueCallIdx - 1].PersistentArguments[2].FSetType(PersistentArgumentType.Int); // hack
+
+
+                            output.CompCall = evt.PersistentCallsList[GetValueCallIdx];
+                            output.CompEvt = evt;
+                        }
+                    }
+
+                }
+                else // ret only
+                {
+                    node.DataOutputs[0].CompCall = invokeMethod;
+                    node.DataOutputs[0].CompEvt = evt; 
+                }
             }
 
             var nnextNode = node.FlowOutputs[0].Target?.Node;
