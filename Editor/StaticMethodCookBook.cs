@@ -67,12 +67,23 @@ public class StaticMethodCookBook : CookBook
                     descriptiveText += $", {t.Assembly.FullName.Split(',')[0]}";
 
 
+                    bool hasRefParam = false;
+                    var y = meth.GetParameters();
+                    for (int i = 0; i < y.Length; i++)
+                    {
+                        if (y[i].ParameterType.IsByRef)
+                        {
+                            hasRefParam = true;
+                            break;
+                        }
+                    }
+                    string execPinMsg = hasRefParam ? "Reflection Exec" : "Exec";
                     var newDef = new NodeDef(this, t.GetFriendlyName() + "." + meth.Name,
                         inputs: () =>
                         {
                             var @params = meth.GetParameters();
-                            if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin("Exec") };
-                            return @params.Select(p => new Pin(p.GetParamName(brackets: true), p.ParameterType)).Prepend(new NodeDef.Pin("Exec")).ToArray();
+                            if (@params == null || @params.Length == 0) return new Pin[] { new NodeDef.Pin(execPinMsg) };
+                            return @params.Select(p => new Pin(p.GetParamName(brackets: true), p.ParameterType)).Prepend(new NodeDef.Pin(execPinMsg)).ToArray();
                         },
                         outputs: () =>
                         {
