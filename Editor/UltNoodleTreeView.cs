@@ -486,19 +486,16 @@ public class UltNoodleTreeView : GraphView
 
             // data ports
             // shenanig
-            Type tout = null;
-            Type tin = null;
-            if (startPort.userData is NoodleDataOutput dout)  tout = dout.Type.Type;
-            if (startPort.userData is NoodleDataInput  din)   tin = din.Type.Type;
-            if (endPort.userData   is NoodleDataOutput dout2) tout = dout2.Type.Type;
-            if (endPort.userData   is NoodleDataInput  din2)  tin = din2.Type.Type;
-            if (tout != null &&  tin != null)
+            bool tout = false;
+            bool tin  = false;
+            if (startPort.userData is NoodleDataOutput dout)  tout = true;
+            if (startPort.userData is NoodleDataInput  din)   tin = true;
+            if (endPort.userData   is NoodleDataOutput dout2) tout = true;
+            if (endPort.userData   is NoodleDataInput  din2)  tin = true;
+            if (tout && tin)
             {
-                if (tout.IsByRef) tout = tout.GetElementType();
-                if (tin.IsByRef) tin = tin.GetElementType();
-                return tout.IsAssignableFrom(tin) || tin.IsAssignableFrom(tout);
+                return true; // guess who just got inconvenienced lol
             }
-
             return false;
         }).ToList();
     }
