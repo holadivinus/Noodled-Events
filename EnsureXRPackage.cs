@@ -92,7 +92,7 @@ namespace NoodledEvents
                                 if (evt?.PersistentCallsList != null)
                                     foreach (var pcall in evt.PersistentCallsList)
                                     {
-                                        if (pcall.MethodName == "UltNoodleRuntimeExtensions, Noodled-Events, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.ArrayItemSetter1")
+                                        if (pcall.MethodName == "UltNoodleRuntimeExtensions, Noodled-Events, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.ArrayItemSetter1" && !Application.isPlaying)
                                             pcall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
                                     }
                             }
