@@ -16,6 +16,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using static PlasticPipe.PlasticProtocol.Messages.NegotiationCommand;
 
 public class UltNoodleEditor : EditorWindow
 {
@@ -86,6 +87,10 @@ public class UltNoodleEditor : EditorWindow
         PrefabStage.prefabStageOpened += (_) => contextChanged();
         PrefabStage.prefabStageClosing += (_) => contextChanged(); // described as "Prefab stage is about to be opened" in docs but functions as "Prefab stage is closed"
         Selection.selectionChanged += () => contextChanged(EditorPrefs.GetBool("SelectedBowlsOnly", true));
+
+        // Fixes issue where having the editor open when going in then out of play mode causes the search window to infinitely throw exceptions
+        EditorApplication.playModeStateChanged += (_) => contextChanged();
+        EditorApplication.playModeStateChanged += (_) => Editor.Close();
 
         treeView = root.Q<UltNoodleTreeView>();
         inspectorView = root.Q<UltNoodleInspectorView>();
@@ -445,6 +450,28 @@ public class UltNoodleEditor : EditorWindow
     }
 
     #region Noodle Bowl Prompts
+    static void InstantInstantNoodle(GameObject gameObject, Type EventHolderType, string eventField)
+    {
+        // Create a custom game object
+        GameObject go = new GameObject("Instant Noodle Bowl");
+        // Ensure it gets reparented if this was a context click (otherwise does nothing)
+        GameObjectUtility.SetParentAndAlign(go, gameObject);
+        // Register the creation in the undo system
+        Undo.RegisterCreatedObjectUndo(go, "Create Instant Noodle Bowl " + go.name);
+        Selection.activeObject = go;
+
+        var @event = go.AddComponent(EventHolderType);
+        if (Editor == null) OpenWindow();
+        Editor.NewBowl(@event, new SerializedType(EventHolderType), eventField);
+    }
+
+    [MenuItem("GameObject/Instant Noodles/UltEventHolder Bowl", true)] static bool vin1(MenuCommand command) => command.context ? !PrefabUtility.IsPartOfAnyPrefab(command.context) : true;
+    [MenuItem("GameObject/Instant Noodles/UltEventHolder Bowl")]
+    static void UltEventHolderInstantNoodle(MenuCommand menuCommand) 
+        => InstantInstantNoodle(menuCommand.context as GameObject, typeof(UltEventHolder), "_Event");
+    [MenuItem("GameObject/Instant Noodles/DelayedUltEventHolder Bowl")]
+    static void DelayedUltEventHolderInstantNoodle(MenuCommand menuCommand)
+        => InstantInstantNoodle(menuCommand.context as GameObject, typeof(DelayedUltEventHolder), "_Event");
     [MenuItem("CONTEXT/UltEventHolder/Noodle Bowl", true)] static bool v1(MenuCommand command) => !PrefabUtility.IsPartOfAnyPrefab(command.context);
     [MenuItem("CONTEXT/UltEventHolder/Noodle Bowl")]
     static void BowlSingle(MenuCommand command)

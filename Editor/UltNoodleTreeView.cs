@@ -483,12 +483,19 @@ public class UltNoodleTreeView : GraphView
             if (startPort.userData is NoodleFlowInput fi2 && endPort.userData is NoodleFlowOutput fo2)
                 return fo2.CanConnectTo(fi2);
 
-            // data ports
-            if (startPort.userData is NoodleDataOutput dout && endPort.userData is NoodleDataInput din)
-                return dout.Type.Type.IsAssignableFrom(din.Type.Type) || din.Type.Type.IsAssignableFrom(dout.Type.Type);
-            if (startPort.userData is NoodleDataInput din2 && endPort.userData is NoodleDataOutput dout2)
-                return dout2.Type.Type.IsAssignableFrom(din2.Type.Type) || din2.Type.Type.IsAssignableFrom(dout2.Type.Type);
 
+            // data ports
+            // shenanig
+            bool tout = false;
+            bool tin  = false;
+            if (startPort.userData is NoodleDataOutput dout)  tout = true;
+            if (startPort.userData is NoodleDataInput  din)   tin = true;
+            if (endPort.userData   is NoodleDataOutput dout2) tout = true;
+            if (endPort.userData   is NoodleDataInput  din2)  tin = true;
+            if (tout && tin)
+            {
+                return true; // guess who just got inconvenienced lol
+            }
             return false;
         }).ToList();
     }

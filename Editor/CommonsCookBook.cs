@@ -16,10 +16,11 @@ public class CommonsCookBook : CookBook
     {
         List<NodeDef> allDefs = new();
 
+        #region FLOW
         // flow.if
-        allDefs.Add(new NodeDef(this, "flow.if", 
-            inputs:() => new[] { new Pin("Exec"), new Pin("condition", typeof(bool)) },
-            outputs:() => new[] { new Pin("true"), new Pin("false") },
+        allDefs.Add(new NodeDef(this, "flow.if",
+            inputs: () => new[] { new Pin("Exec"), new Pin("condition", typeof(bool)) },
+            outputs: () => new[] { new Pin("true"), new Pin("false") },
             bookTag: "if"));
 
         // flow.redirect
@@ -33,8 +34,9 @@ public class CommonsCookBook : CookBook
             inputs: () => new[] { new Pin("", typeof(object)) },
             outputs: () => new[] { new Pin("", typeof(object)) },
             bookTag: "data_redirect"));
+        #endregion
 
-        #region MATH
+        #region FLOAT MATH
         allDefs.Add(new NodeDef(this, "math.add_floats",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
             outputs: () => new[] { new Pin("done"), new Pin("a+b", typeof(float)) },
@@ -55,15 +57,47 @@ public class CommonsCookBook : CookBook
             outputs: () => new[] { new Pin("done"), new Pin("a/b", typeof(float)) },
             bookTag: "div_floats"));
 
-        allDefs.Add(new NodeDef(this, "math.greater",
+        allDefs.Add(new NodeDef(this, "math.greater_floats",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
             outputs: () => new[] { new Pin("done"), new Pin("a > b", typeof(bool)) },
             bookTag: "greater"));
 
-        allDefs.Add(new NodeDef(this, "math.lesser",
+        allDefs.Add(new NodeDef(this, "math.lesser_floats",
             inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(float)), new Pin("b", typeof(float)) },
             outputs: () => new[] { new Pin("done"), new Pin("a < b", typeof(bool)) },
             bookTag: "lesser"));
+        #endregion
+
+        #region INT MATH
+        allDefs.Add(new NodeDef(this, "math.add_ints",
+            inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(int)), new Pin("b", typeof(int)) },
+            outputs: () => new[] { new Pin("done"), new Pin("a+b", typeof(int)) },
+            bookTag: "add_ints"));
+
+        allDefs.Add(new NodeDef(this, "math.sub_ints",
+            inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(int)), new Pin("b", typeof(int)) },
+            outputs: () => new[] { new Pin("done"), new Pin("a-b", typeof(int)) },
+            bookTag: "sub_ints"));
+
+        allDefs.Add(new NodeDef(this, "math.mul_ints",
+            inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(int)), new Pin("b", typeof(int)) },
+            outputs: () => new[] { new Pin("done"), new Pin("a*b", typeof(int)) },
+            bookTag: "mul_ints"));
+
+        allDefs.Add(new NodeDef(this, "math.div_ints",
+            inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(int)), new Pin("b", typeof(int)) },
+            outputs: () => new[] { new Pin("done"), new Pin("a/b", typeof(int)) },
+            bookTag: "div_ints"));
+
+        allDefs.Add(new NodeDef(this, "math.greater_ints",
+            inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(int)), new Pin("b", typeof(int)) },
+            outputs: () => new[] { new Pin("done"), new Pin("a > b", typeof(bool)) },
+            bookTag: "greater_ints"));
+
+        allDefs.Add(new NodeDef(this, "math.lesser_ints",
+            inputs: () => new[] { new Pin("Exec"), new Pin("a", typeof(int)), new Pin("b", typeof(int)) },
+            outputs: () => new[] { new Pin("done"), new Pin("a < b", typeof(bool)) },
+            bookTag: "lesser_ints"));
         #endregion
 
         #region VARIABLES
@@ -76,7 +110,7 @@ public class CommonsCookBook : CookBook
 
         // vars.set_bowl_float_var
         allDefs.Add(new NodeDef(this, "vars.get_bowl_float_var", // Is this supposed to be SET? Book tag says Get
-                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const:true) },
+                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", typeof(float)) },
                 bookTag: "get_bowl_float_var"));
 
@@ -133,17 +167,19 @@ public class CommonsCookBook : CookBook
                 bookTag: "get_saved_string_var"));
         #endregion
 
-        // Async
+        #region ASYNC
+        // Async doesnt really need its own region but it looks cleaner if every catagory has a region
         allDefs.Add(new NodeDef(this, "async.Wait",
             inputs: () => new[] { new Pin("Start"), new Pin("seconds", typeof(float)),
             new Pin("embedded", typeof(bool), true)},
             outputs: () => new[] { new Pin("On Started"), new Pin("After \"seconds\"") },
             bookTag: "wait"));
+        #endregion
 
-        // Delegates
+        #region DELEGATES
         allDefs.Add(new NodeDef(this, "delegates.Create",
             inputs: () => new[] { new Pin("Create") },
-            outputs: () => new[] { new Pin("On Created"), new Pin("DelegateID", typeof(string)),  new Pin("Delegate", typeof(Delegate)), new Pin("On Triggered") },
+            outputs: () => new[] { new Pin("On Created"), new Pin("DelegateID", typeof(string)), new Pin("Delegate", typeof(Delegate)), new Pin("On Triggered") },
             bookTag: "delegate0"));
         for (int i = 1; i < 5; i++)
         {
@@ -160,12 +196,13 @@ public class CommonsCookBook : CookBook
                 inputs: ins.ToArray,
                 outputs: outs.ToArray,
                 bookTag: $"delegate{i}"));
-            
+
         }
         allDefs.Add(new NodeDef(this, "delegates.Fetch",
             inputs: () => new[] { new Pin("Fetch"), new Pin("DelegateID", typeof(string)) },
             outputs: () => new[] { new Pin("Fetched"), new Pin("Delegate", typeof(Delegate)) },
             bookTag: "fetch_delegate"));
+        #endregion
 
         progressCallback.Invoke(allDefs, 1);
         completedCallback.Invoke();
@@ -196,7 +233,7 @@ public class CommonsCookBook : CookBook
                     storagerData.Item2.SetValue(tempVarRef, Activator.CreateInstance(storagerData.Item2.PropertyType));
                 else storagerData.Item2.SetValue(tempVarRef, null);
             }
-            
+
 
             var setCall = new PersistentCall(storagerData.Item2.SetMethod, tempVarRef);
             if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, setCall, 0).Connect(dataRoot); // retval
@@ -241,7 +278,8 @@ public class CommonsCookBook : CookBook
                 if (node.Name.StartsWith("vars.get_or_init_gobj_"))
                 {
                     storagerData.Item2.SetValue(tempVarRef, node.DataInputs[2].GetDefault());
-                } else
+                }
+                else
                 {
                     // get before init??? we have to use type defaults then :/
                     if (storagerData.Item2.PropertyType.IsValueType)
@@ -259,6 +297,45 @@ public class CommonsCookBook : CookBook
             if (nextNode != null)
                 nextNode.Book.CompileNode(evt, nextNode, dataRoot);
             return;
+        }
+        void math_ints_op(string op_name, Type outType)
+        {
+            var SqlInt32 = typeof(System.Data.SqlTypes.SqlInt32);
+            var SqlInt32Implicit = SqlInt32.GetMethod("op_Implicit", new Type[] { typeof(int) });
+            var SqlInt32Operation = SqlInt32.GetMethod(op_name);
+
+            var impCallA = new PersistentCall(SqlInt32Implicit, null);
+            if (node.DataInputs[0].Source != null) new PendingConnection(node.DataInputs[0].Source, evt, impCallA, 0).Connect(dataRoot);
+            else impCallA.PersistentArguments[0].Int = node.DataInputs[0].DefaultIntValue;
+            var impCallA_idx = evt.PersistentCallsList.Count;
+            evt.PersistentCallsList.Add(impCallA);
+
+            var impCallB = new PersistentCall(SqlInt32Implicit, null);
+            if (node.DataInputs[1].Source != null) new PendingConnection(node.DataInputs[1].Source, evt, impCallB, 0).Connect(dataRoot);
+            else impCallB.PersistentArguments[0].Int = node.DataInputs[1].DefaultIntValue;
+            var impCallB_idx = evt.PersistentCallsList.Count;
+            evt.PersistentCallsList.Add(impCallB);
+
+            var opCall = new PersistentCall(SqlInt32Operation, null);
+            opCall.PersistentArguments[0].ToRetVal(impCallA_idx, SqlInt32);
+            opCall.PersistentArguments[1].ToRetVal(impCallB_idx, SqlInt32);
+            var opCall_idx = evt.PersistentCallsList.Count;
+            evt.PersistentCallsList.Add(opCall);
+
+            // string.Concat(object arg0) is stripped, using string.Concat(object arg0, object arg1)
+            var stringConcatCall = new PersistentCall(typeof(string).GetMethod("Concat", new Type[] { typeof(object), typeof(object) }), null);
+            stringConcatCall.PersistentArguments[0].ToRetVal(opCall_idx, typeof(object));
+            stringConcatCall.PersistentArguments[1].ToObjVal(null, typeof(object)); // check if generates valid ult
+            var concatCall_idx = evt.PersistentCallsList.Count;
+            evt.PersistentCallsList.Add(stringConcatCall);
+
+            var intConvertCall = new PersistentCall(outType.GetMethod("Parse", new Type[] { typeof(string) }), null);
+            intConvertCall.PersistentArguments[0].ToRetVal(concatCall_idx, typeof(string));
+            var intConvertCall_idx = evt.PersistentCallsList.Count;
+            evt.PersistentCallsList.Add(intConvertCall);
+
+            node.DataOutputs[0].CompEvt = evt;
+            node.DataOutputs[0].CompCall = intConvertCall;
         }
         switch (node.BookTag)
         {
@@ -306,7 +383,7 @@ public class CommonsCookBook : CookBook
                     if (node.DataInputs.Length == 2 && node.DataInputs[1].DefaultBoolValue)
                     {
                         // is embedded - place at root
-                        
+
                         var asyncEvt = node.Bowl.LastGenerated.transform.StoreComp<DelayedUltEventHolder>("Embedded Async Event");
                         asyncEvt.gameObject.SetActive(true);
 
@@ -328,7 +405,7 @@ public class CommonsCookBook : CookBook
                     Transform ats = dataRoot.Find("async templates");
                     if (!ats) ats = dataRoot.StoreTransform("async templates");
 
-                    
+
                     // okay so like this is supposed to be async
                     // new, copied on run dataroot:
                     var slowDataRoot = ats.StoreComp<LifeCycleEvents>("Async DataRoot");
@@ -346,7 +423,7 @@ public class CommonsCookBook : CookBook
 
                     // okay now we just need to insert cloning pcalls to original evt!
                     // since PendingConnection naturally put compstoragers under slowDataRoot.transform :3
-                    
+
                     // delay pin in functionality
                     if (node.DataInputs[0].Source == null) delayedEvt.Delay = node.DataInputs[0].DefaultFloatValue;
                     else
@@ -394,7 +471,7 @@ public class CommonsCookBook : CookBook
                 onFalse.EnableEvent.EnsurePCallList();
                 onFalse.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
 
-                
+
                 if (node.DataInputs[0].Source != null) // condition varies
                 {
                     var rs1 = new PersistentCall(SetActive, onTrue.gameObject);  // reset onTrue
@@ -465,7 +542,7 @@ public class CommonsCookBook : CookBook
 
                     // dot extract float
                     var dotter = new PersistentCall(typeof(Vector3).GetMethod("Dot"), null);
-                    dotter.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count -1, typeof(Vector3));
+                    dotter.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(Vector3));
                     dotter.PersistentArguments[1].FSetType(PersistentArgumentType.Vector3);
                     dotter.PersistentArguments[1].Vector3 = Vector3.up;
                     evt.PersistentCallsList.Add(dotter);
@@ -584,7 +661,7 @@ public class CommonsCookBook : CookBook
                 {
                     // given a, b
                     // a > b?
-                    
+
                     var greater = new PersistentCall();
                     greater.FSetTarget(null);
                     greater.FSetMethodName("SLZ.Bonelab.VoidLogic.MathUtilities, Assembly-CSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null.IsApproximatelyEqualToOrGreaterThan");
@@ -628,6 +705,61 @@ public class CommonsCookBook : CookBook
 
                     node.DataOutputs[0].CompEvt = evt;
                     node.DataOutputs[0].CompCall = lesser;
+
+                    var nextNode = node.FlowOutputs[0].Target?.Node;
+                    if (nextNode != null)
+                        nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+                    return;
+                }
+            case "add_ints":
+                {
+                    math_ints_op("op_Addition", typeof(int));
+
+                    var nextNode = node.FlowOutputs[0].Target?.Node;
+                    if (nextNode != null)
+                        nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+
+                    return;
+                }
+            case "sub_ints":
+                {
+                    math_ints_op("op_Subtraction", typeof(int));
+
+                    var nextNode = node.FlowOutputs[0].Target?.Node;
+                    if (nextNode != null)
+                        nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+                    return;
+                }
+            case "mul_ints":
+                {
+                    math_ints_op("op_Multiply", typeof(int));
+
+                    var nextNode = node.FlowOutputs[0].Target?.Node;
+                    if (nextNode != null)
+                        nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+                    return;
+                }
+            case "div_ints":
+                {
+                    math_ints_op("op_Division", typeof(int));
+
+                    var nextNode = node.FlowOutputs[0].Target?.Node;
+                    if (nextNode != null)
+                        nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+                    return;
+                }
+            case "greater_ints":
+                {
+                    math_ints_op("op_GreaterThan", typeof(bool));
+
+                    var nextNode = node.FlowOutputs[0].Target?.Node;
+                    if (nextNode != null)
+                        nextNode.Book.CompileNode(evt, nextNode, dataRoot);
+                    return;
+                }
+            case "lesser_ints":
+                {
+                    math_ints_op("op_LessThan", typeof(bool));
 
                     var nextNode = node.FlowOutputs[0].Target?.Node;
                     if (nextNode != null)
@@ -750,16 +882,17 @@ public class CommonsCookBook : CookBook
 
                     // get dict again, since now it's garuanteed to exist
                     int gotDictB = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
-                    
+
                     MethodInfo setMethod = typeof(Dictionary<string, object>).GetMethod("set_Item", (BindingFlags)60);
                     var nameArg = new PersistentArgument(typeof(string)); nameArg.String = node.DataInputs[0].DefaultStringValue;
-                    if (node.DataInputs[1].Source == null) 
+                    if (node.DataInputs[1].Source == null)
                     {
                         var constVal = node.DataInputs[1].GetDefault();
                         var arg = new PersistentArgument(constVal.GetType());
                         arg.Value = constVal;
                         evt.PersistentCallsList.AddRunMethod(setMethod, gotDictB, nameArg, arg);
-                    } else
+                    }
+                    else
                     {
                         if (node.DataInputs[1].Source.CompEvt != evt) throw new Exception("Can't transfer data for global vars! (todo)");
                         if (node.DataInputs[1].Source.UseCompAsParam) throw new Exception("Can't use event params for global vars! (todo)");
@@ -904,13 +1037,15 @@ public class CommonsCookBook : CookBook
                         GetSceneVar(null);
                     else SetSceneVar(null);
                     return;
-                } else if (node.BookTag.Contains("_gobj_") && node.BookTag.EndsWith("_var"))
+                }
+                else if (node.BookTag.Contains("_gobj_") && node.BookTag.EndsWith("_var"))
                 {
                     if (node.BookTag.StartsWith("get_"))
                         GetSceneVar((GameObject)node.DataInputs[1].DefaultObject);
                     else SetSceneVar((GameObject)node.DataInputs[2].DefaultObject);
                     return;
-                } else if (node.BookTag.StartsWith("delegate")) 
+                }
+                else if (node.BookTag.StartsWith("delegate"))
                 {
                     // added tons of awesome utility functions, 
                     // which should make this so much easier
@@ -969,7 +1104,7 @@ public class CommonsCookBook : CookBook
                         if (o.Name.StartsWith("Parameter "))
                         {
                             o.CompEvt = evtBase.Event;
-                            o.CompAsParam = int.Parse(o.Name.Replace("Parameter ",""))-1;
+                            o.CompAsParam = int.Parse(o.Name.Replace("Parameter ", "")) - 1;
                             o.UseCompAsParam = true;
                         }
                     }
@@ -1002,7 +1137,7 @@ public class CommonsCookBook : CookBook
 
                     var createDel = typeof(Delegate).GetMethod("CreateDelegate", new Type[] { typeof(Type), typeof(object), typeof(MethodInfo) });
                     var makeDel = new PersistentCall(createDel, null);
-                    makeDel.PersistentArguments[0].ToRetVal(actionTypeIdx, typeof(Type)); 
+                    makeDel.PersistentArguments[0].ToRetVal(actionTypeIdx, typeof(Type));
                     makeDel.PersistentArguments[1].ToRetVal(floatedIdx, typeof(object));
                     makeDel.PersistentArguments[2].ToRetVal(invokeMethod, typeof(MethodInfo));
                     evt.PersistentCallsList.Add(makeDel);
@@ -1012,7 +1147,7 @@ public class CommonsCookBook : CookBook
 
                     evt.PersistentCallsList.AddDebugLog("ensuring dict");
                     // now ensure the dict exists omfg
-                    
+
                     int dictStoreType = evt.PersistentCallsList.FindOrAddGetTyper(dictStoreTypeStr);
                     int dictField = evt.PersistentCallsList.AddGetFieldInfo(dictStoreType, dictStoreFieldStr);
                     int gotDict1 = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
@@ -1350,7 +1485,8 @@ public class CommonsCookBook : CookBook
                     // found it!
                     varStoragerData.Item2.SetValue(storger, curNode.DataInputs[1].GetDefault());
                     return true;
-                } else
+                }
+                else
                     foreach (var o in curNode.FlowOutputs)
                         if (o.Target != null && SearchForDef(o.Target.Node))
                             return true;

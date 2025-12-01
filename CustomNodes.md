@@ -25,12 +25,15 @@ Each bowl gets a bowl element, consisting of the following:
 4. The Select button selects the given bowl, showing its nodes in the graph view.
 5. The small button with the GameObject icon highlights the bowl's GameObject when clicked on.
 
-Bowls are organized by placement in the Hierarchy. Bowls parented to root are shown first, top to bottom.
+Bowls are organized by placement in the Hierarchy. Bowls parented to root are shown first, top to bottom. 
+
+Bowls within a prefab are not included in the bowl selector. To edit a bowl that is within a prefab, go into prefab mode in either isolation or in context to edit it directly. (See [Editing a Prefab in Prefab Mode](https://docs.unity3d.com/2021.3/Documentation/Manual/EditingInPrefabMode.html))
 
 ![Bowl Selector](Docs~/bowlSelector.png)
 
 ### The Menu Bar
 The menu bar within the editor contains options and functions.
+
 ![Menu Bar](Docs~/menuBar.png)
 ```md
 Menu Bar
@@ -43,10 +46,11 @@ Menu Bar
   |   ├ Selected Bowls Only: When enabled, only shows bowls which are on gameobject currently selected in the Hierarchy.
   |   └ Rebuild View: Rebuilds the Graph View. Good first step for debugging odd issues.
   ├ Compilation
-  | ├ Add Debug Logs: Adds debugging logs to methods that use it.
-  | └ Use Inline Ultswaps: Toggle for legacy compilation method. Turn off if experiencing issues with functions.
+  |   ├ Add Debug Logs: Adds debugging logs to methods that use it.
+  |   └ Use Inline Ultswaps: Toggle for legacy compilation method. Turn off if experiencing issues with functions.
   └ Help
-     └ GitHub: Opens holadivinus/NoodledEvents on GitHub
+      ├ GitHub: Opens holadivinus/NoodledEvents on GitHub
+      └ Update: Updates the Noodled-Editor package. Only shows up when an update is available.
 ```
 
 ### The Graph View
