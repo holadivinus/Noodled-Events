@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using UltEvents;
 using UnityEngine;
+using WebSocketSharp;
 
     
 public static class UltNoodleRuntimeExtensions
@@ -523,6 +524,95 @@ public static class UltNoodleRuntimeExtensions
         var makeDict = new PersistentCall(typeof(Activator).GetMethod("CreateInstance", new Type[] { typeof(Type) }), null);
         makeDict.PersistentArguments[0].ToRetVal(t, typeof(Type));
         list.Add(makeDict);
+        return list.Count - 1;
+    }
+    public static int AddGetDict(this List<PersistentCall> list)
+    {
+        list.AddDebugLog("getting dictionary (extension)");
+        int dictStoreType = list.FindOrAddGetTyper(CommonsCookBook.dictStoreTypeStr);
+        int dictField = list.AddGetFieldInfo(dictStoreType, CommonsCookBook.dictStoreFieldStr);
+        int gotDict = list.AddRunMethod(GetFieldValue, dictField, @params: new object[1]);
+        list.AddDebugLog("got dict:");
+        list.AddDebugLog(gotDict);
+        return gotDict;
+    }
+    public static int AddEnsureDict(this List<PersistentCall> list, SerializedNode node)
+    {
+        // Because this only needs to run once ever, we can use the properties of lifecycleevents to make it not execute after it does once.
+
+        const string SubroutineName = "subroutine dict init check";
+        var dataRoot = node.Bowl.LastGenerated.transform;
+        var srt = dataRoot.Find(SubroutineName);
+        LifeCycleEvents subRoot;
+
+        if (srt)
+        {
+            list.AddDebugLog(SubroutineName + " already existed");
+            subRoot = srt.GetChild(0).GetComponent<LifeCycleEvents>();
+        }
+        else
+        {
+            srt = new GameObject(SubroutineName).transform;
+            srt.parent = dataRoot;
+            list.AddDebugLog(SubroutineName + " was generated here");
+            subRoot = srt.StoreComp<LifeCycleEvents>("check");
+            subRoot.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+            subRoot.EnableEvent = new UltEvent();
+            var evt = subRoot.EnableEvent;
+            evt.EnsurePCallList();
+
+            var subPCalls = evt.PersistentCallsList;
+
+            subPCalls.AddDebugLog("start of ensure dict");
+            int gotDictA = subPCalls.AddGetDict();
+
+            // if null, create dict...
+            var dictCreateEvt = srt.StoreComp<LifeCycleEvents>("init");
+            {
+                dictCreateEvt.EnableEvent = new UltEvent();
+                dictCreateEvt.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+                dictCreateEvt.EnableEvent.EnsurePCallList();
+                dictCreateEvt.EnableEvent.PersistentCallsList.AddDebugLog("dict was uninitialized, creating");
+
+                // Create Dict
+                int dictStoreType = dictCreateEvt.EnableEvent.PersistentCallsList.FindOrAddGetTyper(CommonsCookBook.dictStoreTypeStr);
+                int dictField = dictCreateEvt.EnableEvent.PersistentCallsList.AddGetFieldInfo(dictStoreType, CommonsCookBook.dictStoreFieldStr);
+                int madeDictIdx = dictCreateEvt.EnableEvent.PersistentCallsList.AddCreateInstance<Dictionary<string, object>>();
+                dictCreateEvt.EnableEvent.PersistentCallsList.AddSetFieldValue(dictField, -1, madeDictIdx); // does -1 work here??
+
+                dictCreateEvt.EnableEvent.PersistentCallsList.AddDebugLog("created dict:");
+                dictCreateEvt.EnableEvent.PersistentCallsList.AddDebugLog(madeDictIdx);
+            }
+            var formatCall = CookBook.MakeCall<string>("Format", new Type[] { typeof(string), typeof(object) });
+            formatCall.PersistentArguments[0].FSetType(PersistentArgumentType.String);
+            formatCall.PersistentArguments[0].FSetString("{0}");
+            formatCall.PersistentArguments[1].ToRetVal(gotDictA, typeof(object));
+            subPCalls.Add(formatCall);
+
+            var compareCall = CookBook.MakeCall<object>("Equals", new Type[] { typeof(object), typeof(object) });
+            compareCall.PersistentArguments[0].ToRetVal(subPCalls.IndexOf(formatCall), typeof(object));
+            compareCall.PersistentArguments[1].FSetType(PersistentArgumentType.String);
+            compareCall.PersistentArguments[1].FSetString("System.Object");
+            subPCalls.Add(compareCall);
+
+            subPCalls.AddDebugLog("dict is"); subPCalls.AddDebugLog(subPCalls.IndexOf(formatCall));
+            subPCalls.AddDebugLog("result is"); subPCalls.AddDebugLog(subPCalls.IndexOf(compareCall));
+
+            var decideCallA = CookBook.MakeCall<GameObject>("SetActive", dictCreateEvt.gameObject, typeof(bool));
+            decideCallA.PersistentArguments[0].ToRetVal(subPCalls.IndexOf(compareCall), typeof(bool));
+            subPCalls.Add(decideCallA);
+
+            var burnfuseCall = CookBook.MakeCall<GameObject>("SetActive", srt.gameObject, typeof(bool));
+            burnfuseCall.PersistentArguments[0].Bool = false;
+            subPCalls.Add(burnfuseCall);
+        }
+
+        // call subroutine and return
+        list.AddDebugLog("to call dict ensurance");
+
+        var invCall = CookBook.MakeCall<GameObject>("SetActive", subRoot.gameObject, typeof(bool));
+        invCall.PersistentArguments[0].Bool = true;
+        list.Add(invCall);
         return list.Count - 1;
     }
 

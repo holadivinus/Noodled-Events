@@ -208,8 +208,8 @@ public class CommonsCookBook : CookBook
         completedCallback.Invoke();
     }
 
-    const string dictStoreTypeStr = "UnityEngine.Rendering.LensFlareCommonSRP, Unity.RenderPipelines.Core.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
-    const string dictStoreFieldStr = "m_Padlock";
+    public const string dictStoreTypeStr = "UnityEngine.Rendering.LensFlareCommonSRP, Unity.RenderPipelines.Core.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+    public const string dictStoreFieldStr = "m_Padlock";
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
         base.CompileNode(evt, node, dataRoot);
@@ -823,9 +823,7 @@ public class CommonsCookBook : CookBook
             case "fetch_delegate":
                 {
                     // get dict
-                    int dictField3 = evt.PersistentCallsList.AddGetFieldInfo(typeof(System.TimeZone).GetField("s_InternalSyncObject", (BindingFlags)60));
-                    int gotDict4 = evt.PersistentCallsList.AddRunMethod(
-                        UltNoodleRuntimeExtensions.GetFieldValue, dictField3, @params: new object[1]);
+                    int gotDict = evt.PersistentCallsList.AddGetDict();
 
                     // for my sanity this is localized with a stupid format
                     var getGuidStr2 = MakeCall<string>("Format", typeof(string), typeof(object));
@@ -835,7 +833,7 @@ public class CommonsCookBook : CookBook
                     evt.PersistentCallsList.Add(getGuidStr2);
 
                     int gotValue = evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, object>).GetMethod("TryGetValue"),
-                            gotDict4, evt.PersistentCallsList.IndexOf(getGuidStr2), null);
+                            gotDict, evt.PersistentCallsList.IndexOf(getGuidStr2), null);
 
                     int arrIdx = evt.PersistentCallsList.Count - 4;
 
@@ -853,35 +851,8 @@ public class CommonsCookBook : CookBook
             case "set_global_SystemObject_var":
                 {
                     // get dict
-                    FieldInfo dictField = typeof(System.TimeZone).GetField("s_InternalSyncObject", (BindingFlags)60);
-                    int gotDictA = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
-
-                    // if null, create dict...
-                    var dictCreateEvt = dataRoot.StoreComp<LifeCycleEvents>("dict null check");
-                    {
-                        dictCreateEvt.EnableEvent = new UltEvent();
-                        dictCreateEvt.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
-                        dictCreateEvt.EnableEvent.EnsurePCallList();
-
-                        // Create Dict
-                        int madeDictIdx = dictCreateEvt.EnableEvent.PersistentCallsList.AddCreateInstance<Dictionary<string, object>>();
-                        int dictField4 = dictCreateEvt.EnableEvent.PersistentCallsList.AddSetFieldValue(dictField, -1, madeDictIdx);
-                    }
-                    var compareCall = MakeCall<object>("Equals", new Type[] { typeof(object), typeof(object) });
-                    compareCall.PersistentArguments[0].ToRetVal(gotDictA, typeof(object));
-                    compareCall.PersistentArguments[1].FSetType(PersistentArgumentType.Object);
-                    evt.PersistentCallsList.Add(compareCall);
-
-                    var decideCallA = MakeCall<GameObject>("SetActive", dictCreateEvt.gameObject, typeof(bool));
-                    decideCallA.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(compareCall), typeof(bool));
-                    evt.PersistentCallsList.Add(decideCallA);
-
-                    var decideCallB = MakeCall<GameObject>("SetActive", dictCreateEvt.gameObject, typeof(bool));
-                    decideCallB.PersistentArguments[0].Bool = false;
-                    evt.PersistentCallsList.Add(decideCallB);
-
-                    // get dict again, since now it's garuanteed to exist
-                    int gotDictB = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
+                    evt.PersistentCallsList.AddEnsureDict(node);
+                    int gotDict = evt.PersistentCallsList.AddGetDict();
 
                     MethodInfo setMethod = typeof(Dictionary<string, object>).GetMethod("set_Item", (BindingFlags)60);
                     var nameArg = new PersistentArgument(typeof(string)); nameArg.String = node.DataInputs[0].DefaultStringValue;
@@ -890,16 +861,16 @@ public class CommonsCookBook : CookBook
                         var constVal = node.DataInputs[1].GetDefault();
                         var arg = new PersistentArgument(constVal.GetType());
                         arg.Value = constVal;
-                        evt.PersistentCallsList.AddRunMethod(setMethod, gotDictB, nameArg, arg);
+                        evt.PersistentCallsList.AddRunMethod(setMethod, gotDict, nameArg, arg);
                     }
                     else
                     {
                         if (node.DataInputs[1].Source.CompEvt != evt) throw new Exception("Can't transfer data for global vars! (todo)");
                         if (node.DataInputs[1].Source.UseCompAsParam) throw new Exception("Can't use event params for global vars! (todo)");
-                        evt.PersistentCallsList.AddRunMethod(setMethod, gotDictB, nameArg, evt.PersistentCallsList.IndexOf(node.DataInputs[1].Source.CompCall));
+                        evt.PersistentCallsList.AddRunMethod(setMethod, gotDict, nameArg, evt.PersistentCallsList.IndexOf(node.DataInputs[1].Source.CompCall));
                     }
 
-                    evt.PersistentCallsList.AddDebugLog(gotDictB, true);
+                    evt.PersistentCallsList.AddDebugLog(gotDict, true);
 
                     // compile next node.
                     var evtNext3 = node.FlowOutputs[0].Target?.Node;
@@ -910,39 +881,12 @@ public class CommonsCookBook : CookBook
             case "get_global_SystemObject_var":
                 {
                     // get dict
-                    FieldInfo dictField = typeof(System.TimeZone).GetField("s_InternalSyncObject", (BindingFlags)60);
-                    int gotDictA = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
-
-                    // if null, create dict...
-                    var dictCreateEvt = dataRoot.StoreComp<LifeCycleEvents>("dict null check");
-                    {
-                        dictCreateEvt.EnableEvent = new UltEvent();
-                        dictCreateEvt.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
-                        dictCreateEvt.EnableEvent.EnsurePCallList();
-
-                        // Create Dict
-                        int madeDictIdx = dictCreateEvt.EnableEvent.PersistentCallsList.AddCreateInstance<Dictionary<string, object>>();
-                        int dictField4 = dictCreateEvt.EnableEvent.PersistentCallsList.AddSetFieldValue(dictField, -1, madeDictIdx);
-                    }
-                    var compareCall = MakeCall<object>("Equals", new Type[] { typeof(object), typeof(object) });
-                    compareCall.PersistentArguments[0].ToRetVal(gotDictA, typeof(object));
-                    compareCall.PersistentArguments[1].FSetType(PersistentArgumentType.Object);
-                    evt.PersistentCallsList.Add(compareCall);
-
-                    var decideCallA = MakeCall<GameObject>("SetActive", dictCreateEvt.gameObject, typeof(bool));
-                    decideCallA.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(compareCall), typeof(bool));
-                    evt.PersistentCallsList.Add(decideCallA);
-
-                    var decideCallB = MakeCall<GameObject>("SetActive", dictCreateEvt.gameObject, typeof(bool));
-                    decideCallB.PersistentArguments[0].Bool = false;
-                    evt.PersistentCallsList.Add(decideCallB);
-
-                    // get dict again, since now it's garuanteed to exist
-                    int gotDictB = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
+                    evt.PersistentCallsList.AddEnsureDict(node);
+                    int gotDict = evt.PersistentCallsList.AddGetDict();
 
                     MethodInfo getMethod = typeof(Dictionary<string, object>).GetMethod("get_Item", (BindingFlags)60);
                     var nameArg = new PersistentArgument(typeof(string)); nameArg.String = node.DataInputs[0].DefaultStringValue;
-                    int gotValue = evt.PersistentCallsList.AddRunMethod(getMethod, gotDictB, nameArg);
+                    int gotValue = evt.PersistentCallsList.AddRunMethod(getMethod, gotDict, nameArg);
 
                     node.DataOutputs[0].CompCall = evt.PersistentCallsList[gotValue];
                     node.DataOutputs[0].CompEvt = evt;
@@ -1145,84 +1089,43 @@ public class CommonsCookBook : CookBook
                     evt.PersistentCallsList.AddDebugLog("made delegate:");
                     evt.PersistentCallsList.AddDebugLog(delMade);
 
-                    evt.PersistentCallsList.AddDebugLog("ensuring dict");
-                    // now ensure the dict exists omfg
+                    
+                    if (node.DataOutputs[0].Targets.Count > 0) // only add delegate to dict if the user wants to
+                    {
+                        evt.PersistentCallsList.AddDebugLog("making guid");
+                        // awesome, at this point we have a dict, delegate, floater
+                        // with custom scripting within it
+                        // now we just gotta generate & output a guid + store in dict w/ guid
+                        var getGuid = MakeCall<Guid>("NewGuid");
+                        evt.PersistentCallsList.Add(getGuid);
 
-                    int dictStoreType = evt.PersistentCallsList.FindOrAddGetTyper(dictStoreTypeStr);
-                    int dictField = evt.PersistentCallsList.AddGetFieldInfo(dictStoreType, dictStoreFieldStr);
-                    int gotDict1 = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
+                        var getGuidStr = MakeCall<string>("Format", typeof(string), typeof(object));
+                        getGuidStr.PersistentArguments[0].String = "{0}";
+                        getGuidStr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(object));
+                        evt.PersistentCallsList.Add(getGuidStr);
 
-                    var nullCheck = MakeCall<object>("Equals", new Type[] { typeof(object), typeof(object) });
-                    nullCheck.PersistentArguments[0].ToRetVal(gotDict1, typeof(object));
-                    nullCheck.PersistentArguments[1].FSetType(PersistentArgumentType.Object).FSetString(typeof(object).AssemblyQualifiedName).FSetInt(0);
-                    evt.PersistentCallsList.Add(nullCheck);
+                        evt.PersistentCallsList.AddDebugLog("got guid:");
+                        evt.PersistentCallsList.AddDebugLog(evt.PersistentCallsList.IndexOf(getGuidStr));
 
-                    var ifNull = dataRoot.StoreComp<LifeCycleEvents>("dict null check");
-                    ifNull.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+                        evt.PersistentCallsList.AddEnsureDict(node);
+                        int gotDict = evt.PersistentCallsList.AddGetDict();
 
-                    var triggerNullCheck = MakeCall<GameObject>("SetActive", ifNull.gameObject);
-                    triggerNullCheck.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(bool));
-                    evt.PersistentCallsList.Add(triggerNullCheck);
+                        evt.PersistentCallsList.AddDebugLog("got dict:");
+                        evt.PersistentCallsList.AddDebugLog(gotDict);
 
-                    // Dict is null, create new one
-                    ifNull.EnableEvent.FSetPCalls(new());
-                    int dictType = ifNull.EnableEvent.PersistentCallsList.FindOrAddGetTyper<Dictionary<string, object>>();
+                        // put {GUID:Delegate} kvp into dict :)
+                        evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, object>).GetMethod("Add"),
+                            gotDict, new object[] { evt.PersistentCallsList.IndexOf(getGuidStr), delMade });
 
-                    var makeDict = MakeCall<Activator>("CreateInstance", typeof(Type));
-                    makeDict.PersistentArguments[0].ToRetVal(dictType, typeof(Type));
-                    ifNull.EnableEvent.PersistentCallsList.Add(makeDict);
-                    int madeDictIdx = ifNull.EnableEvent.PersistentCallsList.IndexOf(makeDict);
+                        evt.PersistentCallsList.AddDebugLog("added kvp to dict");
 
-                    ifNull.EnableEvent.PersistentCallsList.AddDebugLog("dict was null, made new:");
-                    ifNull.EnableEvent.PersistentCallsList.AddDebugLog(ifNull.EnableEvent.PersistentCallsList.IndexOf(makeDict));
-
-                    // set dict
-                    int dictStoreType2 = ifNull.EnableEvent.PersistentCallsList.FindOrAddGetTyper(dictStoreTypeStr);
-                    int dictStoreField2 = ifNull.EnableEvent.PersistentCallsList.AddGetFieldInfo(dictStoreType2, dictStoreFieldStr);
-                    ifNull.EnableEvent.PersistentCallsList.AddSetFieldValue(dictStoreField2, -1, madeDictIdx);
-
-                    /*
-                    int dictField2 = ifNull.EnableEvent.PersistentCallsList.AddGetFieldInfo(, "");
-                    ifNull.EnableEvent.PersistentCallsList.AddDebugLog(dictField2);
-
-                    int gotDict2 = ifNull.EnableEvent.PersistentCallsList.AddRunMethod(
-                        UltNoodleRuntimeExtensions.SetFieldValue, dictField2, null,
-                        ifNull.EnableEvent.PersistentCallsList.IndexOf(makeDict));*/
-                    //
-
-                    evt.PersistentCallsList.AddDebugLog("making guid");
-                    // awesome, at this point we have a dict, delegate, floater
-                    // with custom scripting within it
-                    // now we just gotta generate & output a guid + store in dict w/ guid
-                    var getGuid = MakeCall<Guid>("NewGuid");
-                    evt.PersistentCallsList.Add(getGuid);
-
-                    var getGuidStr = MakeCall<string>("Format", typeof(string), typeof(object));
-                    getGuidStr.PersistentArguments[0].String = "{0}";
-                    getGuidStr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(object));
-                    evt.PersistentCallsList.Add(getGuidStr);
-
-                    evt.PersistentCallsList.AddDebugLog("got guid:");
-                    evt.PersistentCallsList.AddDebugLog(evt.PersistentCallsList.IndexOf(getGuidStr));
-
-
-                    int gotDict3 = evt.PersistentCallsList.AddGetFieldValue(dictField, null);
-
-                    evt.PersistentCallsList.AddDebugLog("got dict:");
-                    evt.PersistentCallsList.AddDebugLog(gotDict3);
-
-                    // put {GUID:Delegate} kvp into dict :)
-                    evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, object>).GetMethod("Add"),
-                        gotDict3, new object[] { evt.PersistentCallsList.IndexOf(getGuidStr), delMade });
-
-                    evt.PersistentCallsList.AddDebugLog("added kvp to dict");
-
+                        node.DataOutputs[0].CompCall = getGuidStr; // delegate
+                    }
 
                     // now:
                     // - also add a node to fetch from assembly_resolve_in_progress
 
                     // compile the remaining evt, post-del
-                    node.DataOutputs[0].CompCall = getGuidStr; // delegate GUID
                     node.DataOutputs[0].CompEvt = evt;
                     node.DataOutputs[1].CompCall = evt.PersistentCallsList[delMade]; // delegate itself
                     node.DataOutputs[1].CompEvt = evt;
@@ -1231,170 +1134,6 @@ public class CommonsCookBook : CookBook
                     if (evtNext != null)
                         evtNext.Book.CompileNode(evt, evtNext, dataRoot);
 
-                    /*// create & remember a delegate via string :3
-                    // at this point in time, we create an event with the require obj signature,
-                    // copy a sacrificial evts PersistentCalls list over,
-                    // form the delegate and output it as a node item
-                    bool hasParams = !node.BookTag.EndsWith("0");
-                    int paramCount = int.Parse(node.BookTag.Replace("delegate", ""));
-                    string m = "";
-                    if (hasParams)
-                        m = "`" + node.BookTag.Replace("delegate", "");
-                    var getEvtTypeCall = new PersistentCall(typeof(Type).GetMethod("GetType", new Type[] { typeof(string) }), null);
-                    getEvtTypeCall.PersistentArguments[0].FSetString($"UltEvents.UltEvent{m}, UltEvents");
-                    evt.PersistentCallsList.Add(getEvtTypeCall);
-
-                    int evtTypeIdx = evt.PersistentCallsList.Count - 1;
-                    int objArrT = evt.PersistentCallsList.FindOrAddGetTyper<Type[]>();
-                    int targDelegateTIdx = -1;
-                    int invParamsTArrIdx = -1;
-
-                    if (hasParams)
-                    {
-                        var makeObjTArr = new PersistentCall(typeof(JsonConvert).GetMethod("DeserializeObject", new Type[] { typeof(string), typeof(Type) }), null);
-                        string objListMaker = "[";
-                        for (int i = 0; i < paramCount; i++)
-                            objListMaker += "\"System.Object, mscorlib\",";
-                        objListMaker = objListMaker[..^1] + "]";
-                        makeObjTArr.PersistentArguments[0].FSetString(objListMaker);
-                        makeObjTArr.PersistentArguments[1].ToRetVal(objArrT, typeof(Type));
-                        evt.PersistentCallsList.Add(makeObjTArr);
-                        invParamsTArrIdx = evt.PersistentCallsList.Count - 1;
-
-                        var makeGenericEvtT = new PersistentCall();
-                        makeGenericEvtT.FSetMethodName("System.RuntimeType, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.MakeGenericType");
-                        makeGenericEvtT.FSetArguments(
-                            new PersistentArgument(typeof(Type)).ToRetVal(evt.PersistentCallsList.IndexOf(getEvtTypeCall), typeof(Type)),
-                            new PersistentArgument(typeof(Type)).ToRetVal(evt.PersistentCallsList.Count - 1, typeof(Type[])));
-                        evt.PersistentCallsList.Add(makeGenericEvtT);
-                        evtTypeIdx = evt.PersistentCallsList.Count - 1;
-
-                        // also, delegate needs cooler type!
-
-                        var dType = evt.PersistentCallsList.FindOrAddGetTyper(Type.GetType($"System.Action{m}, mscorlib"));
-                        var makeGenericDelT = new PersistentCall();
-                        makeGenericDelT.FSetMethodName("System.RuntimeType, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.MakeGenericType");
-                        makeGenericDelT.FSetArguments(
-                            new PersistentArgument(typeof(Type)).ToRetVal(dType, typeof(Type)),
-                            new PersistentArgument(typeof(Type)).ToRetVal(evt.PersistentCallsList.IndexOf(makeObjTArr), typeof(Type[])));
-                        evt.PersistentCallsList.Add(makeGenericDelT);
-                        targDelegateTIdx = evt.PersistentCallsList.Count - 1;
-                    }
-                    else
-                    {
-                        targDelegateTIdx = evt.PersistentCallsList.FindOrAddGetTyper<Action>();
-                        int objT = evt.PersistentCallsList.FindOrAddGetTyper<object>();
-                        var emptyTArr = MakeCall<Array>("CreateInstance", typeof(Type), typeof(int));
-                        emptyTArr.PersistentArguments[0].ToRetVal(objT, typeof(Type));
-                        evt.PersistentCallsList.Add(emptyTArr);
-                        invParamsTArrIdx = evt.PersistentCallsList.Count - 1;
-                    }
-
-                    var createEvt = new PersistentCall(typeof(Activator).GetMethod("CreateInstance", new Type[] { typeof(Type) }), null);
-                    createEvt.PersistentArguments[0].ToRetVal(evtTypeIdx, typeof(Type));
-                    evt.PersistentCallsList.Add(createEvt);
-
-                    var onTrigEvt = dataRoot.StoreComp<UltEventHolder>("OnTrigger");
-                    onTrigEvt.Event.FSetPCalls(new()); 
-                    onTrigEvt.gameObject.SetActive(true);
-                    
-
-
-                    // uahghhg
-                    // gotta get the method
-                    int voidT = evt.PersistentCallsList.FindOrAddGetTyper(typeof(void));
-                    var getInv = new PersistentCall();
-                    getInv.FSetMethodName("System.ComponentModel.MemberDescriptor, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.FindMethod");
-                    getInv.FSetArguments(
-                        new PersistentArgument().ToRetVal(evtTypeIdx, typeof(Type)),
-                        new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("Invoke"),
-                        new PersistentArgument().ToRetVal(invParamsTArrIdx, typeof(Type[])),
-                        new PersistentArgument().ToRetVal(voidT, typeof(Type)),
-                        new PersistentArgument().FSetType(PersistentArgumentType.Bool)
-                        );
-                    evt.PersistentCallsList.Add(getInv);
-
-                    // make the delegate
-                    var delCreate = MakeCall<Delegate>("CreateDelegate", typeof(Type), typeof(object), typeof(MethodInfo));
-                    delCreate.PersistentArguments[0].ToRetVal(targDelegateTIdx, typeof(Type));
-                    delCreate.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.IndexOf(createEvt), typeof(object));
-                    delCreate.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(getInv), typeof(MethodInfo));
-                    evt.PersistentCallsList.Add(delCreate);
-
-                    //var dbg = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
-                    //dbg.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(object));
-                    //evt.PersistentCallsList.Add(dbg);
-
-                    // then we compile the remaining stuff for "On Created"
-                    node.DataOutputs[0].CompCall = delCreate;
-                    node.DataOutputs[0].CompEvt = evt;
-
-                    var nextNode1 = node.FlowOutputs[0].Target?.Node;
-                    if (nextNode1 != null)
-                        nextNode1.Book.CompileNode(evt, nextNode1, dataRoot);
-
-                    var nextNode2 = node.FlowOutputs[1].Target?.Node;
-                    if (nextNode2 != null)
-                        nextNode2.Book.CompileNode(onTrigEvt.Event, nextNode2, onTrigEvt.transform);
-
-                    // alr we gyatta copy onTrigEvt to createEvt
-
-                    // get the onTrigEvt
-                    var getJevt = MakeCall<UltEventHolder>("get_Event", onTrigEvt);
-                    evt.PersistentCallsList.Add(getJevt);
-                    // get the _PersistentCalls list
-
-                    // first get Type[0]
-                    int tT = evt.PersistentCallsList.FindOrAddGetTyper<Type>();
-                    var emptyTArr2 = MakeCall<Array>("CreateInstance", typeof(Type), typeof(int));
-                    emptyTArr2.PersistentArguments[0].ToRetVal(tT, typeof(Type));
-                    evt.PersistentCallsList.Add(emptyTArr2);
-
-                    int methUB = evt.PersistentCallsList.FindOrAddGetTyper(typeof(UltEventBase));
-                    int listT = evt.PersistentCallsList.FindOrAddGetTyper(typeof(List<PersistentCall>));
-                    var getPCallGetter = new PersistentCall();
-                    getPCallGetter.FSetMethodName("System.ComponentModel.MemberDescriptor, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.FindMethod");
-                    getPCallGetter.FSetArguments(
-                        new PersistentArgument().ToRetVal(methUB, typeof(Type)),
-                        new PersistentArgument().FSetType(PersistentArgumentType.String).FSetString("get_PersistentCallsList"),
-                        new PersistentArgument().ToRetVal(evt.PersistentCallsList.IndexOf(emptyTArr2), typeof(Type[])),
-                        new PersistentArgument().ToRetVal(listT, typeof(Type)),
-                        new PersistentArgument().FSetType(PersistentArgumentType.Bool)
-                        );
-                    evt.PersistentCallsList.Add(getPCallGetter);
-
-                    
-                    int objT2 = evt.PersistentCallsList.FindOrAddGetTyper<object>();
-                    var emptyObjArr = MakeCall<Array>("CreateInstance", typeof(Type), typeof(int));
-                    emptyObjArr.PersistentArguments[0].ToRetVal(objT2, typeof(Type));
-                    evt.PersistentCallsList.Add(emptyObjArr);
-                    invParamsTArrIdx = evt.PersistentCallsList.Count - 1;
-
-
-                    var getPCallInvoke = new PersistentCall();
-                    getPCallInvoke.FSetMethodName("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.MethodInfoInvoke");
-                    getPCallInvoke.FSetArguments(
-                        new PersistentArgument().ToRetVal(evt.PersistentCallsList.IndexOf(getPCallGetter), typeof(MethodInfo)),
-                        new PersistentArgument().ToRetVal(evt.PersistentCallsList.IndexOf(getJevt), typeof(object)),
-                        new PersistentArgument().ToRetVal(evt.PersistentCallsList.Count-1, typeof(object[]))
-                        );
-                    evt.PersistentCallsList.Add(getPCallInvoke);
-
-                    // setter for field UltEventBase._PersistentCalls
-                    ///////////////////////////////////////////////////////////////////////////////////////////
-                    {
-                        //evt.PersistentCallsList.FindOrAddGetTyper
-                    }
-                    ///////////////////////////////////////////////////////////////////////////////////////////
-
-                    var dbg = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
-                    dbg.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(createEvt), typeof(object));
-                    evt.PersistentCallsList.Add(dbg);
-
-                    //?
-                    //nvm, _PersistentCalls is field for set :(
-                    
-                    */
                     return;
                 }
                 return;
