@@ -1090,40 +1090,42 @@ public class CommonsCookBook : CookBook
                     evt.PersistentCallsList.AddDebugLog(delMade);
 
                     
+                    if (node.DataOutputs[0].Targets.Count > 0) // only add delegate to dict if the user wants to
+                    {
+                        evt.PersistentCallsList.AddDebugLog("making guid");
+                        // awesome, at this point we have a dict, delegate, floater
+                        // with custom scripting within it
+                        // now we just gotta generate & output a guid + store in dict w/ guid
+                        var getGuid = MakeCall<Guid>("NewGuid");
+                        evt.PersistentCallsList.Add(getGuid);
 
-                    evt.PersistentCallsList.AddDebugLog("making guid");
-                    // awesome, at this point we have a dict, delegate, floater
-                    // with custom scripting within it
-                    // now we just gotta generate & output a guid + store in dict w/ guid
-                    var getGuid = MakeCall<Guid>("NewGuid");
-                    evt.PersistentCallsList.Add(getGuid);
+                        var getGuidStr = MakeCall<string>("Format", typeof(string), typeof(object));
+                        getGuidStr.PersistentArguments[0].String = "{0}";
+                        getGuidStr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(object));
+                        evt.PersistentCallsList.Add(getGuidStr);
 
-                    var getGuidStr = MakeCall<string>("Format", typeof(string), typeof(object));
-                    getGuidStr.PersistentArguments[0].String = "{0}";
-                    getGuidStr.PersistentArguments[1].ToRetVal(evt.PersistentCallsList.Count - 1, typeof(object));
-                    evt.PersistentCallsList.Add(getGuidStr);
+                        evt.PersistentCallsList.AddDebugLog("got guid:");
+                        evt.PersistentCallsList.AddDebugLog(evt.PersistentCallsList.IndexOf(getGuidStr));
 
-                    evt.PersistentCallsList.AddDebugLog("got guid:");
-                    evt.PersistentCallsList.AddDebugLog(evt.PersistentCallsList.IndexOf(getGuidStr));
+                        evt.PersistentCallsList.AddEnsureDict(node);
+                        int gotDict = evt.PersistentCallsList.AddGetDict();
 
-                    evt.PersistentCallsList.AddEnsureDict(node);
-                    int gotDict = evt.PersistentCallsList.AddGetDict();
+                        evt.PersistentCallsList.AddDebugLog("got dict:");
+                        evt.PersistentCallsList.AddDebugLog(gotDict);
 
-                    evt.PersistentCallsList.AddDebugLog("got dict:");
-                    evt.PersistentCallsList.AddDebugLog(gotDict);
+                        // put {GUID:Delegate} kvp into dict :)
+                        evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, object>).GetMethod("Add"),
+                            gotDict, new object[] { evt.PersistentCallsList.IndexOf(getGuidStr), delMade });
 
-                    // put {GUID:Delegate} kvp into dict :)
-                    evt.PersistentCallsList.AddRunMethod(typeof(Dictionary<string, object>).GetMethod("Add"),
-                        gotDict, new object[] { evt.PersistentCallsList.IndexOf(getGuidStr), delMade });
+                        evt.PersistentCallsList.AddDebugLog("added kvp to dict");
 
-                    evt.PersistentCallsList.AddDebugLog("added kvp to dict");
-
+                        node.DataOutputs[0].CompCall = getGuidStr; // delegate
+                    }
 
                     // now:
                     // - also add a node to fetch from assembly_resolve_in_progress
 
                     // compile the remaining evt, post-del
-                    node.DataOutputs[0].CompCall = getGuidStr; // delegate GUID
                     node.DataOutputs[0].CompEvt = evt;
                     node.DataOutputs[1].CompCall = evt.PersistentCallsList[delMade]; // delegate itself
                     node.DataOutputs[1].CompEvt = evt;

@@ -538,22 +538,27 @@ public static class UltNoodleRuntimeExtensions
     }
     public static int AddEnsureDict(this List<PersistentCall> list, SerializedNode node)
     {
+        // Because this only needs to run once ever, we can use the properties of lifecycleevents to make it not execute after it does once.
+
         const string SubroutineName = "subroutine dict init check";
         var dataRoot = node.Bowl.LastGenerated.transform;
         var srt = dataRoot.Find(SubroutineName);
-        UltEventHolder subRoot;
+        LifeCycleEvents subRoot;
 
         if (srt)
         {
             list.AddDebugLog(SubroutineName + " already existed");
-            subRoot = srt.GetComponent<UltEventHolder>();
+            subRoot = srt.GetChild(0).GetComponent<LifeCycleEvents>();
         }
         else
         {
+            srt = new GameObject(SubroutineName).transform;
+            srt.parent = dataRoot;
             list.AddDebugLog(SubroutineName + " was generated here");
-            subRoot = dataRoot.StoreComp<UltEventHolder>(SubroutineName);
-            subRoot.Event = new UltEvent();
-            var evt = subRoot.Event;
+            subRoot = srt.StoreComp<LifeCycleEvents>("check");
+            subRoot.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+            subRoot.EnableEvent = new UltEvent();
+            var evt = subRoot.EnableEvent;
             evt.EnsurePCallList();
 
             var subPCalls = evt.PersistentCallsList;
@@ -562,7 +567,7 @@ public static class UltNoodleRuntimeExtensions
             int gotDictA = subPCalls.AddGetDict();
 
             // if null, create dict...
-            var dictCreateEvt = subRoot.transform.StoreComp<LifeCycleEvents>("dict check");
+            var dictCreateEvt = srt.StoreComp<LifeCycleEvents>("init");
             {
                 dictCreateEvt.EnableEvent = new UltEvent();
                 dictCreateEvt.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
@@ -597,17 +602,16 @@ public static class UltNoodleRuntimeExtensions
             decideCallA.PersistentArguments[0].ToRetVal(subPCalls.IndexOf(compareCall), typeof(bool));
             subPCalls.Add(decideCallA);
 
-            var decideCallB = CookBook.MakeCall<GameObject>("SetActive", dictCreateEvt.gameObject, typeof(bool));
-            decideCallB.PersistentArguments[0].Bool = false;
-            subPCalls.Add(decideCallB);
+            var burnfuseCall = CookBook.MakeCall<GameObject>("SetActive", srt.gameObject, typeof(bool));
+            burnfuseCall.PersistentArguments[0].Bool = false;
+            subPCalls.Add(burnfuseCall);
         }
-        subRoot.gameObject.SetActive(true);
 
         // call subroutine and return
         list.AddDebugLog("to call dict ensurance");
 
-        var invCall = CookBook.MakeCall("Invoke");
-        invCall.FSetTarget(subRoot);
+        var invCall = CookBook.MakeCall<GameObject>("SetActive", subRoot.gameObject, typeof(bool));
+        invCall.PersistentArguments[0].Bool = true;
         list.Add(invCall);
         return list.Count - 1;
     }
