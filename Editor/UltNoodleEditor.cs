@@ -138,6 +138,9 @@ public class UltNoodleEditor : EditorWindow
         {
             bool enabled = !EditorPrefs.GetBool("InlineUltswaps");
             EditorPrefs.SetBool("InlineUltswaps", enabled);
+            foreach (var node in CurrentBowl.SerializedData.NodeDatas)
+                if (node.CurrentUI != null)
+                    node.Book?.VerifyNodeUI(node.CurrentUI);
         }, (_) => EditorPrefs.GetBool("InlineUltswaps") ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
         helpMenu.menu.AppendAction("GitHub", (a) => Application.OpenURL("https://github.com/holadivinus/Noodled-Events"), (a) => DropdownMenuAction.Status.Normal);

@@ -50,8 +50,10 @@ namespace NoodledEvents
             // when a bowl is compiled, it puts forward an evt that is filled by compiled nodes.
             // this func handles it
             // method overrides of this func should also call base.CompileNode(evt, node, dataRoot);
-            // so that errors can be displayed on the node
+            
+            // this is so that errors can be displayed on the node, if it does error.
             node.Bowl.ErroredNode = node;
+            if (node.CurrentUI != null) node.CurrentUI.mainContainer.style.backgroundColor = new Color(0, 0, 0, 0);
 
             // if any of our inputs are connected to a redirect, we need to find the real source and copy its compEvt/compCall
             foreach (var input in node.DataInputs.Where(di => di.Source?.Node?.NoadType == SerializedNode.NodeType.Redirect))
@@ -106,6 +108,9 @@ namespace NoodledEvents
                 if (oldNode.FlowOutputs[0].Target != null)
                     newNode.FlowOutputs[0].Connect(oldNode.FlowOutputs[0].Target);
         }
+
+        // ran when a node's UI connections get changed, for when we need dynamic titles or type hints.
+        public virtual void VerifyNodeUI(UltNoodleNodeView nodeUI) { }
 
         public static PersistentCall MakeCall(string method)
         {

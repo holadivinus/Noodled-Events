@@ -16,9 +16,13 @@ public class UltNoodleNodeView : Node
     public SerializedNode Node { get; }
     public Action<UltNoodleNodeView> OnNodeSelected;
 
+    public IEnumerable<Port> FlowInputs => _flowInputs.Values;
     protected readonly Dictionary<string, Port> _flowInputs = new();
+    public IEnumerable<Port> FlowOutputs => _flowOutputs.Values;
     protected readonly Dictionary<string, Port> _flowOutputs = new();
+    public IEnumerable<Port> DataInputs => _dataInputs.Values;
     protected readonly Dictionary<string, Port> _dataInputs = new();
+    public IEnumerable<Port> DataOutputs => _dataOutputs.Values;
     protected readonly Dictionary<string, Port> _dataOutputs = new();
 
     private Dictionary<Type, List<NoodleDataInput>> _varManVarOptions = new();
@@ -28,6 +32,7 @@ public class UltNoodleNodeView : Node
         this.Node = node;
         this.title = node.Name;
         this.viewDataKey = node.ID;
+
 
         if (node.NoadType == SerializedNode.NodeType.Redirect)
             return; // let the subclass handle it
@@ -88,6 +93,9 @@ public class UltNoodleNodeView : Node
         {
             UltNoodleEditor.Editor.TreeView.DeleteElements(new[] { this });
         });
+
+        node.CurrentUI = this;
+        node.Book?.VerifyNodeUI(node.CurrentUI);
     }
 
     private void OnMouseDown(MouseDownEvent evt)

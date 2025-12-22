@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using UltEvents;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace NoodledEvents
 {
@@ -120,7 +119,7 @@ namespace NoodledEvents
         [HideInInspector] public Vector2 LastPosition;
         public Action<Vector2> PositionChanged = delegate { };
 
-
+        [NonSerialized] public UltNoodleNodeView CurrentUI;
 
         public void Compile(Transform dataRoot)
         {
@@ -390,18 +389,23 @@ namespace NoodledEvents
 
         public void Connect(NoodleDataOutput output)
         {
-            if (Source != null)
+            if (Source != null) {
                 Source.Targets.Remove(this);
+                Source.Node.Book?.VerifyNodeUI(Source.Node.CurrentUI);
+            }
             Source = output;
             if (Source != null && !Source.Targets.Contains(this))
+            {
                 Source.Targets.Add(this);
+                Source.Node.Book?.VerifyNodeUI(Source.Node.CurrentUI);
+            }
+
+            this.Node.Book?.VerifyNodeUI(Node.CurrentUI);
         }
 
         [NonSerialized] public NoodleDataOutput TrueSource;
         public bool HasConstObjInput()
         {
-            if (DefaultObject)
-                return true;
             if (Source != null)
                 switch (Source.Node.NoadType)
                 {
@@ -435,6 +439,8 @@ namespace NoodledEvents
                     default:
                         throw new NotImplementedException();
                 }
+            if (DefaultObject)
+                return true;
             return false;
         }
     }
@@ -518,10 +524,16 @@ namespace NoodledEvents
         public void Connect(NoodleFlowInput input)
         {
             if (Target != null)
+            {
                 Target.Sources.Remove(this);
+                Target.Node.Book?.VerifyNodeUI(Target.Node.CurrentUI);
+            }
             Target = input;
             if (Target != null && !Target.Sources.Contains(this))
+            {
                 Target.Sources.Add(this);
+                Target.Node.Book?.VerifyNodeUI(Target.Node.CurrentUI);
+            }
 
             // Connected; Now disconnect if something down the line refs back to me somehow.
             List<SerializedNode> valids = new List<SerializedNode>();
@@ -542,6 +554,8 @@ namespace NoodledEvents
                     }
             }
             conLoop(this);
+
+            Node.Book?.VerifyNodeUI(Node.CurrentUI);
         }
     }
 }

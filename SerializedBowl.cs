@@ -139,8 +139,17 @@ namespace NoodledEvents
                 }
             }
 
-            EntryNode.Compile(LastGenerated.transform);
-
+            try
+            {
+                EntryNode.Compile(LastGenerated.transform);
+            }
+            catch (Exception e) 
+            {
+                Debug.LogError($"[NoodledEvents]: Failed to compile node {ErroredNode.Name} in bowl {this.name}!");
+                Debug.LogException(e);
+                if (ErroredNode.CurrentUI != null)
+                    ErroredNode.CurrentUI.mainContainer.style.backgroundColor = Color.red;
+            }
             ErroredNode = null;
 
             // postcompile hook

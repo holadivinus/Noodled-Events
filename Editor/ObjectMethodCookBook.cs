@@ -128,7 +128,7 @@ public class ObjectMethodCookBook : CookBook
 
         p.ContinueWith(t => completedCallback.Invoke());
     }
-
+    
     private bool NeedsReflection(MethodBase meth, bool inlineUltswaps) =>
         (!(typeof(UnityEngine.Object).IsAssignableFrom(meth.DeclaringType) && inlineUltswaps) // Not Targettable by Pcalls?
         || meth.DeclaringType.ContainsGenericParameters  // ex: List<T> vs List<bool>
@@ -408,11 +408,19 @@ public class ObjectMethodCookBook : CookBook
         // figure node method
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
 
+        // die if attempting to compile a node with const null for instance targ
+        if (!meth.Method.IsStatic)
+        {
+            if (node.DataInputs[0].Source == null && !node.DataInputs[0].HasConstObjInput())
+            {
+                throw new Exception("Attempted to compile instance node with no instance specified!");
+            }
+        }
+
         #region Reflection Based Method
-        if ((NeedsReflection(meth.Method, EditorPrefs.GetBool("InlineUltswaps")) && !node.DataInputs[0].HasConstObjInput()) || meth.Method.IsStatic) // bonus retvals! // isStatic here bc im repurposing this func to handle statics with reference params
+        if ((NeedsReflection(meth.Method, EditorPrefs.GetBool("InlineUltswaps")) && (!node.DataInputs[0].HasConstObjInput())) || meth.Method.IsStatic) // bonus retvals! // isStatic here bc im repurposing this func to handle statics with reference params
         {
             // UAHGAHGAUGUAAAAAAS
-
 
 
             int typeArrType = evt.PersistentCallsList.FindOrAddGetTyper<Type[]>();
@@ -921,6 +929,22 @@ public class ObjectMethodCookBook : CookBook
         }
     }
 
-
+    public override void VerifyNodeUI(UltNoodleNodeView ui)
+    {
+        if (!ui.Node.BookTag.StartsWith('{') || ui.Node.FlowInputs.Length == 0) return;
+        MethodBase meth = JsonUtility.FromJson<SerializedMethod>(ui.Node.BookTag).Method;
+        bool mustBeReflection = !typeof(UnityEngine.Object).IsAssignableFrom(meth.DeclaringType)
+                         || meth.DeclaringType.ContainsGenericParameters  // ex: List<T> vs List<bool>
+                         || meth.ContainsGenericParameters // like GameObject.GetComponent<T>();
+                         || meth.GetParameters().Any(p => p.IsOut || p.ParameterType.IsByRef); // like Physics.Raycast(..., out HitInfo hits);
+        if (!mustBeReflection)
+        {
+            var dataInput = ui.Node.DataInputs[0];
+            if (dataInput.Source == null) // no connection; is const.
+                ui.FlowInputs.First().portName = "Exec";
+            else ui.FlowInputs.First().portName = EditorPrefs.GetBool("InlineUltswaps") ? "UltSwap Exec" : "Reflection Exec";
+        }
+        else ui.FlowInputs.First().portName = "Reflection-Only Exec";
+    }
 }
 #endif
