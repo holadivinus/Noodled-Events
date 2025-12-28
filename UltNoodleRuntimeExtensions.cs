@@ -399,7 +399,10 @@ public static class UltNoodleRuntimeExtensions
         var editorSetCall = new PersistentCall(typeof(UltNoodleRuntimeExtensions).GetMethod("ArrayItemSetter1", UltEventUtils.AnyAccessBindings), null);
         editorSetCall.PersistentArguments[0].ToRetVal(array, typeof(Array));
         editorSetCall.PersistentArguments[1].Int = idx;
+        editorSetCall.PersistentArguments[1].FSetString("System.Int, mscorlib");
         editorSetCall.PersistentArguments[2] = @const;
+        if (@const.Type != PersistentArgumentType.String)
+            editorSetCall.PersistentArguments[2].FSetString("System.Object, mscorlib");
         list.Add(editorSetCall);
 
         /*var ingameSetCall = new PersistentCall();
@@ -512,6 +515,11 @@ public static class UltNoodleRuntimeExtensions
     {
         int fieldIdx = list.AddGetFieldInfo(field);
         return list.AddSetFieldValue(fieldIdx, objIdx, value);
+    }
+    public static int AddSetFieldValue(this List<PersistentCall> list, FieldInfo field, object targ, object value)
+    {
+        int fieldIdx = list.AddGetFieldInfo(field);
+        return list.AddRunMethod(SetFieldValue, fieldIdx, targ, value);
     }
     public static int AddSetFieldValue(this List<PersistentCall> list, int field, int objIdx, object value)
     {

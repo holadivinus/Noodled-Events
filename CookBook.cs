@@ -179,7 +179,8 @@ namespace NoodledEvents
                 { typeof(Vector3), (typeof(PositionConstraint), typeof(PositionConstraint).GetProperty(nameof(PositionConstraint.translationOffset))) },
                 { typeof(string), (typeof(TextMeshPro), typeof(TMP_Text).GetProperty("text", UltEventUtils.AnyAccessBindings)) },
                 { typeof(int), (typeof(LineRenderer), typeof(LineRenderer).GetProperty("numCapVertices", UltEventUtils.AnyAccessBindings)) },
-                { typeof(Vector2), (typeof(RectTransform), typeof(RectTransform).GetProperty("sizeDelta", UltEventUtils.AnyAccessBindings)) }
+                { typeof(Vector2), (typeof(RectTransform), typeof(RectTransform).GetProperty("sizeDelta", UltEventUtils.AnyAccessBindings)) },
+                { typeof(object), (typeof(ObjectStore), typeof(ObjectStore).GetProperty("Obj", UltEventUtils.AnyAccessBindings)) }
             };
             /* Todo types for CompStoragers
             {typeof(Vector3), "Vector3"},

@@ -116,32 +116,37 @@ public class CommonsCookBook : CookBook
 
         foreach (var storager in PendingConnection.CompStoragers)
         {
+            string typeName = storager.Key == typeof(object) ? "SystemObject" : storager.Key.GetFriendlyName();
+
             // scene storagers
-            allDefs.Add(new NodeDef(this, $"vars.set_scene_{storager.Key.GetFriendlyName()}_var",
+            allDefs.Add(new NodeDef(this, $"vars.set_scene_{typeName}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", storager.Key) },
                 outputs: () => new[] { new Pin("done") },
-                bookTag: $"set_scene_{storager.Key.GetFriendlyName()}_var"));
-            allDefs.Add(new NodeDef(this, $"vars.get_scene_{storager.Key.GetFriendlyName()}_var",
+                bookTag: $"set_scene_{typeName}_var"));
+            allDefs.Add(new NodeDef(this, $"vars.get_scene_{typeName}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
-                bookTag: $"get_scene_{storager.Key.GetFriendlyName()}_var"));
-            allDefs.Add(new NodeDef(this, $"vars.get_or_init_scene_{storager.Key.GetFriendlyName()}_var",
-                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("default/init value", storager.Key, @const: true) },
-                outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
-                bookTag: $"get_or_init_scene_{storager.Key.GetFriendlyName()}_var"));
+                bookTag: $"get_scene_{typeName}_var"));
+            if (storager.Key != typeof(object))
+                allDefs.Add(new NodeDef(this, $"vars.get_or_init_scene_{typeName}_var",
+                    inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("default/init value", storager.Key, @const: true) },
+                    outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
+                    bookTag: $"get_or_init_scene_{typeName}_var"));
             // gobj storagers
-            allDefs.Add(new NodeDef(this, $"vars.set_gobj_{storager.Key.GetFriendlyName()}_var",
+            allDefs.Add(new NodeDef(this, $"vars.set_gobj_{typeName}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("value", storager.Key), new Pin("gobj", typeof(GameObject), true) },
                 outputs: () => new[] { new Pin("done") },
-                bookTag: $"set_gobj_{storager.Key.GetFriendlyName()}_var"));
-            allDefs.Add(new NodeDef(this, $"vars.get_gobj_{storager.Key.GetFriendlyName()}_var",
+                bookTag: $"set_gobj_{typeName}_var"));
+            allDefs.Add(new NodeDef(this, $"vars.get_gobj_{typeName}_var",
                 inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("gobj", typeof(GameObject), true) },
                 outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
-                bookTag: $"get_gobj_{storager.Key.GetFriendlyName()}_var"));
-            allDefs.Add(new NodeDef(this, $"vars.get_or_init_gobj_{storager.Key.GetFriendlyName()}_var",
-                inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("gobj", typeof(GameObject), true), new Pin("default/init value", storager.Key, @const: true) },
-                outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
-                bookTag: $"get_or_init_gobj_{storager.Key.GetFriendlyName()}_var"));
+                bookTag: $"get_gobj_{typeName}_var"));
+
+            if (storager.Key != typeof(object))
+                allDefs.Add(new NodeDef(this, $"vars.get_or_init_gobj_{typeName}_var",
+                    inputs: () => new[] { new Pin("Exec"), new Pin("name", typeof(string), @const: true), new Pin("gobj", typeof(GameObject), true), new Pin("default/init value", storager.Key, @const: true) },
+                    outputs: () => new[] { new Pin("done"), new Pin("value", storager.Key) },
+                    bookTag: $"get_or_init_gobj_{typeName}_var"));
         }
 
         // Global Sys.Object vars
@@ -1362,5 +1367,13 @@ public class CommonsCookBook : CookBook
         bowl.Event.PersistentCallsList.Add(new PersistentCall(typeof(UltEventHolder).GetMethod("Invoke", new Type[] { }), movedEntryEvt));
     }
     [SerializeField] GameObject VarEnsurer;
+
+    public override void VerifyNodeUI(UltNoodleNodeView nodeUI)
+    {
+        if (nodeUI?.Node?.Name?.StartsWith("vars.") ?? false)
+        {
+            nodeUI.DataInputs?.First()?.SetEnabled(false);
+        }
+    }
 }
 #endif
