@@ -931,7 +931,8 @@ public class ObjectMethodCookBook : CookBook
 
     public override void VerifyNodeUI(UltNoodleNodeView ui)
     {
-        if (!ui.Node.BookTag.StartsWith('{') || ui.Node.FlowInputs.Length == 0) return;
+        if (((!ui?.Node?.BookTag?.StartsWith('{')) ?? true) || (ui?.Node?.FlowInputs?.Length ?? 0) == 0) return;
+        
         MethodBase meth = JsonUtility.FromJson<SerializedMethod>(ui.Node.BookTag).Method;
         bool mustBeReflection = !typeof(UnityEngine.Object).IsAssignableFrom(meth.DeclaringType)
                          || meth.DeclaringType.ContainsGenericParameters  // ex: List<T> vs List<bool>
