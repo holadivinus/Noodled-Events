@@ -441,6 +441,8 @@ namespace NoodledEvents
                 }
             if (DefaultObject)
                 return true;
+            if (Type == typeof(Type))
+                return true;
             return false;
         }
     }
