@@ -84,6 +84,7 @@ namespace NoodledEvents
         [NonSerialized] public SerializedBowl Bowl;
         [SerializeField] public string Name;
         [SerializeField] public string ID = Guid.NewGuid().ToString();
+        [SerializeField] public bool ForceDebugLogs = false;
 
         public void Update() // idk lol
         {

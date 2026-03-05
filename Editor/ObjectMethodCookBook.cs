@@ -138,9 +138,9 @@ public class ObjectMethodCookBook : CookBook
     public override void CompileNode(UltEventBase evt, SerializedNode node, Transform dataRoot)
     {
         base.CompileNode(evt, node, dataRoot);
-        // sanity check (AddComponent() leaves this field empty)
-        if (evt.PersistentCallsList == null) evt.FSetPCalls(new());
+        evt.EnsurePCallList();
 
+        #region Ultswap Stuff
         if (!node.BookTag.StartsWith('{')) // UltSwap stuff
         {
             (Type, PropertyInfo) BLXRData = PendingConnection.CompStoragers[typeof(UnityEngine.Object)];
@@ -405,6 +405,7 @@ public class ObjectMethodCookBook : CookBook
             }
             return;
         }
+        #endregion
 
         // figure node method
         SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(node.BookTag);
@@ -423,12 +424,15 @@ public class ObjectMethodCookBook : CookBook
         {
             // UAHGAHGAUGUAAAAAAS
 
-
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: Executing a Reflection Exec..."); // DebugLog
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: Finding Target Type"); // DebugLog
             int typeArrType = evt.PersistentCallsList.FindOrAddGetTyper<Type[]>();
             int targType = evt.PersistentCallsList.FindOrAddGetTyper(meth.Method.DeclaringType);
             int retValType = evt.PersistentCallsList.FindOrAddGetTyper(meth.Method.GetReturnType());
+            evt.PersistentCallsList.AddDebugLog(targType); // DebugLog
 
             // get Type[] of params
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: Setting Up Param Types via deserialization...");  // DebugLog
             var paramTypeArr = new PersistentCall(typeof(JsonConvert).GetMethod(nameof(JsonConvert.DeserializeObject), new[] { typeof(string), typeof(Type) }), null);
             paramTypeArr.PersistentArguments[0].String = "[";
             ParameterInfo[] methodParams = meth.Method.GetParameters();
@@ -439,7 +443,10 @@ public class ObjectMethodCookBook : CookBook
             paramTypeArr.PersistentArguments[0].String += "]";
             paramTypeArr.PersistentArguments[1].ToRetVal(typeArrType, typeof(Type));
             evt.PersistentCallsList.Add(paramTypeArr);
+            evt.PersistentCallsList.AddDebugLog(evt.PersistentCallsList.IndexOf(paramTypeArr), true); // DebugLog print params
 
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: finding my MethodInfo via MemberDescriptor.FindMethod()."); // DebugLog
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: Type=\"{meth.Method.DeclaringType.Name}\" MethodName=\"{meth.Method.Name}\","); // DebugLog
             var getTargMethod = new PersistentCall(typeof(System.ComponentModel.MemberDescriptor).GetMethod("FindMethod", UltEventUtils.AnyAccessBindings, null,
                 new Type[] { typeof(Type), typeof(string), typeof(Type[]), typeof(Type), typeof(bool) }, null), null);
             getTargMethod.PersistentArguments[0].ToRetVal(targType, typeof(Type));
@@ -449,9 +456,13 @@ public class ObjectMethodCookBook : CookBook
             getTargMethod.PersistentArguments[4].Bool = false;
             evt.PersistentCallsList.Add(getTargMethod);
 
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: Found Method"); // DebugLog
+            evt.PersistentCallsList.AddDebugLog(evt.PersistentCallsList.IndexOf(getTargMethod)); // DebugLog
+
             // aight, we got the MethodInfo
             // just gotta compose the Param Array
 
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: Making array of params for method!");
             int objType = evt.PersistentCallsList.FindOrAddGetTyper<object>();
             var paramArr = new PersistentCall(typeof(Array).GetMethod("CreateInstance", new[] { typeof(Type), typeof(int) }), null);
             paramArr.PersistentArguments[0].ToRetVal(objType, typeof(Type));
@@ -493,6 +504,10 @@ public class ObjectMethodCookBook : CookBook
             // paramArr is now full of data;
             // invoke the method upon the target.
 
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: Filled the Array!"); // DebugLog
+
+
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: Alrighty! Invoking method..."); // DebugLog
             PersistentCall invokeMethod = new PersistentCall(Type.GetType("System.SecurityUtils, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", true, true).GetMethod("MethodInfoInvoke", UltEventUtils.AnyAccessBindings, null,
                 new Type[] { typeof(MethodInfo), typeof(object), typeof(object[]) }, null), null);
             invokeMethod.PersistentArguments[0].ToRetVal(evt.PersistentCallsList.IndexOf(getTargMethod), typeof(MethodInfo));
@@ -517,6 +532,10 @@ public class ObjectMethodCookBook : CookBook
 
             invokeMethod.PersistentArguments[2].ToRetVal(evt.PersistentCallsList.IndexOf(paramArr), typeof(object[]));
             evt.PersistentCallsList.Add(invokeMethod);
+
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: Invoked! Printing Retval via JsonUtility..."); // DebugLog
+            evt.PersistentCallsList.AddDebugLog(evt.PersistentCallsList.IndexOf(invokeMethod), true, true); // DebugLog
+
 
             if (node.DataOutputs.Length > 0)
             {

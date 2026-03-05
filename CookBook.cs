@@ -54,6 +54,11 @@ namespace NoodledEvents
             node.Bowl.ErroredNode = node;
             if (node.CurrentUI != null) node.CurrentUI.mainContainer.style.backgroundColor = new Color(0, 0, 0, 0);
 
+            // this is so that nodes with SerializedNode.ForceDebugLogs = true can have debug logs
+            UltNoodleRuntimeExtensions.CurrentNode = node;
+
+            evt.PersistentCallsList.AddDebugLog($"[{node.Name}]: --- NODE START ---");
+
             // if any of our inputs are connected to a redirect, we need to find the real source and copy its compEvt/compCall
             foreach (var input in node.DataInputs.Where(di => di.Source?.Node?.NoadType == SerializedNode.NodeType.Redirect))
             {

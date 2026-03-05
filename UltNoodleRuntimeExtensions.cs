@@ -264,6 +264,8 @@ public static class UltNoodleRuntimeExtensions
                 new Type[] { typeof(string), typeof(Type) }, null);
     public static MethodInfo JsonSeserializeMethod = typeof(JsonConvert).GetMethod("SerializeObject", UltEventUtils.AnyAccessBindings, null,
                 new Type[] { typeof(object) }, null);
+    public static MethodInfo JsonUtilitySeserializeMethod = typeof(JsonUtility).GetMethod("ToJson", UltEventUtils.AnyAccessBindings, null,
+                new Type[] { typeof(object) }, null);
     public static int FindOrAddJsonDeserialize(this List<PersistentCall> list, string jsonString, Type targType)
     {
         int typeGet = list.FindOrAddGetTyper(targType);
@@ -410,13 +412,14 @@ public static class UltNoodleRuntimeExtensions
         ingameSetCall.FSetMethod(null);
         list.Add(ingameSetCall);*/
     }
-    public static bool DEBUG_IN_COMP = false; // No longer constant, replace with editor pref
-    public static void AddDebugLog(this List<PersistentCall> list, int retVal, bool useJson = false)
+    public static bool DebugLogsActive = false;
+    public static SerializedNode CurrentNode;
+    public static void AddDebugLog(this List<PersistentCall> list, int retVal, bool useJson = false, bool useUnityJson = false)
     {
-        if (!DEBUG_IN_COMP) return;
+        if (!DebugLogsActive && !CurrentNode.ForceDebugLogs) return;
         if (useJson)
         {
-            var jsonSerialize = new PersistentCall(JsonSeserializeMethod, null);
+            var jsonSerialize = new PersistentCall(useUnityJson ? JsonUtilitySeserializeMethod : JsonSeserializeMethod, null);
             jsonSerialize.PersistentArguments[0].ToRetVal(retVal, typeof(object));
             list.Add(jsonSerialize);
             var dbg2 = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
@@ -431,7 +434,7 @@ public static class UltNoodleRuntimeExtensions
     }
     public static void AddDebugLog(this List<PersistentCall> list, string str)
     {
-        if (!DEBUG_IN_COMP) return;
+        if (!DebugLogsActive && !CurrentNode.ForceDebugLogs) return;
         var dbg = new PersistentCall(typeof(Debug).GetMethod("Log", new Type[] { typeof(object) }), null);
         dbg.PersistentArguments[0].FSetType(PersistentArgumentType.String).FSetString(str);
         list.Add(dbg);

@@ -84,6 +84,16 @@ public class UltNoodleInspectorView : VisualElement
         var separator = new VisualElement { style = { height = 12 } };
         Add(separator);
         DrawDataOutputs(nodeView);
+
+        var separator2 = new VisualElement { style = { height = 12 } };
+        Add(separator2);
+
+        var debugToggle = new Toggle("Debug Mode");
+        debugToggle.tooltip = "Whether this node will add Debug.Log calls for each sub-action it takes";
+        debugToggle.value = nodeView.Node.ForceDebugLogs;
+
+        debugToggle.RegisterValueChangedCallback(e => nodeView.Node.ForceDebugLogs = e.newValue);
+        Add(debugToggle);
     }
 
     private void DrawDataInputs(UltNoodleNodeView nodeView)
@@ -134,7 +144,7 @@ public class UltNoodleInspectorView : VisualElement
             }
             else
             {
-                var constLabel = new Label($"({input.Type.Type.Name})");
+                var constLabel = new Label($"({input.Type.Type.GetFriendlyName()})");
                 constLabel.style.color = new StyleColor(Color.gray);
                 row.Add(constLabel);
             }
@@ -182,7 +192,7 @@ public class UltNoodleInspectorView : VisualElement
             };
             row.Add(label);
 
-            var typeLabel = new Label($"({output.Type.Type.Name})");
+            var typeLabel = new Label($"({output.Type.Type.GetFriendlyName()})");
             typeLabel.style.color = new StyleColor(Color.gray);
             row.Add(typeLabel);
 

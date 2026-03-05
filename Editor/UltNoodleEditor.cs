@@ -129,9 +129,9 @@ public class UltNoodleEditor : EditorWindow
         }, (a) => EditorPrefs.GetBool("SelectedBowlsOnly", true) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
         viewMenu.menu.AppendAction("Rebuild View", (a) => contextChanged(), (a) => DropdownMenuAction.Status.Normal);
 
-        compilationMenu.menu.AppendAction("Add Debug Logs", (_) => 
-            UltNoodleRuntimeExtensions.DEBUG_IN_COMP = !UltNoodleRuntimeExtensions.DEBUG_IN_COMP, 
-            (_) => UltNoodleRuntimeExtensions.DEBUG_IN_COMP ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+        compilationMenu.menu.AppendAction("Force Compilation Debug Logs", (_) => 
+            UltNoodleRuntimeExtensions.DebugLogsActive = !UltNoodleRuntimeExtensions.DebugLogsActive, 
+            (_) => UltNoodleRuntimeExtensions.DebugLogsActive ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
         compilationMenu.menu.AppendAction("Use Inline Ultswaps", (_) => 
         {
