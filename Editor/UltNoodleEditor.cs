@@ -237,16 +237,9 @@ public class UltNoodleEditor : EditorWindow
         AllNodeDefs.Clear();
         CollectBooks();
 
-        if (!skipCache && NodeDefCacheManager.TryLoadCache(AllBooks, out var cachedDefs, EditorPrefs.GetBool("RebuildOnAssemblyChange", false),
-            (current, total, percentage) =>
-            {
-                LoadingText.text = $"Loading cache: {current:N0} / {total:N0} nodes ({percentage:P0})";
-            }))
+        if (!skipCache)
         {
-            AllNodeDefs.AddRange(cachedDefs);
-            LoadingText.text = $"Loaded {AllNodeDefs.Count:N0} nodes from cache!";
-            Debug.Log($"[NoodleEditor] Loaded {AllNodeDefs.Count:N0} nodes from cache!");
-            _collecting = false;
+            LoadNodeCache();
             return;
         }
 
@@ -307,6 +300,137 @@ public class UltNoodleEditor : EditorWindow
         if (!cookBooks.Contains(ObjectFCookBook)) cookBooks = cookBooks.Append(ObjectFCookBook);
         if (!cookBooks.Contains(StaticCookBook)) cookBooks = cookBooks.Append(StaticCookBook);
         AllBooks = cookBooks.ToArray();
+    }
+
+    private void LoadNodeCache()
+    {
+        var loadingAction = new Action<int, int, float>((current, total, percentage) =>
+            {
+                LoadingText.text = $"Loading cache: {current:N0} / {total:N0} nodes ({percentage:P0})";
+            });
+        
+        bool loaded = NodeDefCacheManager.TryLoadCache(AllBooks, out var cachedDefs, EditorPrefs.GetBool("RebuildOnAssemblyChange", false), loadingAction);
+        if (loaded)
+        {
+            AllNodeDefs.AddRange(cachedDefs);
+            LoadingText.text = $"Rebuilding cookbook indices...";
+            
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            
+            var staticMethodDefs = new List<CookBook.NodeDef>();
+            var objectMethodDefs = new List<CookBook.NodeDef>();
+            var objectFieldDefs = new List<CookBook.NodeDef>();
+            
+            StaticMethodCookBook staticMethodCB = null;
+            ObjectMethodCookBook objectMethodCB = null;
+            ObjectFieldCookBook objectFieldCB = null;
+            
+            foreach (var def in AllNodeDefs)
+            {
+                switch (def.CookBook)
+                {
+                    case StaticMethodCookBook smCb:
+                        if (staticMethodCB == null) staticMethodCB = smCb;
+                        staticMethodDefs.Add(def);
+                        break;
+                    case ObjectMethodCookBook omCb:
+                        if (objectMethodCB == null) objectMethodCB = omCb;
+                        objectMethodDefs.Add(def);
+                        break;
+                    case ObjectFieldCookBook ofCb:
+                        if (objectFieldCB == null) objectFieldCB = ofCb;
+                        objectFieldDefs.Add(def);
+                        break;
+                }
+            }
+            
+            System.Threading.Tasks.Parallel.Invoke(
+                // StaticMethodCookBook
+                () => {
+                    if (staticMethodCB != null && staticMethodDefs.Count > 0)
+                    {
+                        staticMethodCB.MyDefs.Clear();
+                        staticMethodCB.MyDefs.EnsureCapacity(staticMethodDefs.Count);
+                        
+                        foreach (var def in staticMethodDefs)
+                        {
+                            try
+                            {
+                                if (string.IsNullOrEmpty(def.BookTag)) continue;
+                                SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(def.BookTag);
+                                if (meth?.Method is MethodInfo mi)
+                                    staticMethodCB.MyDefs[mi] = def;
+                            }
+                            catch { }
+                        }
+                    }
+                },
+                // ObjectMethodCookBook
+                () => {
+                    if (objectMethodCB != null && objectMethodDefs.Count > 0)
+                    {
+                        objectMethodCB.MyDefs.Clear();
+                        objectMethodCB.MyDefs.EnsureCapacity(objectMethodDefs.Count);
+                        
+                        foreach (var def in objectMethodDefs)
+                        {
+                            try
+                            {
+                                if (string.IsNullOrEmpty(def.BookTag)) continue;
+                                SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(def.BookTag);
+                                if (meth?.Method is MethodInfo mi)
+                                    objectMethodCB.MyDefs[mi] = def;
+                            }
+                            catch { }
+                        }
+                    }
+                },
+                // ObjectFieldCookBook
+                () => {
+                    if (objectFieldCB != null && objectFieldDefs.Count > 0)
+                    {
+                        objectFieldCB.MyDefs.Clear();
+                        
+                        var byTag = new Dictionary<string, List<CookBook.NodeDef>>();
+                        foreach (var def in objectFieldDefs)
+                        {
+                            if (string.IsNullOrEmpty(def.BookTag)) continue;
+                            
+                            if (!byTag.TryGetValue(def.BookTag, out var list))
+                            {
+                                list = new List<CookBook.NodeDef>(2);
+                                byTag[def.BookTag] = list;
+                            }
+                            list.Add(def);
+                        }
+                        
+                        foreach (var kvp in byTag)
+                        {
+                            try
+                            {
+                                SerializedField field = JsonUtility.FromJson<SerializedField>(kvp.Key);
+                                if (field?.Field == null) continue;
+                                
+                                FieldInfo fi = field.Field;
+                                var defs = kvp.Value;
+                                
+                                var getDef = defs.FirstOrDefault(d => d.Name.IndexOf(".getf_", StringComparison.Ordinal) >= 0);
+                                var setDef = defs.FirstOrDefault(d => d.Name.IndexOf(".setf_", StringComparison.Ordinal) >= 0);
+                                
+                                if (getDef != null && setDef != null)
+                                    objectFieldCB.MyDefs[fi] = (getDef, setDef);
+                            }
+                            catch { }
+                        }
+                    }
+                }
+            );
+            
+            sw.Stop();
+            LoadingText.text = $"Loaded {AllNodeDefs.Count:N0} nodes from cache!";
+            Debug.Log($"[NoodleEditor] Loaded {AllNodeDefs.Count:N0} nodes from cache! Cookbook indices rebuilt in {sw.ElapsedMilliseconds}ms");
+            _collecting = false;
+        }
     }
 
     private bool _created = false;

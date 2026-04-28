@@ -15,7 +15,7 @@ using static NoodledEvents.CookBook.NodeDef;
 
 public class StaticMethodCookBook : CookBook
 {
-    private Dictionary<MethodInfo, NodeDef> MyDefs = new();
+    internal Dictionary<MethodInfo, NodeDef> MyDefs = new();
     public override void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback)
     {
         MyDefs.Clear();
