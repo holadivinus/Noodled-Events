@@ -15,7 +15,7 @@ using static NoodledEvents.CookBook.NodeDef;
 
 public class StaticMethodCookBook : CookBook
 {
-    internal Dictionary<MethodInfo, NodeDef> MyDefs = new();
+    internal List<NodeDef> MyDefs = new();
     public override void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback)
     {
         MyDefs.Clear();
@@ -104,7 +104,7 @@ public class StaticMethodCookBook : CookBook
                         searchTextOverride: searchText,
                         tooltipOverride: descriptiveText);
                     newDefs.Add(newDef);
-                    UltNoodleEditor.MainThread.Enqueue(() => MyDefs.Add(meth, newDef));
+                    UltNoodleEditor.MainThread.Enqueue(() => MyDefs.Add(newDef));
                 }
                 progressCallback.Invoke(newDefs, (++i / (float)UltNoodleEditor.SearchableTypes.Length));
             }
@@ -269,7 +269,9 @@ public class StaticMethodCookBook : CookBook
             
             foreach (var method in meths.Distinct())
             {
-                if (!MyDefs.TryGetValue(method, out NodeDef def)) continue;
+                var bookTag = SerializedMethod.GetBookTag(method);
+                var def = MyDefs.Find(d => d.BookTag == bookTag);
+                if (def == default) continue;
 
                 // lets collapse each overload into a submenu!
                 // also collapse "Injected" methods
@@ -283,13 +285,20 @@ public class StaticMethodCookBook : CookBook
             }
             foreach (var prop in props)
             {
-                if (prop.CanRead && MyDefs.TryGetValue(prop.GetMethod, out NodeDef getter))
+                if (prop.CanRead)
                 {
-                    o.TryAdd(tName + "/Static/Properties/" + getter.SearchItem.text.Replace(".get_", ".").Split('(').First() + "/Get", getter);
+                    string getterBookTag = SerializedMethod.GetBookTag(prop.GetMethod);
+                    var getter = MyDefs.Find(p => p.BookTag == getterBookTag);
+                    if (getter != default)
+                        o.TryAdd(tName + "/Static/Properties/" + getter.SearchItem.text.Replace(".get_", ".").Split('(').First() + "/Get", getter);
                 }
-                if (prop.CanWrite && MyDefs.TryGetValue(prop.SetMethod, out NodeDef setter))
+                
+                if (prop.CanWrite)
                 {
-                    o.TryAdd(tName + "/Static/Properties/" + setter.SearchItem.text.Replace(".set_", ".").Split('(').First() + "/Set", setter);
+                    string setterBookTag = SerializedMethod.GetBookTag(prop.SetMethod);
+                    var setter = MyDefs.Find(p => p.BookTag == setterBookTag);
+                    if (setter != default)
+                        o.TryAdd(tName + "/Static/Properties/" + setter.SearchItem.text.Replace(".set_", ".").Split('(').First() + "/Set", setter);
                 }
             }
         }

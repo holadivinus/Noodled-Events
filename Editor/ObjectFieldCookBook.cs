@@ -14,7 +14,7 @@ using static NoodledEvents.CookBook.NodeDef;
 
 public class ObjectFieldCookBook : CookBook
 {
-    internal Dictionary<FieldInfo, (NodeDef, NodeDef)> MyDefs = new();
+    internal List<(NodeDef, NodeDef)> MyDefs = new();
     public override void CollectDefs(Action<IEnumerable<NodeDef>, float> progressCallback, Action completedCallback)
     {
         MyDefs.Clear();
@@ -57,7 +57,7 @@ public class ObjectFieldCookBook : CookBook
                         tooltipOverride: $"{t.Namespace}.{t.GetFriendlyName()}.setf_{field.Name} (Reflection), {t.Assembly.FullName.Split(',')[0]}")
                     );
                     newDefs.Add(setter);
-                    UltNoodleEditor.MainThread.Enqueue(() => MyDefs.Add(field, (getter, setter)));
+                    UltNoodleEditor.MainThread.Enqueue(() => MyDefs.Add((getter, setter)));
                 }
                 progressCallback.Invoke(newDefs, (++i / (float)UltNoodleEditor.SearchableTypes.Length));
             }
@@ -320,12 +320,10 @@ public class ObjectFieldCookBook : CookBook
             {
                 if (field.DeclaringType != t) continue;
 
-                // reflection :)
-                //if (!(typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType) || field.FieldType == typeof(string) || field.FieldType == typeof(int) || field.FieldType == typeof(float) || field.FieldType == typeof(bool))) continue;
-                //if (field.GetCustomAttribute<NonSerializedAttribute>() != null) continue;
-                //if (!(field.IsPublic || field.GetCustomAttribute<SerializeField>() != null)) continue;
+                var bookTag = SerializedField.GetBookTag(field);
 
-                if (!MyDefs.TryGetValue(field, out (NodeDef, NodeDef) nodes)) continue;
+                var nodes = MyDefs.Find(nd => nd.Item1.BookTag == bookTag);
+                if (nodes == default((NodeDef, NodeDef))) continue;
 
                 if (!field.IsStatic)
                 {

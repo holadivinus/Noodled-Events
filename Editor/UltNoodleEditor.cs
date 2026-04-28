@@ -317,12 +317,8 @@ public class UltNoodleEditor : EditorWindow
             
             var sw = System.Diagnostics.Stopwatch.StartNew();
             
-            var staticMethodDefs = new List<CookBook.NodeDef>();
-            var objectMethodDefs = new List<CookBook.NodeDef>();
             var objectFieldDefs = new List<CookBook.NodeDef>();
             
-            StaticMethodCookBook staticMethodCB = null;
-            ObjectMethodCookBook objectMethodCB = null;
             ObjectFieldCookBook objectFieldCB = null;
             
             foreach (var def in AllNodeDefs)
@@ -330,12 +326,10 @@ public class UltNoodleEditor : EditorWindow
                 switch (def.CookBook)
                 {
                     case StaticMethodCookBook smCb:
-                        if (staticMethodCB == null) staticMethodCB = smCb;
-                        staticMethodDefs.Add(def);
+                        smCb.MyDefs.Add(def);
                         break;
                     case ObjectMethodCookBook omCb:
-                        if (objectMethodCB == null) objectMethodCB = omCb;
-                        objectMethodDefs.Add(def);
+                        omCb.MyDefs.Add(def);
                         break;
                     case ObjectFieldCookBook ofCb:
                         if (objectFieldCB == null) objectFieldCB = ofCb;
@@ -345,83 +339,33 @@ public class UltNoodleEditor : EditorWindow
             }
             
             System.Threading.Tasks.Parallel.Invoke(
-                // StaticMethodCookBook
-                () => {
-                    if (staticMethodCB != null && staticMethodDefs.Count > 0)
-                    {
-                        staticMethodCB.MyDefs.Clear();
-                        staticMethodCB.MyDefs.EnsureCapacity(staticMethodDefs.Count);
-                        
-                        foreach (var def in staticMethodDefs)
-                        {
-                            try
-                            {
-                                if (string.IsNullOrEmpty(def.BookTag)) continue;
-                                SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(def.BookTag);
-                                if (meth?.Method is MethodInfo mi)
-                                    staticMethodCB.MyDefs[mi] = def;
-                            }
-                            catch { }
-                        }
-                    }
-                },
-                // ObjectMethodCookBook
-                () => {
-                    if (objectMethodCB != null && objectMethodDefs.Count > 0)
-                    {
-                        objectMethodCB.MyDefs.Clear();
-                        objectMethodCB.MyDefs.EnsureCapacity(objectMethodDefs.Count);
-                        
-                        foreach (var def in objectMethodDefs)
-                        {
-                            try
-                            {
-                                if (string.IsNullOrEmpty(def.BookTag)) continue;
-                                SerializedMethod meth = JsonUtility.FromJson<SerializedMethod>(def.BookTag);
-                                if (meth?.Method is MethodInfo mi)
-                                    objectMethodCB.MyDefs[mi] = def;
-                            }
-                            catch { }
-                        }
-                    }
-                },
                 // ObjectFieldCookBook
                 () => {
-                    if (objectFieldCB != null && objectFieldDefs.Count > 0)
+                    if (objectFieldCB == null || objectFieldDefs.Count <= 0)
+                        return;
+
+                    objectFieldCB.MyDefs.Clear();
+                        
+                    var byTag = new Dictionary<string, List<CookBook.NodeDef>>();
+                    foreach (var def in objectFieldDefs)
                     {
-                        objectFieldCB.MyDefs.Clear();
+                        if (string.IsNullOrEmpty(def.BookTag)) continue;
                         
-                        var byTag = new Dictionary<string, List<CookBook.NodeDef>>();
-                        foreach (var def in objectFieldDefs)
+                        if (!byTag.TryGetValue(def.BookTag, out var list))
                         {
-                            if (string.IsNullOrEmpty(def.BookTag)) continue;
-                            
-                            if (!byTag.TryGetValue(def.BookTag, out var list))
-                            {
-                                list = new List<CookBook.NodeDef>(2);
-                                byTag[def.BookTag] = list;
-                            }
-                            list.Add(def);
+                            list = new List<CookBook.NodeDef>(2);
+                            byTag[def.BookTag] = list;
                         }
+                        list.Add(def);
+                    }
+                    
+                    foreach (var kvp in byTag)
+                    {
+                        var getDef = kvp.Value.FirstOrDefault(d => d.Name.IndexOf(".getf_", StringComparison.Ordinal) >= 0);
+                        var setDef = kvp.Value.FirstOrDefault(d => d.Name.IndexOf(".setf_", StringComparison.Ordinal) >= 0);
                         
-                        foreach (var kvp in byTag)
-                        {
-                            try
-                            {
-                                SerializedField field = JsonUtility.FromJson<SerializedField>(kvp.Key);
-                                if (field?.Field == null) continue;
-                                
-                                FieldInfo fi = field.Field;
-                                var defs = kvp.Value;
-                                
-                                var getDef = defs.FirstOrDefault(d => d.Name.IndexOf(".getf_", StringComparison.Ordinal) >= 0);
-                                var setDef = defs.FirstOrDefault(d => d.Name.IndexOf(".setf_", StringComparison.Ordinal) >= 0);
-                                
-                                if (getDef != null && setDef != null)
-                                    objectFieldCB.MyDefs[fi] = (getDef, setDef);
-                            }
-                            catch { }
-                        }
+                        if (getDef != null && setDef != null)
+                            objectFieldCB.MyDefs.Add((getDef, setDef));
                     }
                 }
             );
