@@ -76,6 +76,8 @@ public class UltNoodleEditor : EditorWindow
         StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{EditorFolder}/Styles/UltNoodleEditor.uss");
         root.styleSheets.Add(styleSheet);
 
+        UltNoodleTheme.ApplyThemeSheet(root);
+
         EditorApplication.update += OnUpdate;
         void contextChanged(bool resetViews = true)
         {

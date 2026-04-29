@@ -112,7 +112,7 @@ public class UltNoodleNodeView : Node
             var port = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, null);
             port.portName = string.IsNullOrEmpty(fi.Name) ? "Flow In" : fi.Name;
             port.userData = fi;
-            port.portColor = Color.white;
+            port.portColor = UltNoodleTheme.FlowPortColor;
 
             var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
             var connector = new EdgeConnector<Edge>(listener);
@@ -127,7 +127,7 @@ public class UltNoodleNodeView : Node
             var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, null);
             port.portName = string.IsNullOrEmpty(fo.Name) ? "Flow Out" : fo.Name;
             port.userData = fo;
-            port.portColor = Color.white;
+            port.portColor = UltNoodleTheme.FlowPortColor;
 
             var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
             var connector = new EdgeConnector<Edge>(listener);

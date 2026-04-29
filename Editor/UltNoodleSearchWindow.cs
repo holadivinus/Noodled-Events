@@ -83,6 +83,8 @@ public class UltNoodleSearchWindow : EditorWindow
         StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{UltNoodleEditor.EditorFolder}/Styles/UltNoodleSearchWindow.uss");
         root.styleSheets.Add(styleSheet);
 
+        UltNoodleTheme.ApplyThemeSheet(root);
+
         _searchMenu = root.Q<VisualElement>("SearchMenu");
         _searchBar = _searchMenu.Q<TextField>("SearchBar");
         _searchText = _searchMenu.Q<Label>("SearchText");
