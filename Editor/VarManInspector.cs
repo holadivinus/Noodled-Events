@@ -5,6 +5,7 @@ using System.Linq;
 using UltEvents;
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace NoodledEvents.Assets.Noodled_Events
@@ -19,6 +20,30 @@ namespace NoodledEvents.Assets.Noodled_Events
         private bool _settings;
         // List of "UI_ListElement", which handles modifying & applying vars
         public ScrollView VarList;
+        
+        private Dictionary<PersistentArgumentType, Type> Typz = new Dictionary<PersistentArgumentType, Type>()
+        {
+            { PersistentArgumentType.Int, typeof(int)},
+            { PersistentArgumentType.Float, typeof(float)},
+            { PersistentArgumentType.Bool, typeof(bool) },
+            { PersistentArgumentType.String, typeof(string) },
+            { PersistentArgumentType.Object, typeof(UnityEngine.Object) },
+            { PersistentArgumentType.Vector2, typeof(Vector2) },
+            { PersistentArgumentType.Vector3, typeof(Vector3) },
+            { PersistentArgumentType.Color, typeof(Color) },
+        };
+        private Dictionary<string, PersistentArgumentType> TypeNames = new Dictionary<string, PersistentArgumentType>()
+        {
+            { "int", PersistentArgumentType.Int },
+            { "float", PersistentArgumentType.Float },
+            { "bool", PersistentArgumentType.Bool },
+            { "string", PersistentArgumentType.String },
+            { "obj", PersistentArgumentType.Object },
+            { "vector2", PersistentArgumentType.Vector2 },
+            { "vector3", PersistentArgumentType.Vector3 },
+            { "color", PersistentArgumentType.Color },
+        };
+
         public override VisualElement CreateInspectorGUI()
         {
             myMan = (VarMan)target;
@@ -29,61 +54,26 @@ namespace NoodledEvents.Assets.Noodled_Events
 
             var varNamer = myInspector.Q<TextField>("NewVarName");
 
-            myInspector.Q<Button>("bool").clicked += () =>
+            foreach (var pair in TypeNames)
             {
-                var @new = new NoodleDataInput();
-                @new.Name = varNamer.value;
-                @new.ConstInput = PersistentArgumentType.Bool;
+                myInspector.Q<Button>(pair.Key).clicked += () =>
+                {
+                    if (myMan.Vars.Any(v => v.Name == varNamer.value))
+                    {
+                        EditorUtility.DisplayDialog("Duplicate Var Name", $"A variable with the name \"{varNamer.value}\" already exists! Please choose a different name.", "OK");
+                        return;
+                    }
 
-                myMan.Vars = myMan.Vars.Append(@new).ToArray();
-                EditorUtility.SetDirty(myMan); PrefabUtility.RecordPrefabInstancePropertyModifications(myMan);
-                varNamer.value = "";
-                RegenList();
-            };
-            myInspector.Q<Button>("string").clicked += () =>
-            {
-                var @new = new NoodleDataInput();
-                @new.Name = varNamer.value;
-                @new.ConstInput = PersistentArgumentType.String;
+                    var @new = new NoodleDataInput();
+                    @new.Name = varNamer.value;
+                    @new.ConstInput = pair.Value;
 
-                myMan.Vars = myMan.Vars.Append(@new).ToArray();
-                EditorUtility.SetDirty(myMan); PrefabUtility.RecordPrefabInstancePropertyModifications(myMan);
-                varNamer.value = "";
-                RegenList();
-            };
-            myInspector.Q<Button>("float").clicked += () =>
-            {
-                var @new = new NoodleDataInput();
-                @new.Name = varNamer.value;
-                @new.ConstInput = PersistentArgumentType.Float;
-
-                myMan.Vars = myMan.Vars.Append(@new).ToArray();
-                EditorUtility.SetDirty(myMan); PrefabUtility.RecordPrefabInstancePropertyModifications(myMan);
-                varNamer.value = "";
-                RegenList();
-            };
-            myInspector.Q<Button>("int").clicked += () =>
-            {
-                var @new = new NoodleDataInput();
-                @new.Name = varNamer.value;
-                @new.ConstInput = PersistentArgumentType.Int;
-
-                myMan.Vars = myMan.Vars.Append(@new).ToArray();
-                EditorUtility.SetDirty(myMan); PrefabUtility.RecordPrefabInstancePropertyModifications(myMan);
-                varNamer.value = "";
-                RegenList();
-            };
-            myInspector.Q<Button>("obj").clicked += () =>
-            {
-                var @new = new NoodleDataInput();
-                @new.Name = varNamer.value;
-                @new.ConstInput = PersistentArgumentType.Object;
-
-                myMan.Vars = myMan.Vars.Append(@new).ToArray();
-                EditorUtility.SetDirty(myMan); PrefabUtility.RecordPrefabInstancePropertyModifications(myMan);
-                varNamer.value = "";
-                RegenList(); 
-            }; 
+                    myMan.Vars = myMan.Vars.Append(@new).ToArray();
+                    EditorUtility.SetDirty(myMan); PrefabUtility.RecordPrefabInstancePropertyModifications(myMan);
+                    varNamer.value = "";
+                    RegenList();
+                };
+            }
 
             var title = myInspector.Q<Label>("Title");
             myInspector.Q<ColorField>("FillSetting").RegisterValueChangedCallback(e => title.style.color = e.newValue);
@@ -134,20 +124,21 @@ namespace NoodledEvents.Assets.Noodled_Events
                 UltNoodleEditor.Editor?.GetType().GetMethod("OnFocus", UltEventUtils.AnyAccessBindings).Invoke(UltNoodleEditor.Editor, new object[] { });
             });
 
+            myInspector.Q<Button>("EnforceAllBT").clicked += () =>
+            {
+                foreach (var varrr in myMan.Vars)
+                    EnforceVar(varrr);
+            };
+
             RegenList();
             // Add a simple label.
             // Return the finished Inspector UI.
             return myInspector;
         }
-        private void AutoEnforce()
-        {
-            if (myMan.AutoEnforce)
-                foreach (var act in _forceClickers.Values)
-                    act.Invoke();
-        }
+
         public void RegenList()
         {
-            VarList.Clear(); _forceClickers.Clear();
+            VarList.Clear();
             foreach (var varrr in myMan.Vars)
             {
                 var SData = varrr;
@@ -163,7 +154,7 @@ namespace NoodledEvents.Assets.Noodled_Events
                             var t = new Toggle("");
                             vfr.Add(t);
                             t.value = SData.DefaultBoolValue;
-                            t.RegisterValueChangedCallback((e) => { SData.DefaultBoolValue = e.newValue; AutoEnforce(); });
+                            t.RegisterValueChangedCallback((e) => { SData.DefaultBoolValue = e.newValue; EnforceVar(SData, true); });
                             break;
                         }
                     case UltEvents.PersistentArgumentType.String:
@@ -171,7 +162,7 @@ namespace NoodledEvents.Assets.Noodled_Events
                             var t = new TextField("");
                             vfr.Add(t);
                             t.value = SData.DefaultStringValue;
-                            t.RegisterValueChangedCallback((e) => {SData.DefaultStringValue = e.newValue; AutoEnforce(); });
+                            t.RegisterValueChangedCallback((e) => {SData.DefaultStringValue = e.newValue; EnforceVar(SData, true); });
                             break;
                         }
                     case UltEvents.PersistentArgumentType.Int:
@@ -179,7 +170,7 @@ namespace NoodledEvents.Assets.Noodled_Events
                             var t = new IntegerField("");
                             vfr.Add(t);
                             t.value = SData.DefaultIntValue;
-                            t.RegisterValueChangedCallback((e) => {SData.DefaultIntValue = e.newValue; AutoEnforce(); });
+                            t.RegisterValueChangedCallback((e) => {SData.DefaultIntValue = e.newValue; EnforceVar(SData, true); });
                             break;
                         }
                     case UltEvents.PersistentArgumentType.Float:
@@ -187,7 +178,7 @@ namespace NoodledEvents.Assets.Noodled_Events
                             var t = new FloatField("");
                             vfr.Add(t);
                             t.value = SData.DefaultFloatValue;
-                            t.RegisterValueChangedCallback((e) => {SData.DefaultFloatValue = e.newValue; AutoEnforce(); });
+                            t.RegisterValueChangedCallback((e) => {SData.DefaultFloatValue = e.newValue; EnforceVar(SData, true); });
                             break;
                         }
                     case UltEvents.PersistentArgumentType.Object:
@@ -196,7 +187,31 @@ namespace NoodledEvents.Assets.Noodled_Events
                             t.objectType = typeof(UnityEngine.Object);
                             vfr.Add(t);
                             t.value = SData.DefaultObject;
-                            t.RegisterValueChangedCallback((e) => {SData.DefaultObject = e.newValue; AutoEnforce(); });
+                            t.RegisterValueChangedCallback((e) => {SData.DefaultObject = e.newValue; EnforceVar(SData, true); });
+                            break;
+                        }
+                    case PersistentArgumentType.Vector2:
+                        {
+                            var t = new Vector2Field("");
+                            vfr.Add(t);
+                            t.value = SData.DefaultVector2Value;
+                            t.RegisterValueChangedCallback((e) => { SData.DefaultVector2Value = e.newValue; EnforceVar(SData, true); });
+                            break;
+                        }
+                    case PersistentArgumentType.Vector3:
+                        {
+                            var t = new Vector3Field("");
+                            vfr.Add(t);
+                            t.value = SData.DefaultVector3Value;
+                            t.RegisterValueChangedCallback((e) => { SData.DefaultVector3Value = e.newValue; EnforceVar(SData, true); });
+                            break;
+                        }
+                    case UltEvents.PersistentArgumentType.Color:
+                        {
+                            var t = new ColorField("");
+                            vfr.Add(t);
+                            t.value = SData.DefaultColorValue;
+                            t.RegisterValueChangedCallback((e) => { SData.DefaultColorValue = e.newValue; EnforceVar(SData, true); });
                             break;
                         }
                     default:
@@ -227,42 +242,39 @@ namespace NoodledEvents.Assets.Noodled_Events
                 if (myMan.AutoEnforce)
                     bt.style.display = DisplayStyle.None;
 
-                Action btAct = () => 
+                entry.Q<Button>("EnforceBT").clicked += () =>
                 {
-                    foreach (var bowl in myMan.GetComponentsInChildren<SerializedBowl>(true))
-                    {
-                        bool needsComp = false;
-                        foreach (var node in bowl.NodeDatas)
-                            foreach (var input in node.DataInputs)
-                                if (input.Source == null && input.EditorConstName == SData.Name && input.Type.Type == SData.Type.Type)
-                                {
-                                    input.ValDefs = SData.ValDefs;
-                                    input.DefaultStringValue = SData.DefaultStringValue;
-                                    input.DefaultObject = SData.DefaultObject;
-                                    needsComp = true;
-                                    EditorUtility.SetDirty(bowl);
-                                    PrefabUtility.RecordPrefabInstancePropertyModifications(bowl);
-                                    if (!PrefabUtility.IsPartOfAnyPrefab(bowl) && UltNoodleEditor.Editor != null)
-                                        UltNoodleEditor.Editor.Bowls.FirstOrDefault(b => b.SerializedData == bowl)?.Validate();
-                                }
-                        if (needsComp)
-                        bowl.Compile();
-                    }
+                    EnforceVar(SData);
                 };
-                entry.Q<Button>("EnforceBT").clicked += btAct;
-                _forceClickers[bt] = btAct;
                 VarList.Add(entry);
             }
         }
-        private Dictionary<Button, Action> _forceClickers = new();
-        private Dictionary<PersistentArgumentType, Type> Typz = new Dictionary<PersistentArgumentType, Type>()
+
+        private void EnforceVar(NoodleDataInput nDi, bool checkAuto = false)
         {
-            { PersistentArgumentType.Int, typeof(int)},
-            { PersistentArgumentType.Float, typeof(float)},
-            { PersistentArgumentType.Bool, typeof(bool) },
-            { PersistentArgumentType.String, typeof(string) },
-            { PersistentArgumentType.Object, typeof(UnityEngine.Object) }
-        };
+            if (checkAuto && !myMan.AutoEnforce)
+                return;
+
+            foreach (var bowl in myMan.GetComponentsInChildren<SerializedBowl>(true))
+            {
+                bool needsComp = false;
+                foreach (var node in bowl.NodeDatas)
+                    foreach (var input in node.DataInputs)
+                        if (input.Source == null && input.EditorConstName == nDi.Name && input.Type.Type == nDi.Type.Type)
+                        {
+                            input.ValDefs = nDi.ValDefs;
+                            input.DefaultStringValue = nDi.DefaultStringValue;
+                            input.DefaultObject = nDi.DefaultObject;
+                            needsComp = true;
+                            EditorUtility.SetDirty(bowl);
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(bowl);
+                            if (!PrefabUtility.IsPartOfAnyPrefab(bowl) && UltNoodleEditor.Editor != null)
+                                UltNoodleEditor.Editor.Bowls.FirstOrDefault(b => b.SerializedData == bowl)?.Validate();
+                        }
+                if (needsComp)
+                    bowl.Compile();
+            }
+        }
     }
 }
 

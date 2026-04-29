@@ -48,15 +48,15 @@ public class UltNoodleSearchWindow : EditorWindow
         if (edge.output != null)
         {
             if (edge.output.userData is not NoodleDataOutput dataOut) return Open(graphView, screenPos); // fallback to generic search
-            return InternalOpen(graphView, screenPos, dataOut.Type);
+            return InternalOpen(graphView, screenPos, dataOut.Type, false);
         } else
         {
             if (edge.input.userData is not NoodleDataInput dataIn) return Open(graphView, screenPos); // fallback to generic search
-            return InternalOpen(graphView, screenPos, dataIn.Type, false);
+            return InternalOpen(graphView, screenPos, dataIn.Type, true);
         }
     }
 
-    private static UltNoodleSearchWindow InternalOpen(UltNoodleTreeView graphView, Vector2 screenPos, Type filterType, bool filterDir = true)
+    private static UltNoodleSearchWindow InternalOpen(UltNoodleTreeView graphView, Vector2 screenPos, Type filterType, bool filterIsInput = true)
     {
         _activeWindow?.Close();
         _activeWindow = null;
@@ -66,7 +66,7 @@ public class UltNoodleSearchWindow : EditorWindow
         window._pendingScreenPos = screenPos;
         window.position = new Rect(-10000, -10000, 1, 1); // hide until uxml loads and we can size properly
         if (filterType != null)
-            window.SetSearchFilter(filterDir, filterType);
+            window.SetSearchFilter(filterIsInput, filterType);
         else
             window.FilteredNodeDefs = UltNoodleEditor.AllNodeDefs;
         window.ShowPopup();
@@ -82,6 +82,8 @@ public class UltNoodleSearchWindow : EditorWindow
 
         StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{UltNoodleEditor.EditorFolder}/Styles/UltNoodleSearchWindow.uss");
         root.styleSheets.Add(styleSheet);
+
+        UltNoodleTheme.ApplyThemeSheet(root);
 
         _searchMenu = root.Q<VisualElement>("SearchMenu");
         _searchBar = _searchMenu.Q<TextField>("SearchBar");
@@ -145,6 +147,15 @@ public class UltNoodleSearchWindow : EditorWindow
         });
         _settingsMenu.Add(spcToggle);
 
+        Toggle showParamsToggle = new Toggle("Show Parameters");
+        showParamsToggle.value = EditorPrefs.GetBool("ShowParamsInSearch", false);
+        showParamsToggle.RegisterValueChangedCallback((evt) =>
+        {
+            EditorPrefs.SetBool("ShowParamsInSearch", evt.newValue);
+            SearchTypes(100); // refresh to update search text
+        });
+        _settingsMenu.Add(showParamsToggle);
+
         foreach (var cbType in UltNoodleEditor.AllBooks.Select(b => b.GetType()).Distinct())
         {
             var cbToggle = new Toggle(cbType.Name.Replace("CookBook", ""));
@@ -174,7 +185,7 @@ public class UltNoodleSearchWindow : EditorWindow
         ForceClose();
     }
 
-    private void SetSearchFilter(bool pinIn, Type t)
+    private void SetSearchFilter(bool fromPinIsInput, Type t)
     {
         // lets cache the searchables
 
@@ -188,11 +199,11 @@ public class UltNoodleSearchWindow : EditorWindow
         {
             try
             {
-                foreach (var pin in pinIn ? node.Inputs : node.Outputs)
+                foreach (var pin in fromPinIsInput ? node.Outputs : node.Inputs)
                 {
                     if (pin.Flow) continue;
 
-                    if ((pinIn ? pin.Type : t).IsAssignableFrom(pinIn ? t : pin.Type))
+                    if ((fromPinIsInput ? pin.Type : t).IsAssignableFrom(fromPinIsInput ? t : pin.Type))
                     {
                         FilteredNodeDefs.Add(node);
                         break;
@@ -204,8 +215,8 @@ public class UltNoodleSearchWindow : EditorWindow
 
         FilteredNodeDefs.Sort((a, b) =>
         {
-            var aTs = pinIn ? a.Inputs : a.Outputs;
-            var bTs = pinIn ? b.Inputs : b.Outputs;
+            var aTs = fromPinIsInput ? a.Inputs : a.Outputs;
+            var bTs = fromPinIsInput ? b.Inputs : b.Outputs;
             bool aHasT = aTs.Any(p => p.Type == t);
             bool bHasT = bTs.Any(p => p.Type == t);
             if (aHasT && !bHasT) return -1;

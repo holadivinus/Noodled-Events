@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using TMPro;
 using UltEvents;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.UIElements;
@@ -309,7 +310,17 @@ namespace NoodledEvents
 
                         UltNoodleSearchWindow.ForceClose();
                     });
-                    o.text = searchTextOverride == string.Empty ? def.Name : searchTextOverride;
+
+                    string staticStr = def.CookBook is StaticMethodCookBook ? "static " : "";
+                    string parameters = string.Join(", ", def.Inputs.Where(i => i.Type != null).Select(i => i.Type.Name));
+                    string outputs = string.Join(", ", def.Outputs.Where(o => o.Type != null).Select(o => o.Type.Name));
+                    string completeSearchText = $"{staticStr}{def.Name} ({parameters}) -> ({outputs})";
+
+                    def.searchTextParameters = completeSearchText;
+
+                    string buttonText = EditorPrefs.GetBool("ShowParamsInSearch", true) ? def.searchTextParameters : def.Name;
+
+                    o.text = searchTextOverride == string.Empty ? completeSearchText : searchTextOverride;
                     o.tooltip = tooltipOverride == string.Empty ? o.text : tooltipOverride;
                     return o;
                 }){ BookTag = bookTag; }
@@ -321,6 +332,8 @@ namespace NoodledEvents
             public string BookTag;
             public Func<SerializedNode> CreateNode;
             private Func<NodeDef, Button> createSearchItem;
+            
+            private string searchTextParameters;
             public Button SearchItem
             {
                 get
@@ -329,7 +342,11 @@ namespace NoodledEvents
                     {
                         _searchItem = createSearchItem.Invoke(this);
                         _searchItem.style.unityTextAlign = TextAnchor.MiddleLeft;
-                    } return _searchItem;
+                    }
+
+                    string buttonText = EditorPrefs.GetBool("ShowParamsInSearch", true) ? searchTextParameters : Name;
+                    _searchItem.text = buttonText;
+                    return _searchItem;
                 }
             }
             private Button _searchItem;

@@ -112,7 +112,7 @@ public class UltNoodleNodeView : Node
             var port = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, null);
             port.portName = string.IsNullOrEmpty(fi.Name) ? "Flow In" : fi.Name;
             port.userData = fi;
-            port.portColor = Color.white;
+            port.portColor = UltNoodleTheme.FlowPortColor;
 
             var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
             var connector = new EdgeConnector<Edge>(listener);
@@ -127,7 +127,7 @@ public class UltNoodleNodeView : Node
             var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, null);
             port.portName = string.IsNullOrEmpty(fo.Name) ? "Flow Out" : fo.Name;
             port.userData = fo;
-            port.portColor = Color.white;
+            port.portColor = UltNoodleTheme.FlowPortColor;
 
             var listener = new UltNoodleEdgeConnectorListener(UltNoodleEditor.Editor.TreeView);
             var connector = new EdgeConnector<Edge>(listener);
@@ -356,7 +356,7 @@ public class UltNoodleNodeView : Node
             }
 
             // only rebuild if we changed from const to varman or vice versa
-            if ((prev == "" && now != "") || (prev != "" && now == ""))
+            if (string.IsNullOrEmpty(prev) != string.IsNullOrEmpty(now))
                 RebuildConstantField(input);
         });
         dropdown.value = string.IsNullOrEmpty(input.EditorConstName) ? "" : input.EditorConstName;
@@ -544,10 +544,21 @@ public class UltNoodleNodeView : Node
         foreach (var port in _dataOutputs.Values) yield return port;
     }
 
-    public Port GetPortByName(string name, Direction dir)
+    public Port GetPortById(string id, Direction dir)
     {
         var search = dir == Direction.Input ? _flowInputs.Values.Concat(_dataInputs.Values) : _flowOutputs.Values.Concat(_dataOutputs.Values);
-        return search.FirstOrDefault(p => p.portName == name);
+        return search.FirstOrDefault(p =>
+        {
+            string portId = p?.userData switch
+            {
+                NoodleFlowOutput fo => fo.ID,
+                NoodleFlowInput fi => fi.ID,
+                NoodleDataOutput dout => dout.ID,
+                NoodleDataInput din => din.ID,
+                _ => null
+            };
+            return p != null && portId == id;
+        });
     }
 
     public void RebuildConstantField(NoodleDataInput input)

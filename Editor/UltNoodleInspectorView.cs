@@ -24,7 +24,8 @@ public class UltNoodleInspectorView : VisualElement
                 style = {
                     fontSize = 14,
                     marginTop = 12,
-                    unityTextAlign = TextAnchor.MiddleCenter
+                    unityTextAlign = TextAnchor.MiddleCenter,
+                    color = UltNoodleTheme.TextPrimary
                 }
             };
             Add(label);
@@ -42,7 +43,8 @@ public class UltNoodleInspectorView : VisualElement
                 unityFontStyleAndWeight = FontStyle.Bold,
                 fontSize = 16,
                 marginBottom = 12,
-                unityTextAlign = TextAnchor.MiddleCenter
+                unityTextAlign = TextAnchor.MiddleCenter,
+                color = UltNoodleTheme.TextPrimary
             }
         };
 
@@ -95,7 +97,8 @@ public class UltNoodleInspectorView : VisualElement
                 unityFontStyleAndWeight = FontStyle.Bold,
                 fontSize = 14,
                 marginBottom = 8,
-                unityTextAlign = TextAnchor.MiddleCenter
+                unityTextAlign = TextAnchor.MiddleCenter,
+                color = UltNoodleTheme.TextPrimary
             }
         };
         Add(titleLabel);
@@ -112,7 +115,8 @@ public class UltNoodleInspectorView : VisualElement
                 style =
                 {
                     flexGrow = 1,
-                    unityTextAlign = TextAnchor.MiddleLeft
+                    unityTextAlign = TextAnchor.MiddleLeft,
+                    color = UltNoodleTheme.TextSecondary
                 }
             };
             row.Add(label);
@@ -135,7 +139,7 @@ public class UltNoodleInspectorView : VisualElement
             else
             {
                 var constLabel = new Label($"({input.Type.Type.Name})");
-                constLabel.style.color = new StyleColor(Color.gray);
+                constLabel.style.color = new StyleColor(UltNoodleTheme.TextSecondary);
                 row.Add(constLabel);
             }
 
@@ -146,7 +150,7 @@ public class UltNoodleInspectorView : VisualElement
         {
             var noInputsLabel = new Label("No data inputs");
             noInputsLabel.style.unityFontStyleAndWeight = FontStyle.Italic;
-            noInputsLabel.style.color = new StyleColor(Color.gray);
+            noInputsLabel.style.color = new StyleColor(UltNoodleTheme.TextSecondary);
             Add(noInputsLabel);
         }
     }
@@ -160,7 +164,8 @@ public class UltNoodleInspectorView : VisualElement
                 unityFontStyleAndWeight = FontStyle.Bold,
                 fontSize = 14,
                 marginBottom = 8,
-                unityTextAlign = TextAnchor.MiddleCenter
+                unityTextAlign = TextAnchor.MiddleCenter,
+                color = UltNoodleTheme.TextPrimary
             }
         };
         Add(titleLabel);
@@ -177,13 +182,14 @@ public class UltNoodleInspectorView : VisualElement
                 style =
                 {
                     flexGrow = 1,
-                    unityTextAlign = TextAnchor.MiddleLeft
+                    unityTextAlign = TextAnchor.MiddleLeft,
+                    color = UltNoodleTheme.TextSecondary
                 }
             };
             row.Add(label);
 
             var typeLabel = new Label($"({output.Type.Type.Name})");
-            typeLabel.style.color = new StyleColor(Color.gray);
+            typeLabel.style.color = new StyleColor(UltNoodleTheme.TextSecondary);
             row.Add(typeLabel);
 
             Add(row);
@@ -193,7 +199,7 @@ public class UltNoodleInspectorView : VisualElement
         {
             var noOutputsLabel = new Label("No data outputs");
             noOutputsLabel.style.unityFontStyleAndWeight = FontStyle.Italic;
-            noOutputsLabel.style.color = new StyleColor(Color.gray);
+            noOutputsLabel.style.color = new StyleColor(UltNoodleTheme.TextSecondary);
             Add(noOutputsLabel);
         }
     }

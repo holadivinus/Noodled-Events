@@ -65,7 +65,7 @@ public class UltNoodleBowl
     public void Validate()
     {
         if (_component == null //kms if no evt
-            || (Selection.activeGameObject != SerializedData.gameObject && EditorPrefs.GetBool("SelectedBowlsOnly", true)) // kms if unselected
+            || !SerializedData.IsSelected() // kms if unselected
             || !(UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage()?.IsPartOfPrefabContents(SerializedData.gameObject) ?? true)) // kms if not in a prefab when prefab mode is active
         {
             _editor.Bowls.Remove(this);

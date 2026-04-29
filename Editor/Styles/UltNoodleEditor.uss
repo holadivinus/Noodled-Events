@@ -1,37 +1,30 @@
-GridBackground 
-{    
-    --grid-background-color: rgb(28, 28, 28);
-    --line-color: rgba(88, 92, 78, 0.1);
-    --thick-line-color: rgba(88, 92, 78, 0.1);
-    --spacing: 15;
+GridBackground {
+  --grid-background-color: var(--ult-grid-background-color);
+  --line-color: var(--ult-line-color);
+  --thick-line-color: var(--ult-thick-line-color);
+  --spacing: 15;
 }
 
-.ult-node-button-container
-{
-    justify-content: flex-end;
-    padding-left: 4px;
-    padding-right: 4px;
+.ult-node-button-container {
+  justify-content: flex-end;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
-.ult-node-button
-{
-    background-color: transparent;
-    width: 20px;
-    
-    flex-direction: column;
-    justify-content: center;
+.ult-node-button {
+  background-color: transparent;
+  width: 20px;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.ult-node-button-icon
-{
-    align-self: center;
-    width: 16px;
-    height: 16px;
-    opacity: 0.5;
+.ult-node-button-icon {
+  align-self: center;
+  width: 16px;
+  height: 16px;
+  opacity: 0.5;
 }
 
-.ult-node-button-icon-hover
-{
-    background-color: rgba(43, 43, 43, 1);
-    opacity: 1;
+.ult-secondary-text {
+  color: var(--ult-text-secondary);
 }
