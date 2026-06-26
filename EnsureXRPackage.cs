@@ -17,10 +17,32 @@ namespace NoodledEvents
     static class EnsureXRPackage
     {
         private static Dictionary<Type, List<FieldInfo>> TypeToUltFields = new();
+
+        public static bool HasPackage(string packageName)
+        {
+            string manifest = File.ReadAllText("Packages/manifest.json");
+            return manifest.Contains($"\"{packageName}\"");
+        }
+        
         static EnsureXRPackage()
         {
-            // Soft Dependancies
-            Client.AddAndRemove(new string[] { "https://github.com/holadivinus/BLXRComp.git", "https://github.com/holadivinus/MarrowBuildHook.git" }, null);
+            // Soft DependanciesList<string> dependenciesToInstall = new();
+            if(!HasPackage("com.holadivinus.blxrcomp"))
+                dependenciesToInstall.Add("https://github.com/holadivinus/BLXRComp.git");
+
+            if(!HasPackage("com.holadivinus.marrowbuildhook"))
+                dependenciesToInstall.Add("https://github.com/holadivinus/MarrowBuildHook.git");
+
+            if (dependenciesToInstall.Count != 0)
+            {
+                string dependenciesString = "";
+                foreach(string dep in dependenciesToInstall) dependenciesString += $"{dep} \n";
+                
+                bool didInstall = EditorUtility.DisplayDialog("Noodled Events", $"Noodled Events is missing the following dependencies: \n {dependenciesString}", "Install", "Cancel");
+
+                if (didInstall)
+                    Client.AddAndRemove(dependenciesToInstall.ToArray(), null);
+            }
 
 
             // also fix up MathUtilities.cs
