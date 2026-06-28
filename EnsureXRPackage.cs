@@ -26,7 +26,8 @@ namespace NoodledEvents
         
         static EnsureXRPackage()
         {
-            // Soft DependanciesList<string> dependenciesToInstall = new();
+            // Soft Dependancies
+            List<string> dependenciesToInstall = new();
             if(!HasPackage("com.holadivinus.blxrcomp"))
                 dependenciesToInstall.Add("https://github.com/holadivinus/BLXRComp.git");
 
