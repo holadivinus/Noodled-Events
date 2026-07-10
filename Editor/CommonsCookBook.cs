@@ -21,7 +21,7 @@ public class CommonsCookBook : CookBook
         // flow.if
         allDefs.Add(new NodeDef(this, "flow.if",
             inputs: () => new[] { new Pin("Exec"), new Pin("condition", typeof(bool)) },
-            outputs: () => new[] { new Pin("true"), new Pin("false") },
+            outputs: () => new[] { new Pin("true"), new Pin("false"), new Pin("post-if") },
             bookTag: "if"));
 
         // flow.redirect
@@ -454,8 +454,15 @@ public class CommonsCookBook : CookBook
                 }
                 return;
             case "if":
-                // if statementtt :/
+                // if statementtt! :)
                 // requires two evts, one for true 1 for false
+                // and now one more for post-if stuff. Need to figure out how to not make it throw an out of bounds exception
+
+                if(node.FlowOutputs.Length == 2) // add one to make it three, or else it will throw error. I have no idea what im doing. Maybe a generalized way to ensure the proper amount of outputs on every node that compiles would be cool
+                {
+                    node.AddFlowOut("post-if");
+                    // This seems to work for now though.
+                }
 
                 // oh if it's const just generate in the same event
                 if (node.DataInputs[0].Source == null)
@@ -464,54 +471,96 @@ public class CommonsCookBook : CookBook
                     var next = node.FlowOutputs[node.DataInputs[0].DefaultBoolValue ? 0 : 1];
                     if (next.Target != null)
                         next.Target.Node.Book.CompileNode(evt, next.Target.Node, dataRoot);
+
+                    var postIf = node.FlowOutputs[2];
+                    if(postIf.Target != null)
+                        postIf.Target.Node.Book.CompileNode(evt, postIf.Target.Node, dataRoot);
                     return;
                 }
-                var onTrue = new GameObject("if True", typeof(LifeCycleEvents)).GetComponent<LifeCycleEvents>();
-                onTrue.transform.parent = dataRoot;
-                onTrue.gameObject.SetActive(false);
-                onTrue.EnableEvent.EnsurePCallList();
-                onTrue.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
-                var onFalse = new GameObject("if False", typeof(LifeCycleEvents)).GetComponent<LifeCycleEvents>();
-                onFalse.transform.parent = dataRoot;
-                onFalse.gameObject.SetActive(false);
-                onFalse.EnableEvent.EnsurePCallList();
-                onFalse.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+
+                // Weird edge case where both true and false point to the same node. #uselessoptimizations
+                if (node.FlowOutputs[0].Target == node.FlowOutputs[1].Target && node.FlowOutputs[0].Target != null)
+                {
+                    var next = node.FlowOutputs[0];
+                        next.Target.Node.Book.CompileNode(evt, next.Target.Node, dataRoot);
+
+                    var postIf = node.FlowOutputs[2];
+                    if(postIf.Target != null)
+                        postIf.Target.Node.Book.CompileNode(evt, postIf.Target.Node, dataRoot);
+                    return;
+                }
+
+                LifeCycleEvents onTrue = null;
+                if (node.FlowOutputs[0].Target != null)
+                {
+                    onTrue = new GameObject("if True", typeof(LifeCycleEvents)).GetComponent<LifeCycleEvents>();
+                    onTrue.transform.parent = dataRoot;
+                    onTrue.gameObject.SetActive(false);
+                    onTrue.EnableEvent.EnsurePCallList();
+                    onTrue.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+                }
+                LifeCycleEvents onFalse = null;
+                if(node.FlowOutputs[1].Target != null)
+                {
+                    onFalse = new GameObject("if False", typeof(LifeCycleEvents)).GetComponent<LifeCycleEvents>();
+                    onFalse.transform.parent = dataRoot;
+                    onFalse.gameObject.SetActive(false);
+                    onFalse.EnableEvent.EnsurePCallList();
+                    onFalse.gameObject.AddComponent<LifeCycleEvtEditorRunner>();
+                }
 
 
                 if (node.DataInputs[0].Source != null) // condition varies
                 {
-                    var rs1 = new PersistentCall(SetActive, onTrue.gameObject);  // reset onTrue
-                    rs1.FSetArguments(new PersistentArgument(typeof(bool)));
-                    evt.PersistentCallsList.Add(rs1);
-                    var rs2 = new PersistentCall(SetActive, onFalse.gameObject); // reset onFalse
-                    rs2.FSetArguments(new PersistentArgument(typeof(bool)));
-                    evt.PersistentCallsList.Add(rs2);
+                    if (onTrue != null)
+                    {
+                        var rs1 = new PersistentCall(SetActive, onTrue.gameObject);  // reset onTrue
+                        rs1.FSetArguments(new PersistentArgument(typeof(bool)));
+                        evt.PersistentCallsList.Add(rs1);
+                    }
+                    if (onFalse != null)
+                    { 
+                        var rs2 = new PersistentCall(SetActive, onFalse.gameObject); // reset onFalse
+                        rs2.FSetArguments(new PersistentArgument(typeof(bool)));
+                        evt.PersistentCallsList.Add(rs2);
+                    }
 
                     int conditionSource = evt.PersistentCallsList.IndexOf(node.DataInputs[0].Source.CompCall);
 
                     //pcall for setting the "true" state
-                    var truCall = new PersistentCall(SetActive, onTrue.gameObject);
-                    truCall.FSetArguments(new PersistentArgument().ToRetVal(conditionSource, typeof(bool)));
-                    evt.PersistentCallsList.Add(truCall);
+                    if (onTrue != null)
+                    {
+                        var truCall = new PersistentCall(SetActive, onTrue.gameObject);
+                        truCall.FSetArguments(new PersistentArgument().ToRetVal(conditionSource, typeof(bool)));
+                        evt.PersistentCallsList.Add(truCall);
+                    }
+                    if (onFalse != null)
+                    {
+                        //pcall to invert the state for the falser
+                        var invCall = new PersistentCall();
+                        invCall.FSetMethodName("System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Equals");
+                        invCall.FSetArguments(new PersistentArgument().ToRetVal(conditionSource, typeof(bool)), new PersistentArgument(typeof(bool)));
+                        evt.PersistentCallsList.Add(invCall);
 
-                    //pcall to invert the state for the falser
-                    var invCall = new PersistentCall();
-                    invCall.FSetMethodName("System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Equals");
-                    invCall.FSetArguments(new PersistentArgument().ToRetVal(conditionSource, typeof(bool)), new PersistentArgument(typeof(bool)));
-                    evt.PersistentCallsList.Add(invCall);
-
-                    //pcall for setting the "false" state
-                    var falCall = new PersistentCall(SetActive, onFalse.gameObject);
-                    falCall.FSetArguments(new PersistentArgument().ToRetVal(evt.PersistentCallsList.IndexOf(invCall), typeof(bool)));
-                    evt.PersistentCallsList.Add(falCall);
+                        //pcall for setting the "false" state
+                        var falCall = new PersistentCall(SetActive, onFalse.gameObject);
+                        falCall.FSetArguments(new PersistentArgument().ToRetVal(evt.PersistentCallsList.IndexOf(invCall), typeof(bool)));
+                        evt.PersistentCallsList.Add(falCall);
+                    }
 
                     // reset to false so no accidental triggers happen
-                    var rs11 = new PersistentCall(SetActive, onTrue.gameObject);  // reset onTrue
-                    rs11.FSetArguments(new PersistentArgument(typeof(bool)));
-                    evt.PersistentCallsList.Add(rs11);
-                    var rs22 = new PersistentCall(SetActive, onFalse.gameObject); // reset onFalse
-                    rs22.FSetArguments(new PersistentArgument(typeof(bool)));
-                    evt.PersistentCallsList.Add(rs22);
+                    if (onTrue != null)
+                    {
+                        var rs11 = new PersistentCall(SetActive, onTrue.gameObject);  // reset onTrue
+                        rs11.FSetArguments(new PersistentArgument(typeof(bool)));
+                        evt.PersistentCallsList.Add(rs11);
+                    }
+                    if (onFalse != null)
+                    {
+                        var rs22 = new PersistentCall(SetActive, onFalse.gameObject); // reset onFalse
+                        rs22.FSetArguments(new PersistentArgument(typeof(bool)));
+                        evt.PersistentCallsList.Add(rs22);
+                    }
 
                     // compile true, false evts
                     var next = node.FlowOutputs[0];
@@ -520,6 +569,11 @@ public class CommonsCookBook : CookBook
                     next = node.FlowOutputs[1];
                     if (next.Target != null)
                         next.Target.Node.Book.CompileNode(onFalse.EnableEvent, next.Target.Node, dataRoot);
+                    
+                    // compile post-if event in origial event after true or false have both ran.
+                    var postIf = node.FlowOutputs[2];
+                    if(postIf.Target != null)
+                        postIf.Target.Node.Book.CompileNode(evt, postIf.Target.Node, dataRoot);
                 }
                 return;
             case "add_floats":
