@@ -19,7 +19,7 @@ namespace NoodledEvents
     {
         private static Assembly _blAssmb;
         private static Assembly _xrAssmb;
-        public static Assembly BLAssembly => _blAssmb ??= AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(ass => ass.FullName.StartsWith("Assembly-CSharp"));
+        public static Assembly BLAssembly => _blAssmb ??= AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(ass => ass.FullName.StartsWith("Assembly-CSharp,"));
         public static Assembly XRAssembly => _xrAssmb ??= AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(ass => ass.FullName.StartsWith("Unity.XR.Interaction.Toolkit"));
         public static Type GetExtType(string name, Assembly ass = null) 
         {

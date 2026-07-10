@@ -17,10 +17,33 @@ namespace NoodledEvents
     static class EnsureXRPackage
     {
         private static Dictionary<Type, List<FieldInfo>> TypeToUltFields = new();
+
+        public static bool HasPackage(string packageName)
+        {
+            string manifest = File.ReadAllText("Packages/manifest.json");
+            return manifest.Contains($"\"{packageName}\"");
+        }
+        
         static EnsureXRPackage()
         {
             // Soft Dependancies
-            Client.AddAndRemove(new string[] { "https://github.com/holadivinus/BLXRComp.git", "https://github.com/holadivinus/MarrowBuildHook.git" }, null);
+            List<string> dependenciesToInstall = new();
+            if(!HasPackage("com.holadivinus.blxrcomp"))
+                dependenciesToInstall.Add("https://github.com/holadivinus/BLXRComp.git");
+
+            if(!HasPackage("com.holadivinus.marrowbuildhook"))
+                dependenciesToInstall.Add("https://github.com/holadivinus/MarrowBuildHook.git");
+
+            if (dependenciesToInstall.Count != 0)
+            {
+                string dependenciesString = "";
+                foreach(string dep in dependenciesToInstall) dependenciesString += $"{dep} \n";
+                
+                bool didInstall = EditorUtility.DisplayDialog("Noodled Events", $"Noodled Events is missing the following dependencies: \n {dependenciesString}", "Install", "Cancel");
+
+                if (didInstall)
+                    Client.AddAndRemove(dependenciesToInstall.ToArray(), null);
+            }
 
 
             // also fix up MathUtilities.cs
@@ -89,9 +112,17 @@ namespace NoodledEvents
                             
                             foreach (var ultField in fields)
                             {
-                                var evt = (UltEventBase)ultField.GetValue(script);
-                                if (evt?.PersistentCallsList != null)
-                                    ProcessEvent(script, evt);
+                                try
+                                {
+                                    var evt = (UltEventBase)ultField.GetValue(script);
+                                    if (evt?.PersistentCallsList != null)
+                                        ProcessEvent(script, evt);
+                                }
+                                catch (System.Exception ex)
+                                {    
+                                    Debug.LogWarning("[Noodle]: Failed to process UltEvent field for GameObject: " + script.gameObject.name);
+                                    Debug.LogWarning(ex);
+                                }
                             }
 
                         }
@@ -104,75 +135,86 @@ namespace NoodledEvents
         {
             for (int i = 0; i < evt.PersistentCallsList.Count; i++)
             {
-                PersistentCall pcall = evt.PersistentCallsList[i];
-
-                if (pcall.Method == SysObjStoreProp.GetMethod)
+                try
                 {
-                    GameObject tempObjStore = ((Component)pcall.Target).gameObject;
-                    Component realObjStore = tempObjStore.GetComponent(PlateAnimatorType) ?? tempObjStore.AddComponent(PlateAnimatorType);
+                    PersistentCall pcall = evt.PersistentCallsList[i];
 
-                    int threshhold = i;
-                    // cut off next pcalls
-                    var @base = evt.PersistentCallsList.ToArray()[..threshhold].ToList();
-                    var remainings = evt.PersistentCallsList.ToArray()[(threshhold + 1)..];
+                    if (pcall.Method == SysObjStoreProp.GetMethod)
+                    {
+                        GameObject tempObjStore = ((Component)pcall.Target).gameObject;
+                        Component realObjStore = tempObjStore.GetComponent(PlateAnimatorType) ?? tempObjStore.AddComponent(PlateAnimatorType);
 
-                    PersistentArgument ros = new PersistentArgument();
-                    ros.FSetType(PersistentArgumentType.Object);
-                    ros.FSetObject(realObjStore);
-                    int got = @base.AddGetFieldValue(PlateAnimatorType.GetField("mainSequence", UltEventUtils.AnyAccessBindings), ros);
-                    got = @base.AddRunMethod(typeof(IEnumerator).GetProperty("Current", UltEventUtils.AnyAccessBindings).GetMethod, got);
-                    int newLength = @base.Count;
-                    foreach (var remPcall in remainings)
-                        foreach (var pa in remPcall.PersistentArguments)
-                            if (pa.Type == PersistentArgumentType.ReturnValue)
-                            {
-                                if (pa.FGetInt() == threshhold)
-                                    pa.FSetInt(got);
-                                else if (pa.FGetInt() > threshhold)
+                        int threshhold = i;
+                        // cut off next pcalls
+                        var @base = evt.PersistentCallsList.ToArray()[..threshhold].ToList();
+                        var remainings = evt.PersistentCallsList.ToArray()[(threshhold + 1)..];
+
+                        PersistentArgument ros = new PersistentArgument();
+                        ros.FSetType(PersistentArgumentType.Object);
+                        ros.FSetObject(realObjStore);
+                        int got = @base.AddGetFieldValue(PlateAnimatorType.GetField("mainSequence", UltEventUtils.AnyAccessBindings), ros);
+                        got = @base.AddRunMethod(typeof(IEnumerator).GetProperty("Current", UltEventUtils.AnyAccessBindings).GetMethod, got);
+                        int newLength = @base.Count;
+                        foreach (var remPcall in remainings)
+                            foreach (var pa in remPcall.PersistentArguments)
+                                if (pa.Type == PersistentArgumentType.ReturnValue)
                                 {
-                                    pa.FSetInt(pa.FGetInt() + (newLength - threshhold) + -1);
+                                    if (pa.FGetInt() == threshhold)
+                                        pa.FSetInt(got);
+                                    else if (pa.FGetInt() > threshhold)
+                                    {
+                                        pa.FSetInt(pa.FGetInt() + (newLength - threshhold) + -1);
+                                    }
                                 }
-                            }
-                    @base.AddRange(remainings);
-                    evt.FSetPCalls(@base);
+                        @base.AddRange(remainings);
+                        evt.FSetPCalls(@base);
+                    }
+                    else if (pcall.Method == SysObjStoreProp.SetMethod)
+                    {
+                        GameObject tempObjStore = ((Component)pcall.Target).gameObject;
+                        Component realObjStore = tempObjStore.GetComponent(PlateAnimatorType) ?? tempObjStore.AddComponent(PlateAnimatorType);
+
+                        int threshhold = i;
+                        // cut off next pcalls
+                        var @base = evt.PersistentCallsList.ToArray()[..threshhold].ToList();
+                        var remainings = evt.PersistentCallsList.ToArray()[(threshhold + 1)..];
+                        PersistentArgument val = pcall.PersistentArguments[0];
+
+                        int valArr = @base.CreateArray(typeof(object), 1);
+                        @base.AddArraySet(valArr, val, 0);
+                        int numer = @base.AddRunMethod(typeof(IEnumerable).GetMethod("GetEnumerator", UltEventUtils.AnyAccessBindings), valArr);
+                        @base.AddRunMethod(typeof(IEnumerator).GetMethod("MoveNext", UltEventUtils.AnyAccessBindings), numer);
+
+                        PersistentArgument ros = new PersistentArgument();
+                        ros.FSetType(PersistentArgumentType.Object);
+                        ros.FSetObject(realObjStore);
+
+                        int got = @base.AddSetFieldValue(PlateAnimatorType.GetField("mainSequence", UltEventUtils.AnyAccessBindings), ros, numer);
+                        int newLength = @base.Count;
+
+                        foreach (var remPcall in remainings)
+                            foreach (var pa in remPcall.PersistentArguments)
+                                if (pa.Type == PersistentArgumentType.ReturnValue)
+                                    if (pa.FGetInt() > threshhold)
+                                        pa.FSetInt(pa.FGetInt() + (newLength - threshhold) + -1);
+
+                        @base.AddRange(remainings);
+                        evt.FSetPCalls(@base);
+
+                    }
+
+
+                    if (pcall.MethodName == "UltNoodleRuntimeExtensions, Noodled-Events, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.ArrayItemSetter1" && !Application.isPlaying)
+                    {
+                        pcall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
+                        Debug.Log("Fixed the stupid ultnoodleruntimeextensions on " + script.gameObject.name);
+                    }
                 }
-                else if (pcall.Method == SysObjStoreProp.SetMethod)
+                catch(Exception ex)
                 {
-                    GameObject tempObjStore = ((Component)pcall.Target).gameObject;
-                    Component realObjStore = tempObjStore.GetComponent(PlateAnimatorType) ?? tempObjStore.AddComponent(PlateAnimatorType);
-
-                    int threshhold = i;
-                    // cut off next pcalls
-                    var @base = evt.PersistentCallsList.ToArray()[..threshhold].ToList();
-                    var remainings = evt.PersistentCallsList.ToArray()[(threshhold + 1)..];
-                    PersistentArgument val = pcall.PersistentArguments[0];
-
-                    int valArr = @base.CreateArray(typeof(object), 1);
-                    @base.AddArraySet(valArr, val, 0);
-                    int numer = @base.AddRunMethod(typeof(IEnumerable).GetMethod("GetEnumerator", UltEventUtils.AnyAccessBindings), valArr);
-                    @base.AddRunMethod(typeof(IEnumerator).GetMethod("MoveNext", UltEventUtils.AnyAccessBindings), numer);
-
-                    PersistentArgument ros = new PersistentArgument();
-                    ros.FSetType(PersistentArgumentType.Object);
-                    ros.FSetObject(realObjStore);
-
-                    int got = @base.AddSetFieldValue(PlateAnimatorType.GetField("mainSequence", UltEventUtils.AnyAccessBindings), ros, numer);
-                    int newLength = @base.Count;
-
-                    foreach (var remPcall in remainings)
-                        foreach (var pa in remPcall.PersistentArguments)
-                            if (pa.Type == PersistentArgumentType.ReturnValue)
-                                if (pa.FGetInt() > threshhold)
-                                    pa.FSetInt(pa.FGetInt() + (newLength - threshhold) + -1);
-
-                    @base.AddRange(remainings);
-                    evt.FSetPCalls(@base);
-
+                    Debug.LogWarning("[Noodle]: Failed to process ultevent persistent call on GameObject: " + script.gameObject.name);
+                    Debug.LogWarning(ex);
                 }
-
-
-                if (pcall.MethodName == "UltNoodleRuntimeExtensions, Noodled-Events, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.ArrayItemSetter1" && !Application.isPlaying)
-                    pcall.FSetMethodName("System.Linq.Expressions.Interpreter.CallInstruction, System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e.ArrayItemSetter1");
             }
         }
 
