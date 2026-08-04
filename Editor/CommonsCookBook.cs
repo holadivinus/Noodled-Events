@@ -1371,6 +1371,7 @@ public class CommonsCookBook : CookBook
 
     public override void VerifyNodeUI(UltNoodleNodeView nodeUI)
     {
+        if (nodeUI == null) return;
         try
         {
             if (nodeUI?.Node?.Name?.StartsWith("vars.") ?? false)
