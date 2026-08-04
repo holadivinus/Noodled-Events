@@ -846,7 +846,7 @@ public class ObjectMethodCookBook : CookBook
 
         // calls have been added/linked;
         // set compcall and compile next node.
-        if (node.DataOutputs.Length > 0 && node.DataOutputs[0].CompEvt == null)
+        if (node.DataOutputs.Length > 0)
         {
             node.DataOutputs[0].CompEvt = evt;
             node.DataOutputs[0].CompCall = myCall;

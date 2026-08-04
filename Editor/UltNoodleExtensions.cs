@@ -66,6 +66,15 @@ namespace NoodledEvents
             }
         }
 
+        public static PersistentCall FirstWithin(this List<PersistentCall> pCalls, UltEventBase ult)
+        {
+            foreach (PersistentCall call in pCalls)
+            {
+                if (ult.PersistentCallsList.Contains(call)) return call;
+            }
+            throw new NotImplementedException();
+        }
+
         public static Type[] GetAllTypes()
         {
             /*foreach (var assembl in AppDomain.CurrentDomain.GetAssemblies())

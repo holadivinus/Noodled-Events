@@ -164,7 +164,7 @@ namespace NoodledEvents
                         return;
                     }
                 }
-                SourceEvent = o.CompEvt; SourceCall = o.CompCall;
+                SourceEvents = o.AllCompEvts; SourceCalls = o.AllCompCalls;
                 SourceOutwardType = o.Type.Type;
                 if (o.Node.NoadType == SerializedNode.NodeType.BowlInOut)
                     ArgIsSource = Array.IndexOf(o.Node.DataOutputs, o);
@@ -202,8 +202,8 @@ namespace NoodledEvents
             */
 
             public int ArgIsSource; // if this is from an arg (-1 means no >= 0 gives arg idx)
-            public UltEventBase SourceEvent;
-            public PersistentCall SourceCall;
+            public List<UltEventBase> SourceEvents;
+            public List<PersistentCall> SourceCalls;
 
             public UltEventBase TargEvent;
             public PersistentCall TargCall;
@@ -212,24 +212,24 @@ namespace NoodledEvents
             public int TargInput; // the idx of the arg on the TargCall to set as Arg
             public void Connect(Transform dataRoot) // fyi this is called while the targcall is being constructed
             {
-                if (SourceEvent == null) 
+                if (SourceEvents == null) 
                 {
                     // People dont typically have warnings on in the log
                     Debug.LogWarning("A data redirect node is connected to a node on the right but not the left!\n" +
                         $"Method of node is {TargCall.MethodName}");
                     // So il make the recieved input a proper null instead of leaving None or ret -1
-                    /// I think that new nodes with object parameters should be initialized with this instead of none, as it's more intuitive
+                    // I think that new nodes with object parameters should be initialized with this instead of none, as it's more intuitive
                     TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToObjVal(null, TargInwardType);
                     return;
                     // TODO: make redirect node show as red
                 }
 
-                if (SourceEvent == TargEvent) // same evt connection
+                if (SourceEvents.Contains(TargEvent)) // same evt connection
                 {
                     if (ArgIsSource > -1)
                         TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToParamVal(ArgIsSource, TargInwardType);
                     else
-                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(SourceEvent.PersistentCallsList.IndexOf(SourceCall), TargInwardType);
+                        TargCall.PersistentArguments[TargInput] = new PersistentArgument().ToRetVal(TargEvent.PersistentCallsList.IndexOf(SourceCalls.FirstWithin(TargEvent)), TargInwardType);
                 }
                 else
                 {
@@ -239,7 +239,8 @@ namespace NoodledEvents
                     // for UnityEngine.Object, this is easy
                     // all the other types (int, float, color, bool) are todo.
 
-                        
+                    var SourceEvent = SourceEvents[0];
+
                     Type transferredType = TargInwardType;
                     if (transferredType.IsAssignableFrom(SourceOutwardType))
                         transferredType = SourceOutwardType;
@@ -258,7 +259,7 @@ namespace NoodledEvents
                         PersistentCall varSet = null;
                         if (ArgIsSource == -1)
                         {
-                            int sourceIdx = SourceEvent.PersistentCallsList.IndexOf(SourceCall); // source PCall idx
+                            int sourceIdx = SourceEvent.PersistentCallsList.IndexOf(SourceCalls[0]); // source PCall idx
                             varSet = new PersistentCall(kvp.Value.Item2.SetMethod, compVar); // compVar setter PCall
                             varSet.FSetArguments(new PersistentArgument().ToRetVal(sourceIdx, transferredType)); // arg for compVar setter PCall
                             SourceEvent.PersistentCallsList.SafeInsert(sourceIdx + 1, varSet); // add compVar setter PCall directly after source PCall
