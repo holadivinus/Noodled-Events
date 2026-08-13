@@ -7,6 +7,7 @@ using System.Linq;
 using UltEvents;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -25,6 +26,8 @@ public class UltNoodleTreeView : GraphView
 
     private Port _pendingEdgeOriginPort;
     private Vector2 _newNodeSpawnPos;
+
+    private static readonly GUID EMPTY_GUID = new GUID();
 
     private static readonly JsonSerializerSettings _serializerSettings = new()
     {
@@ -270,6 +273,9 @@ public class UltNoodleTreeView : GraphView
         {
             if (node.NoadType == SerializedNode.NodeType.Redirect)
             {
+                if (node.Name == "Redirector") // update bad names to use the correct tag for serialization
+                    node.Name = node.BookTag.Replace('_', '.');
+
                 var redirectView = new UltNoodleRedirectNodeView(node);
                 redirectView.OnNodeSelected = OnNodeSelected;
                 AddElement(redirectView);
@@ -324,6 +330,7 @@ public class UltNoodleTreeView : GraphView
             id = nv.Node.ID,
             cookBookName = nv.Node.Book.GetType().FullName,
             bookTag = nv.Node.BookTag,
+            nodeDefName = nv.Node.Name,
             position = nv.GetPosition().position,
             inputConstants = nv.Node.DataInputs.Select(di =>
             {
@@ -332,8 +339,27 @@ public class UltNoodleTreeView : GraphView
                     return (int)constant; // enums are stored as ints
                 if (di.Type.Type == typeof(Type))
                     return di.DefaultStringValue; // inline types are stored as strings
+
+                if (constant is UnityEngine.Object obj && obj != null)
+                {
+                    var globalId = GlobalObjectId.GetGlobalObjectIdSlow(obj);
+                    if (globalId.assetGUID == EMPTY_GUID) // this happen a lot with prefab stages, so we work around it by serializing heirarchy paths instead
+                    {
+                        var comp = obj as Component;
+                        var go = comp != null ? comp.gameObject : obj as GameObject;
+                        if (go != null)
+                        {
+                            string path = GetHierarchyPath(go);
+                            string typeName = obj.GetType().FullName;
+                            return $"SceneRef::{path}::{typeName}";
+                        }
+                    }
+                    return globalId.ToString();
+                }
+
                 return constant;
-            }).ToArray()
+            }).ToArray(),
+            inputVarManConsts = nv.Node.DataInputs.Select(di => di.EditorConstName).ToArray()
         }).ToList();
 
         var edges = elements.OfType<Edge>()
@@ -342,12 +368,38 @@ public class UltNoodleTreeView : GraphView
                 if (e.output?.node is UltNoodleNodeView fromNode &&
                     e.input?.node is UltNoodleNodeView toNode)
                 {
+                    string fromPortId = e.output.userData switch
+                    {
+                        NoodleFlowOutput fo => fo.ID,
+                        NoodleDataOutput dout => dout.ID,
+                        _ => null
+                    };
+
+                    string toPortId = e.input.userData switch
+                    {
+                        NoodleFlowInput fi => fi.ID,
+                        NoodleDataInput din => din.ID,
+                        _ => null
+                    };
+
+                    int fromPortIndex = e.output.userData is NoodleFlowOutput ?
+                                            Array.IndexOf(fromNode.Node.FlowOutputs, e.output.userData) :
+                                            Array.IndexOf(fromNode.Node.DataOutputs, e.output.userData);
+
+                    int toPortIndex = e.input.userData is NoodleFlowInput ?
+                                            Array.IndexOf(toNode.Node.FlowInputs, e.input.userData) :
+                                            Array.IndexOf(toNode.Node.DataInputs, e.input.userData);
+
+
                     return new EdgeData
                     {
+                        isFlow = e.output.userData is NoodleFlowOutput,
                         fromNodeId = fromNode.Node.ID,
-                        fromPortName = e.output.portName,
+                        fromPortId = fromPortId,
+                        fromPortIndex = fromPortIndex,
                         toNodeId = toNode.Node.ID,
-                        toPortName = e.input.portName
+                        toPortId = toPortId,
+                        toPortIndex = toPortIndex,
                     };
                 }
                 return null;
@@ -398,7 +450,7 @@ public class UltNoodleTreeView : GraphView
                 continue;
             }
 
-            var def = UltNoodleEditor.AllNodeDefs.FirstOrDefault(d => d.BookTag == nodeData.bookTag && d.CookBook == book);
+            var def = UltNoodleEditor.AllNodeDefs.FirstOrDefault(d => d.BookTag == nodeData.bookTag && d.CookBook == book && d.Name == nodeData.nodeDefName);
             if (def == null)
             {
                 Debug.LogWarning($"Could not find node def {nodeData.id} in book {book.name} when pasting nodes, skipping");
@@ -424,21 +476,84 @@ public class UltNoodleTreeView : GraphView
                 }
 
                 object constant = nodeData.inputConstants[i];
-                if (constant is string str && str.StartsWith("GlobalObjectId_V1"))
+                if (constant is string str)
                 {
-                    if (!GlobalObjectId.TryParse(str, out var globalId))
+                    if (str.StartsWith("GlobalObjectId_V1"))
                     {
-                        Debug.LogWarning($"Could not parse GlobalObjectId when pasting node {nod.ID}, input {i}, skipping");
-                        continue;
+                        if (!GlobalObjectId.TryParse(str, out var globalId))
+                        {
+                            Debug.LogWarning($"Could not parse GlobalObjectId when pasting node {nod.ID}, input {i}, skipping");
+                            continue;
+                        }
+                        constant = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(globalId);
                     }
-                    constant = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(globalId);
+
+                    if (str.StartsWith("SceneRef::"))
+                    {
+                        var parts = str.Split("::");
+                        string path = parts[1];
+                        string typeName = parts[2];
+
+                        var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+                        var root = prefabStage != null
+                            ? prefabStage.prefabContentsRoot.transform
+                            : null;
+
+                        var go = root != null ? FindByHierarchyPath(root, path) : null;
+                        if (go == null)
+                        {
+                            Debug.LogWarning($"Could not find scene object at path '{path}' when pasting, skipping");
+                            continue;
+                        }
+
+                        var type = UltNoodleEditor.SearchableTypes.FirstOrDefault(t => t.FullName == typeName);
+                        constant = type == typeof(GameObject)
+                            ? (UnityEngine.Object)go
+                            : go.GetComponent(type);
+                    }
                 }
                 nod.DataInputs[i].SetDefault(constant);
+                string varManConst = nodeData.inputVarManConsts[i]; // var always exists, it just may be null or empty
+                if (!string.IsNullOrEmpty(varManConst))
+                {
+                    var varManVar = bowl.VarManVars.FirstOrDefault(v => v.Name == varManConst && v.ConstInput == nod.DataInputs[i].GetPCallType());
+                    if (varManVar != null)
+                    {
+                        nod.DataInputs[i].EditorConstName = nodeData.inputVarManConsts[i];
+                        nod.DataInputs[i].ValDefs = varManVar.ValDefs;
+                        nod.DataInputs[i].DefaultObject = varManVar.DefaultObject;
+                        nod.DataInputs[i].DefaultStringValue = varManVar.DefaultStringValue;
+                    }
+                }
             }
 
             bowl.Validate();
             UltNoodleEditor.Editor.TreeView.RenderNewNodes();
             oldToNewIds[nodeData.id] = nod.ID;
+
+            // get the ports of the old and new nodes to add them to the oldToNewIds mapping as well
+            void MapPorts(IEnumerable<EdgeData> edges, bool isInput, object[] ports)
+            {
+                foreach (var edge in edges)
+                {
+                    var (oldId, index) = isInput ? (edge.toPortId, edge.toPortIndex) : (edge.fromPortId, edge.fromPortIndex);
+                    var port = ports[index];
+                    string id = port switch
+                    {
+                        NoodleFlowInput fi => fi.ID,
+                        NoodleFlowOutput fo => fo.ID,
+                        NoodleDataInput din => din.ID,
+                        NoodleDataOutput dout => dout.ID,
+                        _ => null
+                    };
+                    oldToNewIds[oldId] = id;
+                }
+            }
+
+            MapPorts(wrapper.edges.Where(e => e.toNodeId == nodeData.id && e.isFlow), true, nod.FlowInputs);
+            MapPorts(wrapper.edges.Where(e => e.fromNodeId == nodeData.id && e.isFlow), false, nod.FlowOutputs);
+            MapPorts(wrapper.edges.Where(e => e.toNodeId == nodeData.id && !e.isFlow), true, nod.DataInputs);
+            MapPorts(wrapper.edges.Where(e => e.fromNodeId == nodeData.id && !e.isFlow), false, nod.DataOutputs);
 
             AddToSelection(FindNodeView(nod));
         }
@@ -456,8 +571,11 @@ public class UltNoodleTreeView : GraphView
             var toView = FindNodeView(toNode);
             if (fromView == null || toView == null) continue;
 
-            var fromPort = fromView.GetPortByName(edgeData.fromPortName, Direction.Output);
-            var toPort = toView.GetPortByName(edgeData.toPortName, Direction.Input);
+            if (!oldToNewIds.TryGetValue(edgeData.fromPortId, out var newPortFromId)) continue;
+            if (!oldToNewIds.TryGetValue(edgeData.toPortId, out var newPortToId)) continue;
+
+            var fromPort = fromView.GetPortById(newPortFromId, Direction.Output);
+            var toPort = toView.GetPortById(newPortToId, Direction.Input);
             if (fromPort == null || toPort == null) continue;
 
             HandleEdgeCreation(fromPort, toPort, true);
@@ -629,6 +747,8 @@ public class UltNoodleTreeView : GraphView
                 return;
             }
 
+            node.Name = node.BookTag.Replace('_', '.'); // now we know what type to use, update the name to match the type for serialization
+
             evt.StopPropagation();
 
             var rerouteView = new UltNoodleRedirectNodeView(node);
@@ -681,6 +801,27 @@ public class UltNoodleTreeView : GraphView
             dropdown.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
+    private string GetHierarchyPath(GameObject go)
+    {
+        string path = go.name;
+        var t = go.transform.parent;
+        while (t != null) { path = t.name + "/" + path; t = t.parent; }
+        return path;
+    }
+
+    private GameObject FindByHierarchyPath(Transform root, string path)
+    {
+        var parts = path.Split('/');
+        // skip the root name itself since we're already starting there
+        Transform cur = root;
+        foreach (var part in parts.Skip(1))
+        {
+            cur = cur.Cast<Transform>().FirstOrDefault(t => t.name == part);
+            if (cur == null) return null;
+        }
+        return cur?.gameObject;
+    }
+
     [Serializable]
     private class NodeWrapper
     {
@@ -694,17 +835,22 @@ public class UltNoodleTreeView : GraphView
         public string id;
         public string cookBookName;
         public string bookTag;
+        public string nodeDefName;
         public Vector2 position;
         public object[] inputConstants;
+        public string[] inputVarManConsts;
     }
 
     [Serializable]
     private class EdgeData
     {
+        public bool isFlow;
         public string fromNodeId;
-        public string fromPortName;
+        public string fromPortId;
+        public int fromPortIndex;
         public string toNodeId;
-        public string toPortName;
+        public string toPortId;
+        public int toPortIndex;
     }
 }
 #endif

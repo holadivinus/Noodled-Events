@@ -31,7 +31,7 @@ public class UltNoodleNoteView : GraphElement
 
         style.backgroundColor = new Color(1f, 0.96f, 0.66f);
         style.borderTopWidth = style.borderLeftWidth = style.borderRightWidth = style.borderBottomWidth = 1;
-        style.borderTopColor = style.borderLeftColor = style.borderRightColor = style.borderBottomColor = new Color(0.15f, 0.15f, 0.15f);
+        style.borderTopColor = style.borderLeftColor = style.borderRightColor = style.borderBottomColor = UltNoodleTheme.NoteBorder;
         style.paddingLeft = style.paddingTop = style.paddingRight = style.paddingBottom = 6;
 
         // display label (non-edit mode)
@@ -41,7 +41,7 @@ public class UltNoodleNoteView : GraphElement
             tooltip = "Double-click to edit"
         };
         _displayLabel.style.whiteSpace = WhiteSpace.Normal;
-        _displayLabel.style.color = Color.black;
+        _displayLabel.style.color = UltNoodleTheme.NoteText;
         _displayLabel.style.unityTextAlign = TextAnchor.UpperLeft;
         _displayLabel.style.flexGrow = 1;
         _displayLabel.style.overflow = Overflow.Hidden;
@@ -49,7 +49,7 @@ public class UltNoodleNoteView : GraphElement
 
         // edit field (hidden until editing)
         _editField = new TextField { multiline = true, name = "editField", value = _data.Text };
-        _editField.style.color = Color.black;
+        _editField.style.color = UltNoodleTheme.NoteText;
         _editField.style.display = DisplayStyle.None;
         _editField.style.flexGrow = 1;
         _editField.style.whiteSpace = WhiteSpace.Normal;

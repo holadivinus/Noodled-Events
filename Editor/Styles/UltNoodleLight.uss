@@ -1,0 +1,32 @@
+.ult-node-button-icon-hover {
+  background-color: rgba(210, 210, 210, 1);
+  opacity: 1;
+}
+
+.ult-right-panel {
+  background-color: rgb(200, 200, 200);
+}
+
+.ult-search-menu {
+  background-color: rgb(221, 221, 221);
+}
+
+.ult-search-results {
+  background-color: rgb(210, 210, 210);
+}
+
+.ult-settings-menu {
+  background-color: rgba(180, 180, 180, 0.55);
+}
+
+.ult-cog-icon {
+  -unity-background-image-tint-color: rgb(60, 60, 60);
+}
+
+:root {
+  --ult-text-primary: rgb(0, 0, 0);
+  --ult-text-secondary: rgb(80, 80, 80);
+  --ult-grid-background-color: rgb(200, 200, 200);
+  --ult-line-color: rgba(80, 80, 80, 0.15);
+  --ult-thick-line-color: rgba(80, 80, 80, 0.25);
+}

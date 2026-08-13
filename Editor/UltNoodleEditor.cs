@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Text;
 using UltEvents;
 using UnityEditor;
 using UnityEditor.PackageManager;
@@ -74,6 +75,8 @@ public class UltNoodleEditor : EditorWindow
 
         StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>($"{EditorFolder}/Styles/UltNoodleEditor.uss");
         root.styleSheets.Add(styleSheet);
+
+        UltNoodleTheme.ApplyThemeSheet(root);
 
         EditorApplication.update += OnUpdate;
         void contextChanged(bool resetViews = true)
@@ -356,26 +359,51 @@ public class UltNoodleEditor : EditorWindow
             IEnumerable<SerializedBowl> bowls = prefabStage?.prefabContentsRoot.GetComponentsInChildren<SerializedBowl>(true)
                             ?? Resources.FindObjectsOfTypeAll<SerializedBowl>();
 
+            bool anyTargets = bowls.Any(b => b.IsSelected());
+
+            // if the bowl to reselect isn't valid, set it to null
+            bool reselectAvailable = _bowlToReselect != null;
+            if (reselectAvailable && anyTargets)  // don't reset reselection bowl if we don't have anything to retarget
+            {
+                bool reselectExists = bowls.Contains(_bowlToReselect);
+
+                if (!reselectExists || !_bowlToReselect.IsSelected())
+                {
+                    _bowlToReselect = null;
+                }
+            }
+
+            // if we already have a bowl selected, try to reselect it
+            if (_currentBowl?.SerializedData != null && _bowlToReselect == null && Bowls.Contains(_currentBowl))
+                _bowlToReselect = _currentBowl.SerializedData;
+
+            // Track whether we already have a valid bowl selected coming into this refresh.
+            // A bowl is "stably selected" if it's already in our list and is the current one.
+            bool alreadyHaveSelection = _currentBowl != null && Bowls.Contains(_currentBowl);
+
             foreach (var bowl in bowls)
             {
                 if (bowl == null || (prefabStage == null && bowl.gameObject.scene != curScene))
                     continue;
 
                 bool isBowlNew = !Bowls.Any(b => b.SerializedData == bowl);
-                bool isBowlSelected = Selection.gameObjects.Contains(bowl.gameObject)
-                                    || Selection.transforms.Any(t => bowl.transform.IsChildOf(t))
-                                    || !EditorPrefs.GetBool("SelectedBowlsOnly", true);
                 bool isNotPartOfPrefab = !PrefabUtility.IsPartOfAnyPrefab(bowl);
 
-                if (isBowlNew && isBowlSelected && isNotPartOfPrefab)
+                if (isBowlNew && bowl.IsSelected() && isNotPartOfPrefab)
                 {
-                    bool shouldSelect = (_bowlToReselect == null || _bowlToReselect == bowl)
-                            && (_currentBowl == null || !Bowls.Contains(_currentBowl));
+                    // Only auto-select this bowl if:
+                    //   (a) it's the one we explicitly want to reselect, OR
+                    //   (b) there's no pending reselect AND we don't already have a stable selection
+                    bool isExplicitReselect = _bowlToReselect == bowl;
+                    bool shouldSelect = isExplicitReselect || (!alreadyHaveSelection && _bowlToReselect == null);
 
                     NewBowl(bowl.EventHolder, bowl.BowlEvtHolderType, bowl.EventFieldPath, shouldSelect);
 
                     if (shouldSelect)
-                        _bowlToReselect = null;
+                    {
+                        // Once we've selected something, subsequent new bowls should not steal focus.
+                        alreadyHaveSelection = true;
+                    }
                 }
             }
 
@@ -646,6 +674,9 @@ public class UltNoodleEditor : EditorWindow
 
     private void ResetViews()
     {
+        if (_currentBowl?.SerializedData != null)
+            _bowlToReselect = _currentBowl.SerializedData;
+
         _currentBowl = null;
         Bowls.Clear();
 

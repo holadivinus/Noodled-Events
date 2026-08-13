@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UltEvents;
+using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -177,6 +178,18 @@ namespace NoodledEvents
                 node.OnAfterDeserialize();
         }
 
+        /// <summary>
+        /// Checks if the given bowl is directly selected or under a selected object.
+        /// NOTE: This will always return true if SelectedBowlsOnly is false
+        /// </summary>
+        public bool IsSelected()
+        {
+            bool selectedBowlsOnly = EditorPrefs.GetBool("SelectedBowlsOnly", true);
+            bool directlySelected = Selection.gameObjects.Contains(gameObject);
+            bool withinSelected = Selection.transforms.Any(t => transform.IsChildOf(t));
+
+            return withinSelected || directlySelected || !selectedBowlsOnly;
+        }
     }
 }
 #endif
