@@ -22,6 +22,11 @@ namespace NoodledEvents
         private FieldInfo f;
         [SerializeField] string _assemblyTypeName;
         [SerializeField] string _fieldName;
+
+        public static string GetBookTag(FieldInfo field)
+        {
+            return $"{{\"_assemblyTypeName\":\"{field.DeclaringType.AssemblyQualifiedName}\",\"_fieldName\":\"{field.Name}\"}}";
+        }
     }
 }
 #endif

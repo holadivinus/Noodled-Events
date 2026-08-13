@@ -1375,6 +1375,10 @@ public class CommonsCookBook : CookBook
         if (nodeUI == null) return;
         try
         {
+            if (nodeUI == null) {
+                return; // probably a redirect node
+            }
+
             if (nodeUI?.Node?.Name?.StartsWith("vars.") ?? false)
             {
                 nodeUI.DataInputs?.First()?.SetEnabled(false);
