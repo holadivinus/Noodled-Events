@@ -525,7 +525,7 @@ public class CommonsCookBook : CookBook
                         evt.PersistentCallsList.Add(rs2);
                     }
 
-                    int conditionSource = evt.PersistentCallsList.IndexOf(node.DataInputs[0].Source.CompCall);
+                    var conditionSource = node.DataInputs[0].Source;
 
                     //pcall for setting the "true" state
                     if (onTrue != null)
@@ -539,7 +539,8 @@ public class CommonsCookBook : CookBook
                         //pcall to invert the state for the falser
                         var invCall = new PersistentCall();
                         invCall.FSetMethodName("System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Equals");
-                        invCall.FSetArguments(new PersistentArgument().ToRetVal(conditionSource, typeof(bool)), new PersistentArgument(typeof(bool)));
+                        invCall.FSetArguments(new PersistentArgument(typeof(object)), new PersistentArgument(typeof(bool)));
+                        new PendingConnection(conditionSource, evt, invCall, 0).Connect(dataRoot);
                         evt.PersistentCallsList.Add(invCall);
 
                         //pcall for setting the "false" state
@@ -1425,6 +1426,7 @@ public class CommonsCookBook : CookBook
 
     public override void VerifyNodeUI(UltNoodleNodeView nodeUI)
     {
+        if (nodeUI == null) return;
         try
         {
             if (nodeUI?.Node?.Name?.StartsWith("vars.") ?? false)

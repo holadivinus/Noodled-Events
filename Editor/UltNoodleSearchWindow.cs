@@ -127,6 +127,41 @@ public class UltNoodleSearchWindow : EditorWindow
             if (evt.keyCode == KeyCode.Return)
             {
                 SearchTypes(100);
+            } else if (evt.keyCode == KeyCode.Escape)
+            {
+                this.OnLostFocus();
+            }
+        }, TrickleDown.TrickleDown);
+
+        _searchMenu.RegisterCallback<KeyDownEvent>((evt) =>
+        {
+            if (evt.keyCode == KeyCode.DownArrow)
+            {
+                if (_searchBar.panel.focusController.focusedElement == _searchBar && _searchedTypes.childCount > 1)
+                {
+                    _searchedTypes[0].Focus();
+                    _searchedTypes.ScrollTo(_searchedTypes[0]);
+                } else if (_searchBar.panel.focusController.focusedElement is Button b && b.parent == _searchedTypes)
+                {
+                    int btIdx = _searchedTypes.IndexOf(b);
+                    if ((btIdx + 1) < _searchedTypes.childCount && _searchedTypes[btIdx + 1] is Button)
+                    {
+                        _searchedTypes[btIdx + 1].Focus();
+                        _searchedTypes.ScrollTo(_searchedTypes[btIdx + 1]);
+                    }
+                }
+            } else if (evt.keyCode == KeyCode.UpArrow)
+            {
+                if (_searchBar.panel.focusController.focusedElement is Button b && b.parent == _searchedTypes)
+                {
+                    int btIdx = _searchedTypes.IndexOf(b);
+                    if (btIdx > 0)
+                    {
+                        _searchedTypes[btIdx - 1].Focus();
+                        _searchedTypes.ScrollTo(_searchedTypes[btIdx - 1]);
+                    }
+                    else _searchBar.Focus(); 
+                }
             }
         }, TrickleDown.TrickleDown);
 

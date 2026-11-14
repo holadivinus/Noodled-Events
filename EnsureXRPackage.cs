@@ -68,6 +68,7 @@ namespace NoodledEvents
             Type buildHookType = Type.GetType("MarrowBuildHook.MarrowBuildHook, MarrowBuildHook");
             if (buildHookType != null)
             {
+                // Man, MBH really needs a less mentally-ill pattern for adding build hooks
                 List<Action<IEnumerable<GameObject>>> softCallbacks = (List<Action<IEnumerable<GameObject>>>)buildHookType.GetField("ExternalGameObjectProcesses").GetValue(null);
                 softCallbacks.Add((Action<IEnumerable<GameObject>>)((numer) =>
                 {
@@ -116,7 +117,9 @@ namespace NoodledEvents
                                 {
                                     var evt = (UltEventBase)ultField.GetValue(script);
                                     if (evt?.PersistentCallsList != null)
+                                    {
                                         ProcessEvent(script, evt);
+                                    }
                                 }
                                 catch (System.Exception ex)
                                 {    
@@ -135,11 +138,13 @@ namespace NoodledEvents
         {
             for (int i = 0; i < evt.PersistentCallsList.Count; i++)
             {
-                try
-                {
-                    PersistentCall pcall = evt.PersistentCallsList[i];
+                PersistentCall pcall = evt.PersistentCallsList[i];
 
-                    if (pcall.Method == SysObjStoreProp.GetMethod)
+                // i might be stupid
+                // pcall.Method is a Property, which may error on get
+                if (pcall.Target != null && pcall.Target.GetType() == typeof(ObjectStore))
+                {
+                    if (pcall.MethodName == "get_Obj")
                     {
                         GameObject tempObjStore = ((Component)pcall.Target).gameObject;
                         Component realObjStore = tempObjStore.GetComponent(PlateAnimatorType) ?? tempObjStore.AddComponent(PlateAnimatorType);
@@ -169,7 +174,7 @@ namespace NoodledEvents
                         @base.AddRange(remainings);
                         evt.FSetPCalls(@base);
                     }
-                    else if (pcall.Method == SysObjStoreProp.SetMethod)
+                    else if (pcall.MethodName == "set_Obj")
                     {
                         GameObject tempObjStore = ((Component)pcall.Target).gameObject;
                         Component realObjStore = tempObjStore.GetComponent(PlateAnimatorType) ?? tempObjStore.AddComponent(PlateAnimatorType);
@@ -202,6 +207,7 @@ namespace NoodledEvents
                         evt.FSetPCalls(@base);
 
                     }
+                }
 
 
                     if (pcall.MethodName == "UltNoodleRuntimeExtensions, Noodled-Events, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.ArrayItemSetter1" && !Application.isPlaying)
@@ -218,7 +224,8 @@ namespace NoodledEvents
             }
         }
 
-        private static Type PlateAnimatorType = CookBook.GetExtType("PlateJointAnimator", CookBook.BLAssembly);
+        private static Type _pat;
+        private static Type PlateAnimatorType => _pat ??= CookBook.GetExtType("PlateJointAnimator", CookBook.BLAssembly);
         private static PropertyInfo SysObjStoreProp = typeof(ObjectStore).GetProperty("Obj", UltEventUtils.AnyAccessBindings);
         const string fixedMathCS = "using System.Runtime.CompilerServices;\r\n\r\nnamespace SLZ.Bonelab.VoidLogic\r\n{\r\n\tinternal static class MathUtilities\r\n\t{\r\n\t\t[MethodImpl(256)]\r\n\t\tpublic static bool IsApproximatelyEqualToOrGreaterThan(this float num1, float num2)\r\n\t\t{\r\n\t\t\treturn num1 >= num2;\r\n\t\t}\r\n\r\n\t\t[MethodImpl(256)]\r\n\t\tpublic static bool IsApproximatelyEqualToOrLessThan(this float num1, float num2)\r\n\t\t{\r\n\t\t\treturn num1 <= num2;\r\n\t\t}\r\n\t}\r\n}\r\n";
     }

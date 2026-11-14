@@ -84,6 +84,7 @@ namespace NoodledEvents
         [NonSerialized] public SerializedBowl Bowl;
         [SerializeField] public string Name;
         [SerializeField] public string ID = Guid.NewGuid().ToString();
+        [SerializeField] public bool ForceDebugLogs = false;
 
         public void Update() // idk lol
         {
@@ -143,28 +144,40 @@ namespace NoodledEvents
 
                 // we also need to account for nodes with inputs of "System.Type"
                 foreach (var node in Bowl.NodeDatas)
-                {
                     foreach (var din in node.DataInputs)
-                    {
-                        if (din.Source == null && din.Type == typeof(Type))
-                        {
-                            if (din.CompEvt != null)
+                        if (din.Source == null && din.Type == typeof(Type) && din.CompEvt != null)
+                            foreach (var cEvt in din.AllCompEvts)
                             {
                                 // cookbooks gotta tell inputs about their compdata, otherwise no System.Type injection
-                                int callIdx = din.CompEvt.PersistentCallsList.IndexOf(din.CompCall);
+                                int callIdx = -1;
+                                PersistentCall cCall = null;
+                                foreach (var cCallCandidate in din.AllCompCalls)
+                                {
+                                    callIdx = cEvt.PersistentCallsList.IndexOf(cCallCandidate);
+                                    if (callIdx != -1)
+                                    {
+                                        cCall = cCallCandidate;
+                                        break;
+                                    }
+                                }
+                                if (callIdx == -1)
+                                {
+                                    Debug.LogWarning("[NoodledEvents]: failed a type injection for bowl \"" + Bowl.gameObject.name + "." + Bowl.BowlName + "\"!");
+                                    continue;
+                                }
+                                
                                 var getTypeCall = new PersistentCall(typeof(Type).GetMethod(nameof(Type.GetType), new Type[] { typeof(string), typeof(bool), typeof(bool) }), null);
                                 getTypeCall.PersistentArguments[0].String = din.DefaultStringValue;
                                 getTypeCall.PersistentArguments[1].Bool = true;
                                 getTypeCall.PersistentArguments[2].Bool = true;
 
-                                din.CompEvt.PersistentCallsList.SafeInsert(callIdx, getTypeCall);
-                                din.CompArg.FSetType(PersistentArgumentType.ReturnValue);
-                                din.CompArg.FSetInt(callIdx);
-                                din.CompArg.FSetString(typeof(Type).AssemblyQualifiedName);
+                                cEvt.PersistentCallsList.SafeInsert(callIdx, getTypeCall);
+
+                                var cArg = din.AllCompArgs.First(compArg => cCall.PersistentArguments.Contains(compArg));
+                                cArg.FSetType(PersistentArgumentType.ReturnValue);
+                                cArg.FSetInt(callIdx);
+                                cArg.FSetString(typeof(Type).AssemblyQualifiedName);
                             }
-                        }
-                    }
-                }
             }
         }
         public CookBook Book;
@@ -381,9 +394,52 @@ namespace NoodledEvents
         [SerializeField] public UnityEngine.Object DefaultObject;
         [SerializeField] public PersistentArgumentType ConstInput = PersistentArgumentType.None;
 
-        [NonSerialized] public UltEventBase CompEvt;
-        [NonSerialized] public PersistentCall CompCall;
-        [NonSerialized] public PersistentArgument CompArg;
+        // oh my god
+        public UltEventBase CompEvt
+        {
+            get => AllCompEvts?[0];
+            set
+            {
+                if (value == null)
+                {
+                    AllCompEvts = null;
+                    return;
+                }
+                AllCompEvts ??= new List<UltEventBase>();
+                AllCompEvts.Add(value);
+            }
+        }
+        [NonSerialized] public List<UltEventBase> AllCompEvts;
+        public PersistentCall CompCall
+        {
+            get => AllCompCalls?[0];
+            set
+            {
+                if (value == null)
+                {
+                    AllCompCalls = null;
+                    return;
+                }
+                AllCompCalls ??= new List<PersistentCall>();
+                AllCompCalls.Add(value);
+            }
+        }
+        [NonSerialized] public List<PersistentCall> AllCompCalls;
+        public PersistentArgument CompArg
+        {
+            get => AllCompArgs?[0];
+            set
+            {
+                if (value == null)
+                {
+                    AllCompArgs = null;
+                    return;
+                }
+                AllCompArgs ??= new List<PersistentArgument>();
+                AllCompArgs.Add(value);
+            }
+        }
+        [NonSerialized] public List<PersistentArgument> AllCompArgs;
 
         [SerializeField] public string EditorConstName;
 
@@ -460,8 +516,38 @@ namespace NoodledEvents
         [SerializeField] public string ID = Guid.NewGuid().ToString();
         public void Connect(NoodleDataInput input) => input.Connect(this); //lol
 
-        [NonSerialized] public UltEventBase CompEvt; // these only exist at compile time,
-        [NonSerialized] public PersistentCall CompCall; // labelling where to find this output.
+        // these only exist at compile time,
+        // noting which events and calls output this
+        public UltEventBase CompEvt
+        {
+            get => AllCompEvts?[0];
+            set
+            {
+                if (value == null)
+                {
+                    AllCompEvts = null;
+                    return;
+                }
+                AllCompEvts ??= new List<UltEventBase>();
+                AllCompEvts.Add(value);
+            }
+        } 
+        public List<UltEventBase> AllCompEvts; 
+        public PersistentCall CompCall
+        {
+            get => AllCompCalls?[0];
+            set
+            {
+                if (value == null)
+                {
+                    AllCompCalls = null;
+                    return;
+                }
+                AllCompCalls ??= new List<PersistentCall>();
+                AllCompCalls.Add(value);
+            }
+        }
+        [NonSerialized] public List<PersistentCall> AllCompCalls; 
         [NonSerialized] public bool UseCompAsParam;
         [NonSerialized] public int CompAsParam;
     }
