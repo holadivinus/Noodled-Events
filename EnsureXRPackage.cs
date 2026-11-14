@@ -140,75 +140,76 @@ namespace NoodledEvents
             {
                 PersistentCall pcall = evt.PersistentCallsList[i];
 
-                // i might be stupid
-                // pcall.Method is a Property, which may error on get
-                if (pcall.Target != null && pcall.Target.GetType() == typeof(ObjectStore))
+                try
                 {
-                    if (pcall.MethodName == "get_Obj")
+                    // i might be stupid
+                    // pcall.Method is a Property, which may error on get
+                    if (pcall.Target != null && pcall.Target.GetType() == typeof(ObjectStore))
                     {
-                        GameObject tempObjStore = ((Component)pcall.Target).gameObject;
-                        Component realObjStore = tempObjStore.GetComponent(PlateAnimatorType) ?? tempObjStore.AddComponent(PlateAnimatorType);
+                        if (pcall.MethodName == "get_Obj")
+                        {
+                            GameObject tempObjStore = ((Component)pcall.Target).gameObject;
+                            Component realObjStore = tempObjStore.GetComponent(PlateAnimatorType) ?? tempObjStore.AddComponent(PlateAnimatorType);
 
-                        int threshhold = i;
-                        // cut off next pcalls
-                        var @base = evt.PersistentCallsList.ToArray()[..threshhold].ToList();
-                        var remainings = evt.PersistentCallsList.ToArray()[(threshhold + 1)..];
+                            int threshhold = i;
+                            // cut off next pcalls
+                            var @base = evt.PersistentCallsList.ToArray()[..threshhold].ToList();
+                            var remainings = evt.PersistentCallsList.ToArray()[(threshhold + 1)..];
 
-                        PersistentArgument ros = new PersistentArgument();
-                        ros.FSetType(PersistentArgumentType.Object);
-                        ros.FSetObject(realObjStore);
-                        int got = @base.AddGetFieldValue(PlateAnimatorType.GetField("mainSequence", UltEventUtils.AnyAccessBindings), ros);
-                        got = @base.AddRunMethod(typeof(IEnumerator).GetProperty("Current", UltEventUtils.AnyAccessBindings).GetMethod, got);
-                        int newLength = @base.Count;
-                        foreach (var remPcall in remainings)
-                            foreach (var pa in remPcall.PersistentArguments)
-                                if (pa.Type == PersistentArgumentType.ReturnValue)
-                                {
-                                    if (pa.FGetInt() == threshhold)
-                                        pa.FSetInt(got);
-                                    else if (pa.FGetInt() > threshhold)
+                            PersistentArgument ros = new PersistentArgument();
+                            ros.FSetType(PersistentArgumentType.Object);
+                            ros.FSetObject(realObjStore);
+                            int got = @base.AddGetFieldValue(PlateAnimatorType.GetField("mainSequence", UltEventUtils.AnyAccessBindings), ros);
+                            got = @base.AddRunMethod(typeof(IEnumerator).GetProperty("Current", UltEventUtils.AnyAccessBindings).GetMethod, got);
+                            int newLength = @base.Count;
+                            foreach (var remPcall in remainings)
+                                foreach (var pa in remPcall.PersistentArguments)
+                                    if (pa.Type == PersistentArgumentType.ReturnValue)
                                     {
-                                        pa.FSetInt(pa.FGetInt() + (newLength - threshhold) + -1);
+                                        if (pa.FGetInt() == threshhold)
+                                            pa.FSetInt(got);
+                                        else if (pa.FGetInt() > threshhold)
+                                        {
+                                            pa.FSetInt(pa.FGetInt() + (newLength - threshhold) + -1);
+                                        }
                                     }
-                                }
-                        @base.AddRange(remainings);
-                        evt.FSetPCalls(@base);
+                            @base.AddRange(remainings);
+                            evt.FSetPCalls(@base);
+                        }
+                        else if (pcall.MethodName == "set_Obj")
+                        {
+                            GameObject tempObjStore = ((Component)pcall.Target).gameObject;
+                            Component realObjStore = tempObjStore.GetComponent(PlateAnimatorType) ?? tempObjStore.AddComponent(PlateAnimatorType);
+
+                            int threshhold = i;
+                            // cut off next pcalls
+                            var @base = evt.PersistentCallsList.ToArray()[..threshhold].ToList();
+                            var remainings = evt.PersistentCallsList.ToArray()[(threshhold + 1)..];
+                            PersistentArgument val = pcall.PersistentArguments[0];
+
+                            int valArr = @base.CreateArray(typeof(object), 1);
+                            @base.AddArraySet(valArr, val, 0);
+                            int numer = @base.AddRunMethod(typeof(IEnumerable).GetMethod("GetEnumerator", UltEventUtils.AnyAccessBindings), valArr);
+                            @base.AddRunMethod(typeof(IEnumerator).GetMethod("MoveNext", UltEventUtils.AnyAccessBindings), numer);
+
+                            PersistentArgument ros = new PersistentArgument();
+                            ros.FSetType(PersistentArgumentType.Object);
+                            ros.FSetObject(realObjStore);
+
+                            int got = @base.AddSetFieldValue(PlateAnimatorType.GetField("mainSequence", UltEventUtils.AnyAccessBindings), ros, numer);
+                            int newLength = @base.Count;
+
+                            foreach (var remPcall in remainings)
+                                foreach (var pa in remPcall.PersistentArguments)
+                                    if (pa.Type == PersistentArgumentType.ReturnValue)
+                                        if (pa.FGetInt() > threshhold)
+                                            pa.FSetInt(pa.FGetInt() + (newLength - threshhold) + -1);
+
+                            @base.AddRange(remainings);
+                            evt.FSetPCalls(@base);
+
+                        }
                     }
-                    else if (pcall.MethodName == "set_Obj")
-                    {
-                        GameObject tempObjStore = ((Component)pcall.Target).gameObject;
-                        Component realObjStore = tempObjStore.GetComponent(PlateAnimatorType) ?? tempObjStore.AddComponent(PlateAnimatorType);
-
-                        int threshhold = i;
-                        // cut off next pcalls
-                        var @base = evt.PersistentCallsList.ToArray()[..threshhold].ToList();
-                        var remainings = evt.PersistentCallsList.ToArray()[(threshhold + 1)..];
-                        PersistentArgument val = pcall.PersistentArguments[0];
-
-                        int valArr = @base.CreateArray(typeof(object), 1);
-                        @base.AddArraySet(valArr, val, 0);
-                        int numer = @base.AddRunMethod(typeof(IEnumerable).GetMethod("GetEnumerator", UltEventUtils.AnyAccessBindings), valArr);
-                        @base.AddRunMethod(typeof(IEnumerator).GetMethod("MoveNext", UltEventUtils.AnyAccessBindings), numer);
-
-                        PersistentArgument ros = new PersistentArgument();
-                        ros.FSetType(PersistentArgumentType.Object);
-                        ros.FSetObject(realObjStore);
-
-                        int got = @base.AddSetFieldValue(PlateAnimatorType.GetField("mainSequence", UltEventUtils.AnyAccessBindings), ros, numer);
-                        int newLength = @base.Count;
-
-                        foreach (var remPcall in remainings)
-                            foreach (var pa in remPcall.PersistentArguments)
-                                if (pa.Type == PersistentArgumentType.ReturnValue)
-                                    if (pa.FGetInt() > threshhold)
-                                        pa.FSetInt(pa.FGetInt() + (newLength - threshhold) + -1);
-
-                        @base.AddRange(remainings);
-                        evt.FSetPCalls(@base);
-
-                    }
-                }
-
 
                     if (pcall.MethodName == "UltNoodleRuntimeExtensions, Noodled-Events, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.ArrayItemSetter1" && !Application.isPlaying)
                     {
