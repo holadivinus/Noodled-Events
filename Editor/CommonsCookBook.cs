@@ -531,7 +531,7 @@ public class CommonsCookBook : CookBook
                     if (onTrue != null)
                     {
                         var truCall = new PersistentCall(SetActive, onTrue.gameObject);
-                        truCall.FSetArguments(new PersistentArgument().ToRetVal(conditionSource, typeof(bool)));
+                        new PendingConnection(conditionSource, evt, truCall, 0).Connect(dataRoot);
                         evt.PersistentCallsList.Add(truCall);
                     }
                     if (onFalse != null)
